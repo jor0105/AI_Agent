@@ -1,0 +1,8 @@
+{
+  "python.envFile": "${workspaceFolder}/.env",
+  "python.pythonPath": "${command:python.interpreterPath}",
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true
+  }
+}
