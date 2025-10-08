@@ -1,7 +1,9 @@
-from dotenv import load_dotenv
 import os
 
-class EnvironmentConfig:    
+from dotenv import load_dotenv
+
+
+class EnvironmentConfig:
     def get_api_key(self, key: str) -> str:
         load_dotenv()
         api_key = os.getenv(key)
