@@ -6,15 +6,15 @@ class ChatWithAgentUseCase:
     def __init__(self, chat_adapter: ChatRepository):
         self.__chat_adapter = chat_adapter
 
-    def execute(self, agent: DomainAIAgent, user_input: str) -> str:
+    def execute(self, agent: DomainAIAgent, user_ask: str) -> str:
+        agent.update_history({"role": "user", "content": user_ask})
+
         response = self.__chat_adapter.chat(
             model=agent.model,
-            prompt=agent.prompt,
-            user_input=user_input,
-            history=agent.history,
+            instructions=agent.instructions,
+            user_input=agent.history,
         )
 
-        agent.history.append({"role": "user", "content": user_input})
-        agent.history.append({"role": "assistant", "content": response})
+        agent.update_history({"role": "assistant", "content": response})
 
         return response

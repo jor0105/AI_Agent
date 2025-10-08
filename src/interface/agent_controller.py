@@ -7,13 +7,13 @@ from src.infra.factories.chat_adapter_factory import ChatAdapterFactory
 
 
 class AIAgent:
-    def __init__(self, model: str, name: str, prompt: str) -> None:
-        self.__agent = DomainAIAgent(model=model, name=name, prompt=prompt)
+    def __init__(self, model: str, name: str, instructions: str) -> None:
+        self.__agent = DomainAIAgent(model=model, name=name, instructions=instructions)
         chat_adapter = ChatAdapterFactory.create(model)
         self.__chat_use_case = ChatWithAgentUseCase(chat_adapter)
 
-    def chat(self, user_input: str) -> str:
-        return self.__chat_use_case.execute(self.__agent, user_input)
+    def chat(self, user_ask: str) -> str:
+        return self.__chat_use_case.execute(self.__agent, user_ask)
 
     def get_configs(self) -> Dict:
         return GetConfigNewAgentsUseCase.execute(self.__agent)

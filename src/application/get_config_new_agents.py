@@ -9,6 +9,6 @@ class GetConfigNewAgentsUseCase:
         return {
             "Name": agent.name,
             "Model": agent.model,
-            "Prompt": agent.prompt,
+            "Prompt": agent.instructions,
             "History": agent.history,
         }

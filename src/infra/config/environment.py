@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 
 
 class EnvironmentConfig:
-    def get_api_key(self, key: str) -> str:
+    @staticmethod
+    def get_api_key(key: str) -> str:
         load_dotenv()
         api_key = os.getenv(key)
         if not api_key:
