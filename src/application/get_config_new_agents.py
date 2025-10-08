@@ -1,11 +1,11 @@
 from typing import Dict
 
-from src.domain.Agents.agents import AIAgent
+from src.domain.agents.agent_domain import DomainAIAgent
 
 
-class GetConfigNewAgentUseCase:
+class GetConfigNewAgentsUseCase:
     @staticmethod
-    def execute(agent: AIAgent) -> Dict:
+    def execute(agent: DomainAIAgent) -> Dict:
         return {
             "Name": agent.name,
             "Model": agent.model,

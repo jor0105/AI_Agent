@@ -3,7 +3,7 @@ from typing import Dict, List
 
 
 @dataclass
-class AIAgent:
+class DomainAIAgent:
     model: str
     name: str
     prompt: str

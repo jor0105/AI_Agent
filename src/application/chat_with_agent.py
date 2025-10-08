@@ -1,4 +1,4 @@
-from src.domain.Agents.agents import AIAgent
+from src.domain.agents.agent_domain import DomainAIAgent
 from src.domain.interfaces.chat_repository import ChatRepository
 
 
@@ -6,7 +6,7 @@ class ChatWithAgentUseCase:
     def __init__(self, chat_adapter: ChatRepository):
         self.__chat_adapter = chat_adapter
 
-    def execute(self, agent: AIAgent, user_input: str) -> str:
+    def execute(self, agent: DomainAIAgent, user_input: str) -> str:
         response = self.__chat_adapter.chat(
             model=agent.model,
             prompt=agent.prompt,

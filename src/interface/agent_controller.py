@@ -1,14 +1,14 @@
 from typing import Dict
 
 from src.application.chat_with_agent import ChatWithAgentUseCase
-from src.application.get_config_new_agents import GetConfigNewAgentUseCase
-from src.domain.Agents.agents import AIAgent
+from src.application.get_config_new_agents import GetConfigNewAgentsUseCase
+from src.domain.agents.agent_domain import DomainAIAgent
 from src.infra.factories.chat_adapter_factory import ChatAdapterFactory
 
 
-class AIAgentController:
+class AIAgent:
     def __init__(self, model: str, name: str, prompt: str) -> None:
-        self.__agent = AIAgent(model=model, name=name, prompt=prompt)
+        self.__agent = DomainAIAgent(model=model, name=name, prompt=prompt)
         chat_adapter = ChatAdapterFactory.create(model)
         self.__chat_use_case = ChatWithAgentUseCase(chat_adapter)
 
@@ -16,4 +16,4 @@ class AIAgentController:
         return self.__chat_use_case.execute(self.__agent, user_input)
 
     def get_configs(self) -> Dict:
-        return GetConfigNewAgentUseCase.execute(self.__agent)
+        return GetConfigNewAgentsUseCase.execute(self.__agent)

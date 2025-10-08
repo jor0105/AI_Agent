@@ -1,15 +1,8 @@
 from typing import Dict, List
 
-from openai import OpenAI
-
 from src.domain.interfaces.chat_repository import ChatRepository
-from src.infra.Config.environment import EnvironmentConfig
-
-
-class ClientOpenAI:
-    def get_client(self, api_key: str) -> OpenAI:
-        client = OpenAI(api_key=api_key)
-        return client
+from src.infra.adapters.OpenAI.client_openai import ClientOpenAI
+from src.infra.config.environment import EnvironmentConfig
 
 
 class OpenAIChatAdapter(ChatRepository):
