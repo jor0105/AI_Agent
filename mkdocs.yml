@@ -1,0 +1,18 @@
+# Informações do Projeto
+site_name: "AI Agent Creator"
+site_author: "Jordan"
+site_description: "Sistema modular para criação de agentes de IA seguindo Clean Architecture e SOLID"
+
+# Repositório
+repo_name: "jor0105/AI_Agent"
+repo_url: "https://github.com/jor0105/AI_Agent"
+
+# Navegação
+nav:
+  - "Início": "index.md"
+  - "Guia":
+      - "Instalação": "guia/instalacao.md"
+      - "Uso Básico": "guia/uso-basico.md"
+      - "Exemplos": "guia/exemplos.md"
+  - "Arquitetura": "arquitetura.md"
+  - "API": "api.md"

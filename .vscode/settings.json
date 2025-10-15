@@ -1,6 +1,7 @@
 {
   "python.envFile": "${workspaceFolder}/.env",
   "python.pythonPath": "${command:python.interpreterPath}",
+  "python.terminal.activateEnvironment": true,
   "files.exclude": {
     "**/__pycache__": true,
     "**/*.pyc": true

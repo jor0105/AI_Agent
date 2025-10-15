@@ -10,6 +10,7 @@ requires-python = ">=3.14"
 dependencies = [
     "openai (>=2.2.0,<3.0.0)",
     "python-dotenv (>=1.1.1,<2.0.0)",
+    "ollama (>=0.6.0,<0.7.0)",
 ]
 
 [tool.poetry]
@@ -23,5 +24,6 @@ build-backend = "poetry.core.masonry.api"
 dev = [
     "isort (>=6.1.0,<7.0.0)",
     "pre-commit (>=4.3.0,<5.0.0)",
-    "mkdocs (>=1.6.1,<2.0.0)"
+    "mkdocs (>=1.6.1,<2.0.0)",
+    "pytest (>=8.4.2,<9.0.0)"
 ]
