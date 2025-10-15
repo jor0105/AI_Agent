@@ -1,78 +1,73 @@
 import time
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
+
+from ollama import chat
 
 from src.application.interfaces.chat_repository import ChatRepository
 from src.domain.exceptions import ChatException
-from src.infra.adapters.OpenAI.client_openai import ClientOpenAI
 from src.infra.config.environment import EnvironmentConfig
 from src.infra.config.logging_config import LoggingConfig
 from src.infra.config.metrics import ChatMetrics
 from src.infra.config.retry import retry_with_backoff
 
 
-class OpenAIChatAdapter(ChatRepository):
-    """Adapter para comunicação com OpenAI API."""
+class OllamaChatAdapter(ChatRepository):
+    """Adapter para comunicação com Ollama."""
 
     def __init__(self):
-        """Inicializa o adapter carregando as credenciais."""
+        """Inicializa o adapter Ollama com configurações opcionais."""
         self.__logger = LoggingConfig.get_logger(__name__)
         self.__metrics: List[ChatMetrics] = []
 
-        # Configurações de timeout e retry
-        self.__timeout = int(EnvironmentConfig.get_env("OPENAI_TIMEOUT", "30"))
-        self.__max_retries = int(EnvironmentConfig.get_env("OPENAI_MAX_RETRIES", "3"))
+        # Carrega configurações opcionais do ambiente
+        self.__host = EnvironmentConfig.get_env("OLLAMA_HOST", "http://localhost:11434")
+        self.__max_retries = int(EnvironmentConfig.get_env("OLLAMA_MAX_RETRIES", "3"))
 
-        try:
-            api_key = EnvironmentConfig.get_api_key(ClientOpenAI.API_OPENAI_NAME)
-            self.__client = ClientOpenAI.get_client(api_key)
-            self.__logger.info(
-                f"OpenAI adapter inicializado (timeout: {self.__timeout}s, "
-                f"max_retries: {self.__max_retries})"
-            )
-        except EnvironmentError as e:
-            self.__logger.error(f"Erro ao configurar OpenAI: {str(e)}")
-            raise ChatException(f"Erro ao configurar OpenAI: {str(e)}", e)
+        self.__logger.info(
+            f"Ollama adapter inicializado (host: {self.__host}, "
+            f"max_retries: {self.__max_retries})"
+        )
 
     @retry_with_backoff(max_attempts=3, initial_delay=1.0, exceptions=(Exception,))
-    def __call_openai_api(
+    def __call_ollama_api(
         self,
         model: str,
         messages: List[Dict[str, str]],
         temperature: Optional[float],
-        max_tokens: Optional[int],
         top_p: Optional[float],
         stop: Optional[List[str]],
-    ) -> Any:
+    ) -> dict:
         """
-        Chama a API da OpenAI com retry automático.
+        Chama a API do Ollama com retry automático.
 
         Args:
             model: Nome do modelo
             messages: Lista de mensagens
             temperature: Temperatura para geração
-            max_tokens: Máximo de tokens na resposta
             top_p: Top-p sampling
             stop: Sequências de parada
 
         Returns:
             Resposta da API
         """
+        options = {}
+        if temperature is not None:
+            options["temperature"] = temperature
+        if top_p is not None:
+            options["top_p"] = top_p
+
         kwargs = {
             "model": model,
             "messages": messages,
-            "timeout": self.__timeout,
+            "host": self.__host,
         }
 
-        if temperature is not None:
-            kwargs["temperature"] = temperature
-        if max_tokens is not None:
-            kwargs["max_tokens"] = max_tokens
-        if top_p is not None:
-            kwargs["top_p"] = top_p
+        if options:
+            kwargs["options"] = options
         if stop is not None:
             kwargs["stop"] = stop
 
-        return self.__client.chat.completions.create(**kwargs)
+        return chat(**kwargs)
 
     def chat(
         self,
@@ -86,7 +81,7 @@ class OpenAIChatAdapter(ChatRepository):
         stop: Optional[List[str]] = None,
     ) -> str:
         """
-        Envia mensagem para OpenAI e retorna a resposta.
+        Envia mensagem para o Ollama e retorna a resposta.
 
         Args:
             model: Nome do modelo
@@ -94,7 +89,7 @@ class OpenAIChatAdapter(ChatRepository):
             user_ask: Pergunta do usuário
             history: Histórico de conversas (lista de dicts com 'role' e 'content')
             temperature: Temperatura para geração (0.0-2.0)
-            max_tokens: Máximo de tokens na resposta
+            max_tokens: Máximo de tokens (não suportado no Ollama, ignorado)
             top_p: Top-p sampling (0.0-1.0)
             stop: Sequências de parada
 
@@ -107,37 +102,27 @@ class OpenAIChatAdapter(ChatRepository):
         start_time = time.time()
 
         try:
-            self.__logger.debug(f"Iniciando chat com modelo {model}")
+            self.__logger.debug(f"Iniciando chat com modelo {model} no Ollama")
 
             messages = []
             messages.append({"role": "system", "content": instructions})
             messages.extend(history)
             messages.append({"role": "user", "content": user_ask})
 
-            # Chama a API da OpenAI com retry automático
-            response = self.__call_openai_api(
-                model, messages, temperature, max_tokens, top_p, stop
-            )
+            response = self.__call_ollama_api(model, messages, temperature, top_p, stop)
 
-            content = response.choices[0].message.content
+            content = response["message"]["content"]
 
             if not content:
-                self.__logger.warning("OpenAI retornou resposta vazia")
-                raise ChatException("OpenAI retornou uma resposta vazia")
+                self.__logger.warning("Ollama retornou resposta vazia")
+                raise ChatException("Ollama retornou uma resposta vazia")
 
-            # Captura métricas
             latency = (time.time() - start_time) * 1000
-            tokens_used = getattr(response.usage, "total_tokens", None)
-            prompt_tokens = getattr(response.usage, "prompt_tokens", None)
-            completion_tokens = getattr(response.usage, "completion_tokens", None)
+
+            tokens_info = response.get("eval_count", None)
 
             metrics = ChatMetrics(
-                model=model,
-                latency_ms=latency,
-                tokens_used=tokens_used,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                success=True,
+                model=model, latency_ms=latency, tokens_used=tokens_info, success=True
             )
             self.__metrics.append(metrics)
 
@@ -152,35 +137,41 @@ class OpenAIChatAdapter(ChatRepository):
                 model=model,
                 latency_ms=latency,
                 success=False,
-                error_message="OpenAI retornou resposta vazia",
+                error_message="Ollama retornou resposta vazia",
             )
             self.__metrics.append(metrics)
             raise
-        except AttributeError as e:
+        except KeyError as e:
             latency = (time.time() - start_time) * 1000
             metrics = ChatMetrics(
                 model=model,
                 latency_ms=latency,
                 success=False,
-                error_message=f"Erro ao acessar resposta: {str(e)}",
+                error_message=f"Chave ausente: {str(e)}",
             )
             self.__metrics.append(metrics)
-            self.__logger.error(f"Erro ao acessar resposta da OpenAI: {str(e)}")
-            raise ChatException(
-                f"Erro ao acessar resposta da OpenAI: {str(e)}", original_error=e
+            self.__logger.error(
+                f"Resposta do Ollama com formato inválido. Chave ausente: {str(e)}"
             )
-        except IndexError as e:
+            raise ChatException(
+                f"Resposta do Ollama com formato inválido. Chave ausente: {str(e)}",
+                original_error=e,
+            )
+        except TypeError as e:
             latency = (time.time() - start_time) * 1000
             metrics = ChatMetrics(
                 model=model,
                 latency_ms=latency,
                 success=False,
-                error_message=f"Formato inesperado: {str(e)}",
+                error_message=f"Erro de tipo: {str(e)}",
             )
             self.__metrics.append(metrics)
-            self.__logger.error(f"Resposta da OpenAI com formato inesperado: {str(e)}")
+            self.__logger.error(
+                f"Erro de tipo ao processar resposta do Ollama: {str(e)}"
+            )
             raise ChatException(
-                f"Resposta da OpenAI com formato inesperado: {str(e)}", original_error=e
+                f"Erro de tipo ao processar resposta do Ollama: {str(e)}",
+                original_error=e,
             )
         except Exception as e:
             latency = (time.time() - start_time) * 1000
@@ -188,9 +179,9 @@ class OpenAIChatAdapter(ChatRepository):
                 model=model, latency_ms=latency, success=False, error_message=str(e)
             )
             self.__metrics.append(metrics)
-            self.__logger.error(f"Erro ao comunicar com OpenAI: {str(e)}")
+            self.__logger.error(f"Erro ao comunicar com Ollama: {str(e)}")
             raise ChatException(
-                f"Erro ao comunicar com OpenAI: {str(e)}", original_error=e
+                f"Erro ao comunicar com Ollama: {str(e)}", original_error=e
             )
 
     def get_metrics(self) -> List[ChatMetrics]:

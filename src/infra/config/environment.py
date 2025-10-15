@@ -1,13 +1,122 @@
 import os
+import threading
+from typing import Dict, Optional
 
 from dotenv import load_dotenv
 
 
 class EnvironmentConfig:
-    @staticmethod
-    def get_api_key(key: str) -> str:
-        load_dotenv()
-        api_key = os.getenv(key)
-        if not api_key:
-            raise EnvironmentError(f"Environment variable {key} not found")
-        return api_key
+    """
+    Singleton thread-safe para gerenciar configurações de ambiente.
+    Carrega as variáveis de ambiente apenas uma vez.
+    Utiliza Lock para garantir segurança em ambientes multi-threaded.
+    """
+
+    _instance: Optional["EnvironmentConfig"] = None
+    _initialized: bool = False
+    _cache: Dict[str, str] = {}
+    _lock: threading.Lock = threading.Lock()
+
+    def __new__(cls) -> "EnvironmentConfig":
+        """Implementa o padrão Singleton com thread-safety."""
+        if cls._instance is None:
+            with cls._lock:
+                # Double-checked locking
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self) -> None:
+        """Inicializa e carrega variáveis de ambiente apenas uma vez."""
+        if not EnvironmentConfig._initialized:
+            with EnvironmentConfig._lock:
+                # Double-checked locking
+                if not EnvironmentConfig._initialized:
+                    load_dotenv()
+                    EnvironmentConfig._initialized = True
+
+    @classmethod
+    def get_api_key(cls, key: str) -> str:
+        """
+        Obtém uma chave de API das variáveis de ambiente.
+        Usa cache para evitar múltiplas leituras do ambiente.
+        Thread-safe.
+
+        Args:
+            key: Nome da variável de ambiente
+
+        Returns:
+            Valor da chave de API
+
+        Raises:
+            EnvironmentError: Se a variável não for encontrada
+        """
+        # Garante que o ambiente foi inicializado
+        if not cls._initialized:
+            cls()
+
+        # Verifica se está em cache (leitura thread-safe)
+        if key in cls._cache:
+            return cls._cache[key]
+
+        # Busca no ambiente com lock para escrita no cache
+        with cls._lock:
+            # Double-check após adquirir lock
+            if key in cls._cache:
+                return cls._cache[key]
+
+            api_key = os.getenv(key)
+            if not api_key:
+                raise EnvironmentError(
+                    f"A variável de ambiente '{key}' não foi encontrada. "
+                    f"Certifique-se de que ela está definida no arquivo .env"
+                )
+
+            # Armazena em cache
+            cls._cache[key] = api_key
+            return api_key
+
+    @classmethod
+    def get_env(cls, key: str, default: Optional[str] = None) -> Optional[str]:
+        """
+        Obtém uma variável de ambiente com valor padrão opcional.
+        Thread-safe e com cache.
+
+        Args:
+            key: Nome da variável de ambiente
+            default: Valor padrão se a variável não existir
+
+        Returns:
+            Valor da variável ou default
+        """
+        # Garante que o ambiente foi inicializado
+        if not cls._initialized:
+            cls()
+
+        # Verifica cache
+        if key in cls._cache:
+            return cls._cache[key]
+
+        # Busca no ambiente com lock
+        with cls._lock:
+            if key in cls._cache:
+                return cls._cache[key]
+
+            value = os.getenv(key, default)
+            if value is not None:
+                cls._cache[key] = value
+            return value
+
+    @classmethod
+    def clear_cache(cls) -> None:
+        """Limpa o cache de variáveis. Thread-safe."""
+        with cls._lock:
+            cls._cache.clear()
+
+    @classmethod
+    def reset(cls) -> None:
+        """Reseta completamente o Singleton. Thread-safe."""
+        with cls._lock:
+            cls._instance = None
+            cls._initialized = False
+            cls._cache.clear()

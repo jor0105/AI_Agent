@@ -1,28 +1,71 @@
-from src.domain.interfaces.chat_repository import ChatRepository
+from typing import Dict, Literal, Tuple
+
+from src.application.interfaces.chat_repository import ChatRepository
+from src.infra.adapters.Ollama.ollama_chat_adapter import OllamaChatAdapter
+from src.infra.adapters.OpenAI.openai_chat_adapter import OpenAIChatAdapter
+
+ProviderType = Literal["openai", "ollama"]
 
 
 class ChatAdapterFactory:
-    models_ai = {
-        "gpt": "src.infra.adapters.OpenAI.openai_chat_adapter.OpenAIChatAdapter",
-        # Adicione outros modelos aqui, exemplo:
-        # "llama": "src.infra.adapters.Llama.llama_chat_adapter.LlamaChatAdapter",
-    }
+    """
+    Factory para criar adapters de chat com cache.
 
-    @staticmethod
-    def create(model: str) -> ChatRepository:
-        adapter_path = None
-        for key in ChatAdapterFactory.models_ai:
-            if model.lower().startswith(key):
-                adapter_path = ChatAdapterFactory.models_ai[key]
-                break
-        if not adapter_path:
-            raise ValueError(f"IA não suportada: {model}")
-        try:
-            module_path, class_name = adapter_path.rsplit(".", 1)
-            module = __import__(module_path, fromlist=[class_name])
-            adapter_class = getattr(module, class_name)
-            return adapter_class()
-        except (ImportError, AttributeError, Exception) as e:
-            raise ImportError(
-                f"Erro ao importar ou instanciar o adaptador '{adapter_path}': {e}"
+    Lógica:
+    - Se provider for "openai": usa OpenAI
+    - Se provider for "ollama": usa Ollama
+
+    O cache evita a criação de múltiplas instâncias do mesmo adapter,
+    melhorando performance e reduzindo overhead de inicialização.
+    """
+
+    _cache: Dict[Tuple[str, str], ChatRepository] = {}
+
+    @classmethod
+    def create(
+        cls,
+        provider: ProviderType,
+        model: str,
+    ) -> ChatRepository:
+        """
+        Cria o adapter apropriado com cache.
+
+        Args:
+            model: Nome do modelo (ex: "gpt-4", "llama2")
+            provider: Provider específico ("openai" ou "ollama")
+
+        Returns:
+            ChatRepository: Instância do adapter apropriado (cached se já existir)
+
+        Raises:
+            ValueError: Se provider não for "openai" ou "ollama"
+        """
+        # Normaliza o model para lowercase para garantir cache correto
+        cache_key = (model.lower(), provider)
+
+        # Verifica se já existe no cache
+        if cache_key in cls._cache:
+            return cls._cache[cache_key]
+
+        # Cria novo adapter baseado no provider
+        if provider == "openai":
+            adapter = OpenAIChatAdapter()
+        elif provider == "ollama":
+            adapter = OllamaChatAdapter()
+        else:
+            raise ValueError(
+                f"Provider inválido: {provider}. Use 'openai' ou 'ollama'."
             )
+
+        # Armazena no cache
+        cls._cache[cache_key] = adapter
+
+        return adapter
+
+    @classmethod
+    def clear_cache(cls) -> None:
+        """
+        Limpa o cache de adapters.
+        Útil para testes ou quando se deseja forçar recriação.
+        """
+        cls._cache.clear()
