@@ -16,9 +16,9 @@ class GetAgentConfigUseCase:
             AgentConfigOutputDTO: DTO com as configurações do agente
         """
         return AgentConfigOutputDTO(
-            name=agent.name,
+            provider=agent.provider,
             model=agent.model,
+            name=agent.name,
             instructions=agent.instructions,
             history=agent.history.to_dict_list(),  # Converte History para list[dict]
-            provider=agent.provider,
         )
