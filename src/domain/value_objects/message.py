@@ -27,9 +27,7 @@ class Message:
     def __post_init__(self) -> None:
         """Valida os dados da mensagem."""
         if not isinstance(self.role, MessageRole):
-            raise ValueError(
-                f"Role deve ser uma instância de MessageRole, recebido: {type(self.role)}"
-            )
+            raise ValueError("Role deve ser uma instância de MessageRole")
 
         if not self.content or not self.content.strip():
             raise ValueError("O conteúdo da mensagem não pode estar vazio")

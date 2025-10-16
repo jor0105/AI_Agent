@@ -1,9 +1,3 @@
-"""
-Testes unitários para o Value Object Message.
-
-Testa a criação, validação e conversão de mensagens.
-"""
-
 import pytest
 
 from src.domain.value_objects.message import Message, MessageRole
@@ -60,13 +54,13 @@ class TestMessage:
 
     def test_message_validation_empty_content(self):
         with pytest.raises(
-            ValueError, match="conteúdo da mensagem não pode estar vazio"
+            ValueError, match="O conteúdo da mensagem não pode estar vazio"
         ):
             Message(role=MessageRole.USER, content="")
 
     def test_message_validation_whitespace_content(self):
         with pytest.raises(
-            ValueError, match="conteúdo da mensagem não pode estar vazio"
+            ValueError, match="O conteúdo da mensagem não pode estar vazio"
         ):
             Message(role=MessageRole.USER, content="   ")
 
@@ -101,13 +95,17 @@ class TestMessage:
     def test_from_dict_missing_role(self):
         data = {"content": "Hello"}
 
-        with pytest.raises(ValueError, match="deve conter 'role' e 'content'"):
+        with pytest.raises(
+            ValueError, match="Dicionário deve conter 'role' e 'content'"
+        ):
             Message.from_dict(data)
 
     def test_from_dict_missing_content(self):
         data = {"role": "user"}
 
-        with pytest.raises(ValueError, match="deve conter 'role' e 'content'"):
+        with pytest.raises(
+            ValueError, match="Dicionário deve conter 'role' e 'content'"
+        ):
             Message.from_dict(data)
 
     def test_from_dict_invalid_role(self):
