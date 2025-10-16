@@ -3,7 +3,10 @@ from .domain_exceptions import (
     AgentException,
     ChatException,
     InvalidAgentConfigException,
+    InvalidConfigTypeException,
     InvalidModelException,
+    InvalidProviderException,
+    UnsupportedConfigException,
 )
 
 __all__ = [
@@ -12,4 +15,7 @@ __all__ = [
     "InvalidModelException",
     "ChatException",
     "AdapterNotFoundException",
+    "InvalidProviderException",
+    "UnsupportedConfigException",
+    "InvalidConfigTypeException",
 ]

@@ -28,6 +28,7 @@ class CreateAgentUseCase:
                 model=input_dto.model,
                 name=input_dto.name,
                 instructions=input_dto.instructions,
+                config=input_dto.config,
                 history=History(max_size=input_dto.history_max_size),
             )
 
