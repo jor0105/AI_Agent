@@ -1,7 +1,7 @@
 import pytest
 
 from src.application.use_cases.chat_with_agent import ChatWithAgentUseCase
-from src.application.use_cases.get_config_new_agents import GetAgentConfigUseCase
+from src.application.use_cases.get_config_agents import GetAgentConfigUseCase
 from src.domain.entities.agent_domain import Agent
 from src.domain.exceptions import InvalidAgentConfigException
 from src.main.composers.agent_composer import AgentComposer

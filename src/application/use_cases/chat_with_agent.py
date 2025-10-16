@@ -1,8 +1,11 @@
+from typing import List
+
 from src.application.dtos import ChatInputDTO, ChatOutputDTO
 from src.application.interfaces.chat_repository import ChatRepository
 from src.domain.entities.agent_domain import Agent
 from src.domain.exceptions import ChatException
 from src.infra.config.logging_config import LoggingConfig
+from src.infra.config.metrics import ChatMetrics
 
 
 class ChatWithAgentUseCase:
@@ -92,7 +95,7 @@ class ChatWithAgentUseCase:
                 original_error=e,
             )
 
-    def get_metrics(self):
+    def get_metrics(self) -> List[ChatMetrics]:
         """
         Retorna as métricas coletadas pelo repositório de chat.
 

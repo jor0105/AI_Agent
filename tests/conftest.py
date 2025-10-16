@@ -127,6 +127,8 @@ def populated_history():
     history.add_assistant_message("Response 2")
     return history
 
+    history.add_assistant_message("Response 2")
+
 
 # ============================================================================
 # CONFIGURAÇÕES DO PYTEST

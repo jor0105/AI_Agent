@@ -1,11 +1,11 @@
+from dataclasses import field
 from typing import Any, Dict, List, Optional
 
 from src.application.dtos import ChatInputDTO
 from src.application.use_cases.chat_with_agent import ChatWithAgentUseCase
-from src.application.use_cases.get_config_new_agents import GetAgentConfigUseCase
+from src.application.use_cases.get_config_agents import GetAgentConfigUseCase
 from src.domain.entities.agent_domain import Agent
 from src.infra.config.metrics import ChatMetrics
-from src.infra.factories.chat_adapter_factory import ProviderType
 from src.main.composers.agent_composer import AgentComposer
 
 
@@ -17,10 +17,11 @@ class AIAgent:
 
     def __init__(
         self,
-        provider: ProviderType,
+        provider: str,
         model: str,
         name: str,
         instructions: str,
+        config: Dict[str, Any] = field(default_factory=dict),
         history_max_size: int = 10,
     ) -> None:
         """
@@ -31,6 +32,7 @@ class AIAgent:
             model: Nome do modelo de IA
             name: Nome do agente
             instructions: Instruções/prompt do agente
+            configs: Configurações extras do agente, como max_tokens e temperature
             history_max_size: Tamanho máximo do histórico (padrão: 10)
         """
         self.__agent: Agent = AgentComposer.create_agent(
@@ -38,6 +40,7 @@ class AIAgent:
             model=model,
             name=name,
             instructions=instructions,
+            config=config,
             history_max_size=history_max_size,
         )
 
@@ -51,30 +54,18 @@ class AIAgent:
     def chat(
         self,
         message: str,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        top_p: Optional[float] = None,
-        stop: Optional[List[str]] = None,
     ) -> str:
         """
         Envia uma mensagem ao agente e retorna a resposta.
 
         Args:
             message: Mensagem do usuário
-            temperature: Temperatura para geração (0.0-2.0, opcional)
-            max_tokens: Máximo de tokens na resposta (opcional)
-            top_p: Top-p sampling (0.0-1.0, opcional)
-            stop: Sequências de parada (opcional)
 
         Returns:
             str: Resposta do agente
         """
         input_dto = ChatInputDTO(
             message=message,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            top_p=top_p,
-            stop=stop,
         )
         output_dto = self.__chat_use_case.execute(self.__agent, input_dto)
         return output_dto.response
@@ -118,26 +109,3 @@ class AIAgent:
             collector.add(metric)
 
         return collector.export_json(filepath)
-
-    def export_metrics_prometheus(self, filepath: Optional[str] = None) -> str:
-        """
-        Exporta métricas em formato Prometheus.
-
-        Args:
-            filepath: Caminho do arquivo para salvar (opcional)
-
-        Returns:
-            str: Métricas no formato Prometheus
-        """
-        from src.infra.config.metrics import MetricsCollector
-
-        collector = MetricsCollector()
-        for metric in self.get_metrics():
-            collector.add(metric)
-
-        metrics_text = collector.export_prometheus()
-
-        if filepath:
-            collector.export_prometheus_to_file(filepath)
-
-        return metrics_text

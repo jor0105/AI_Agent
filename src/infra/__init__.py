@@ -1,7 +1,23 @@
-from .config.environment import EnvironmentConfig
-from .factories.chat_adapter_factory import ChatAdapterFactory
+from .adapters import ClientOpenAI, OllamaChatAdapter, OpenAIChatAdapter
+from .config import (
+    ChatMetrics,
+    EnvironmentConfig,
+    LoggingConfig,
+    MetricsCollector,
+    SensitiveDataFilter,
+    retry_with_backoff,
+)
+from .factories import ChatAdapterFactory
 
 __all__ = [
-    "ChatAdapterFactory",
     "EnvironmentConfig",
+    "LoggingConfig",
+    "ChatMetrics",
+    "MetricsCollector",
+    "retry_with_backoff",
+    "SensitiveDataFilter",
+    "OllamaChatAdapter",
+    "OpenAIChatAdapter",
+    "ClientOpenAI",
+    "ChatAdapterFactory",
 ]

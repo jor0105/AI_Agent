@@ -1,7 +1,7 @@
 import time
-from typing import Dict, List, Optional
+from typing import Any, Dict, List
 
-from ollama import chat
+from ollama import ChatResponse, chat
 
 from src.application.interfaces.chat_repository import ChatRepository
 from src.domain.exceptions import ChatException
@@ -15,7 +15,6 @@ class OllamaChatAdapter(ChatRepository):
     """Adapter para comunicação com Ollama."""
 
     def __init__(self):
-        """Inicializa o adapter Ollama com configurações opcionais."""
         self.__logger = LoggingConfig.get_logger(__name__)
         self.__metrics: List[ChatMetrics] = []
 
@@ -33,52 +32,34 @@ class OllamaChatAdapter(ChatRepository):
         self,
         model: str,
         messages: List[Dict[str, str]],
-        temperature: Optional[float],
-        top_p: Optional[float],
-        stop: Optional[List[str]],
-    ) -> dict:
+        config: Dict[str, Any],
+    ) -> ChatResponse:
         """
         Chama a API do Ollama com retry automático.
 
         Args:
             model: Nome do modelo
             messages: Lista de mensagens
-            temperature: Temperatura para geração
-            top_p: Top-p sampling
-            stop: Sequências de parada
+            config: Configurações internas da IA
 
         Returns:
             Resposta da API
         """
-        options = {}
-        if temperature is not None:
-            options["temperature"] = temperature
-        if top_p is not None:
-            options["top_p"] = top_p
 
-        kwargs = {
-            "model": model,
-            "messages": messages,
-            "host": self.__host,
-        }
+        response_api: ChatResponse = chat(
+            model=model,
+            messages=messages,
+        )
 
-        if options:
-            kwargs["options"] = options
-        if stop is not None:
-            kwargs["stop"] = stop
-
-        return chat(**kwargs)
+        return response_api
 
     def chat(
         self,
         model: str,
         instructions: str,
-        user_ask: str,
+        config: Dict[str, Any],
         history: List[Dict[str, str]],
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        top_p: Optional[float] = None,
-        stop: Optional[List[str]] = None,
+        user_ask: str,
     ) -> str:
         """
         Envia mensagem para o Ollama e retorna a resposta.
@@ -86,12 +67,9 @@ class OllamaChatAdapter(ChatRepository):
         Args:
             model: Nome do modelo
             instructions: Instruções do sistema
-            user_ask: Pergunta do usuário
+            config: Configurações internas da IA
             history: Histórico de conversas (lista de dicts com 'role' e 'content')
-            temperature: Temperatura para geração (0.0-2.0)
-            max_tokens: Máximo de tokens (não suportado no Ollama, ignorado)
-            top_p: Top-p sampling (0.0-1.0)
-            stop: Sequências de parada
+            user_ask: Pergunta do usuário
 
         Returns:
             str: Resposta do modelo
@@ -109,9 +87,9 @@ class OllamaChatAdapter(ChatRepository):
             messages.extend(history)
             messages.append({"role": "user", "content": user_ask})
 
-            response = self.__call_ollama_api(model, messages, temperature, top_p, stop)
+            response_api = self.__call_ollama_api(model, messages, config)
 
-            content = response["message"]["content"]
+            content = response_api.message.content
 
             if not content:
                 self.__logger.warning("Ollama retornou resposta vazia")
@@ -119,7 +97,7 @@ class OllamaChatAdapter(ChatRepository):
 
             latency = (time.time() - start_time) * 1000
 
-            tokens_info = response.get("eval_count", None)
+            tokens_info = response_api.get("eval_count", None)
 
             metrics = ChatMetrics(
                 model=model, latency_ms=latency, tokens_used=tokens_info, success=True

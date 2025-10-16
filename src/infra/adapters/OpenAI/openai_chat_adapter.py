@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from src.application.interfaces.chat_repository import ChatRepository
 from src.domain.exceptions import ChatException
@@ -14,7 +14,6 @@ class OpenAIChatAdapter(ChatRepository):
     """Adapter para comunicação com OpenAI API."""
 
     def __init__(self):
-        """Inicializa o adapter carregando as credenciais."""
         self.__logger = LoggingConfig.get_logger(__name__)
         self.__metrics: List[ChatMetrics] = []
 
@@ -38,10 +37,7 @@ class OpenAIChatAdapter(ChatRepository):
         self,
         model: str,
         messages: List[Dict[str, str]],
-        temperature: Optional[float],
-        max_tokens: Optional[int],
-        top_p: Optional[float],
-        stop: Optional[List[str]],
+        config: Dict[str, Any],
     ) -> Any:
         """
         Chama a API da OpenAI com retry automático.
@@ -49,41 +45,25 @@ class OpenAIChatAdapter(ChatRepository):
         Args:
             model: Nome do modelo
             messages: Lista de mensagens
-            temperature: Temperatura para geração
-            max_tokens: Máximo de tokens na resposta
-            top_p: Top-p sampling
-            stop: Sequências de parada
+            config: Configurações internas da IA
 
         Returns:
             Resposta da API
         """
-        kwargs = {
-            "model": model,
-            "messages": messages,
-            "timeout": self.__timeout,
-        }
+        response_api = self.__client.responses.create(
+            model=model,
+            input=messages,
+        )
 
-        if temperature is not None:
-            kwargs["temperature"] = temperature
-        if max_tokens is not None:
-            kwargs["max_tokens"] = max_tokens
-        if top_p is not None:
-            kwargs["top_p"] = top_p
-        if stop is not None:
-            kwargs["stop"] = stop
-
-        return self.__client.chat.completions.create(**kwargs)
+        return response_api
 
     def chat(
         self,
         model: str,
         instructions: str,
-        user_ask: str,
+        config: Dict[str, Any],
         history: List[Dict[str, str]],
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        top_p: Optional[float] = None,
-        stop: Optional[List[str]] = None,
+        user_ask: str,
     ) -> str:
         """
         Envia mensagem para OpenAI e retorna a resposta.
@@ -91,12 +71,9 @@ class OpenAIChatAdapter(ChatRepository):
         Args:
             model: Nome do modelo
             instructions: Instruções do sistema
-            user_ask: Pergunta do usuário
+            config: Configurações internas da IA
             history: Histórico de conversas (lista de dicts com 'role' e 'content')
-            temperature: Temperatura para geração (0.0-2.0)
-            max_tokens: Máximo de tokens na resposta
-            top_p: Top-p sampling (0.0-1.0)
-            stop: Sequências de parada
+            user_ask: Pergunta do usuário
 
         Returns:
             str: Resposta do modelo
@@ -107,7 +84,7 @@ class OpenAIChatAdapter(ChatRepository):
         start_time = time.time()
 
         try:
-            self.__logger.debug(f"Iniciando chat com modelo {model}")
+            self.__logger.debug(f"Iniciando chat com modelo {model} na OpenAI")
 
             messages = []
             messages.append({"role": "system", "content": instructions})
@@ -115,11 +92,9 @@ class OpenAIChatAdapter(ChatRepository):
             messages.append({"role": "user", "content": user_ask})
 
             # Chama a API da OpenAI com retry automático
-            response = self.__call_openai_api(
-                model, messages, temperature, max_tokens, top_p, stop
-            )
+            response_api = self.__call_openai_api(model, messages, config)
 
-            content = response.choices[0].message.content
+            content = response_api.output_text
 
             if not content:
                 self.__logger.warning("OpenAI retornou resposta vazia")
@@ -127,9 +102,16 @@ class OpenAIChatAdapter(ChatRepository):
 
             # Captura métricas
             latency = (time.time() - start_time) * 1000
-            tokens_used = getattr(response.usage, "total_tokens", None)
-            prompt_tokens = getattr(response.usage, "prompt_tokens", None)
-            completion_tokens = getattr(response.usage, "completion_tokens", None)
+
+            usage = getattr(response_api, "usage", None)
+            if usage:
+                tokens_used = getattr(usage, "total_tokens", None)
+                prompt_tokens = getattr(usage, "input_tokens", None)
+                completion_tokens = getattr(usage, "output_tokens", None)
+            else:
+                tokens_used = None
+                prompt_tokens = None
+                completion_tokens = None
 
             metrics = ChatMetrics(
                 model=model,
