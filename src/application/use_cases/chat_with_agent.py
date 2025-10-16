@@ -44,12 +44,9 @@ class ChatWithAgentUseCase:
             response = self.__chat_repository.chat(
                 model=agent.model,
                 instructions=agent.instructions,
-                user_ask=input_dto.message,
+                config=agent.config,
                 history=agent.history.to_dict_list(),
-                temperature=input_dto.temperature,
-                max_tokens=input_dto.max_tokens,
-                top_p=input_dto.top_p,
-                stop=input_dto.stop,
+                user_ask=input_dto.message,
             )
 
             if not response:

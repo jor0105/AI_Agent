@@ -54,12 +54,9 @@ class TestChatWithAgentUseCase:
         mock_chat_repository.chat.assert_called_once_with(
             model="phi4-mini:latest",
             instructions="Instructions",
+            config={},
             user_ask="Test message",
             history=[],
-            temperature=None,
-            max_tokens=None,
-            top_p=None,
-            stop=None,
         )
 
     def test_execute_with_existing_history(self, mock_chat_repository):
@@ -154,3 +151,91 @@ class TestChatWithAgentUseCase:
             use_case.execute(agent, input_dto)
 
         assert len(agent.history) == 0
+
+    def test_execute_with_empty_response_raises_error(self, mock_chat_repository):
+        mock_chat_repository.chat.return_value = ""
+        use_case = ChatWithAgentUseCase(chat_repository=mock_chat_repository)
+        agent = Agent(
+            provider="openai", model="gpt-5-nano", name="Test", instructions="Test"
+        )
+        input_dto = ChatInputDTO(message="Test")
+
+        with pytest.raises(ChatException, match="Resposta vazia"):
+            use_case.execute(agent, input_dto)
+
+        assert len(agent.history) == 0
+
+    def test_execute_with_none_response_raises_error(self, mock_chat_repository):
+        mock_chat_repository.chat.return_value = None
+        use_case = ChatWithAgentUseCase(chat_repository=mock_chat_repository)
+        agent = Agent(
+            provider="openai", model="gpt-5-nano", name="Test", instructions="Test"
+        )
+        input_dto = ChatInputDTO(message="Test")
+
+        with pytest.raises(ChatException, match="Resposta vazia"):
+            use_case.execute(agent, input_dto)
+
+        assert len(agent.history) == 0
+
+    def test_execute_with_agent_config(self, mock_chat_repository):
+        mock_chat_repository.chat.return_value = "Response"
+        use_case = ChatWithAgentUseCase(chat_repository=mock_chat_repository)
+        config = {"temperature": 0.7, "max_tokens": 100}
+        agent = Agent(
+            provider="openai",
+            model="gpt-4",
+            name="Test",
+            instructions="Test",
+            config=config,
+        )
+        input_dto = ChatInputDTO(message="Test message")
+
+        use_case.execute(agent, input_dto)
+
+        mock_chat_repository.chat.assert_called_once_with(
+            model="gpt-4",
+            instructions="Test",
+            config=config,
+            user_ask="Test message",
+            history=[],
+        )
+
+    def test_get_metrics_when_repository_supports_it(self):
+        from unittest.mock import Mock
+
+        # Cria um mock sem spec para permitir get_metrics
+        mock_repository = Mock()
+        mock_repository.get_metrics.return_value = [
+            {"timestamp": "2024-01-01", "model": "gpt-4"}
+        ]
+        use_case = ChatWithAgentUseCase(chat_repository=mock_repository)
+
+        metrics = use_case.get_metrics()
+
+        assert len(metrics) == 1
+        assert metrics[0]["model"] == "gpt-4"
+        mock_repository.get_metrics.assert_called_once()
+
+    def test_get_metrics_when_repository_does_not_support_it(
+        self, mock_chat_repository
+    ):
+        # O mock com spec não permite chamar get_metrics que não está na interface
+        use_case = ChatWithAgentUseCase(chat_repository=mock_chat_repository)
+
+        metrics = use_case.get_metrics()
+
+        # Deve retornar lista vazia se o repositório não tem get_metrics
+        assert metrics == []
+
+    def test_execute_validates_input_dto(self, mock_chat_repository):
+        use_case = ChatWithAgentUseCase(chat_repository=mock_chat_repository)
+        agent = Agent(
+            provider="openai", model="gpt-5-nano", name="Test", instructions="Test"
+        )
+        input_dto = ChatInputDTO(message="   ")
+
+        with pytest.raises(ValueError, match="message"):
+            use_case.execute(agent, input_dto)
+
+        mock_chat_repository.chat.assert_not_called()
