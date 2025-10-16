@@ -9,19 +9,23 @@ class TestHistory:
     """Testes para o Value Object History."""
 
     def test_create_empty_history(self):
-        history = History()
+        history = History(max_size=1)
 
         assert len(history) == 0
         assert bool(history) is False
         assert history.get_messages() == []
 
-    def test_create_history_with_custom_max_size(self):
-        history = History(MAX_SIZE=5)
+    def test_history_default_max_size(self):
+        history = History(max_size=10)
+        assert history.max_size == 10
 
-        assert history.MAX_SIZE == 5
+    def test_create_history_with_custom_max_size(self):
+        history = History(max_size=5)
+
+        assert history.max_size == 5
 
     def test_add_message_object(self):
-        history = History()
+        history = History(max_size=5)
         message = Message(role=MessageRole.USER, content="Hello")
 
         history.add(message)
@@ -30,13 +34,15 @@ class TestHistory:
         assert history.get_messages()[0] == message
 
     def test_add_invalid_type_raises_error(self):
-        history = History()
+        history = History(max_size=1)
 
-        with pytest.raises(TypeError, match="Apenas objetos do tipo Message"):
+        with pytest.raises(
+            TypeError, match="Apenas objetos do tipo Message podem ser adicionados"
+        ):
             history.add("Not a message")
 
     def test_add_user_message(self):
-        history = History()
+        history = History(max_size=2)
 
         history.add_user_message("User message")
 
@@ -46,7 +52,7 @@ class TestHistory:
         assert messages[0].content == "User message"
 
     def test_add_assistant_message(self):
-        history = History()
+        history = History(max_size=1)
 
         history.add_assistant_message("Assistant response")
 
@@ -56,7 +62,7 @@ class TestHistory:
         assert messages[0].content == "Assistant response"
 
     def test_add_system_message(self):
-        history = History()
+        history = History(max_size=1)
 
         history.add_system_message("System instruction")
 
@@ -66,7 +72,7 @@ class TestHistory:
         assert messages[0].content == "System instruction"
 
     def test_add_multiple_messages(self):
-        history = History()
+        history = History(max_size=4)
 
         history.add_user_message("Message 1")
         history.add_assistant_message("Response 1")
@@ -76,7 +82,7 @@ class TestHistory:
         assert len(history) == 4
 
     def test_clear_history(self):
-        history = History()
+        history = History(max_size=2)
         history.add_user_message("Message 1")
         history.add_user_message("Message 2")
 
@@ -88,7 +94,7 @@ class TestHistory:
         assert bool(history) is False
 
     def test_get_messages_returns_copy(self):
-        history = History()
+        history = History(max_size=1)
         history.add_user_message("Test")
 
         messages1 = history.get_messages()
@@ -98,7 +104,7 @@ class TestHistory:
         assert messages1 is not messages2  # Objetos diferentes
 
     def test_to_dict_list_empty(self):
-        history = History()
+        history = History(max_size=1)
 
         result = history.to_dict_list()
 
@@ -106,7 +112,7 @@ class TestHistory:
         assert isinstance(result, list)
 
     def test_to_dict_list_with_messages(self):
-        history = History()
+        history = History(max_size=10)
         history.add_user_message("Hello")
         history.add_assistant_message("Hi there!")
 
@@ -118,7 +124,7 @@ class TestHistory:
 
     def test_from_dict_list_empty(self):
         data = []
-        history = History.from_dict_list(data)
+        history = History.from_dict_list(data, max_size=5)
 
         assert len(history) == 0
 
@@ -128,7 +134,7 @@ class TestHistory:
             {"role": "assistant", "content": "Hi!"},
         ]
 
-        history = History.from_dict_list(data)
+        history = History.from_dict_list(data, max_size=5)
 
         assert len(history) == 2
         messages = history.get_messages()
@@ -139,12 +145,12 @@ class TestHistory:
 
     def test_from_dict_list_with_custom_max_size(self):
         data = [{"role": "user", "content": "Test"}]
-        history = History.from_dict_list(data, max_size=5)
+        history = History(max_size=5).from_dict_list(data, max_size=5)
 
-        assert history.MAX_SIZE == 5
+        assert history.max_size == 5
 
     def test_history_max_size_limit(self):
-        history = History(MAX_SIZE=3)
+        history = History(max_size=3)
 
         history.add_user_message("Msg 1")
         history.add_user_message("Msg 2")
@@ -158,13 +164,22 @@ class TestHistory:
         assert messages[1].content == "Msg 4"
         assert messages[2].content == "Msg 5"
 
-    def test_history_default_max_size(self):
-        history = History()
-
-        assert history.MAX_SIZE == 10
+    def test_history_invalid_max_size_raises(self):
+        with pytest.raises(
+            ValueError, match="Tamanho máximo do histórico deve ser maior que zero"
+        ):
+            History(max_size=None)
+        with pytest.raises(
+            ValueError, match="Tamanho máximo do histórico deve ser maior que zero"
+        ):
+            History(max_size=0)
+        with pytest.raises(
+            ValueError, match="Tamanho máximo do histórico deve ser maior que zero"
+        ):
+            History(max_size=-1)
 
     def test_history_trim_keeps_most_recent(self):
-        history = History(MAX_SIZE=10)
+        history = History(max_size=10)
 
         # Adiciona 15 mensagens
         for i in range(15):
@@ -176,18 +191,18 @@ class TestHistory:
         assert messages[-1].content == "Message 14"
 
     def test_history_bool_true_when_has_messages(self):
-        history = History()
+        history = History(max_size=1)
         history.add_user_message("Test")
 
         assert bool(history) is True
 
     def test_history_bool_false_when_empty(self):
-        history = History()
+        history = History(max_size=1)
 
         assert bool(history) is False
 
     def test_history_len_returns_correct_count(self):
-        history = History()
+        history = History(max_size=3)
 
         assert len(history) == 0
 
@@ -201,13 +216,13 @@ class TestHistory:
         assert len(history) == 0
 
     def test_to_dict_list_and_from_dict_list_roundtrip(self):
-        original = History()
+        original = History(max_size=10)
         original.add_user_message("User msg")
         original.add_assistant_message("Assistant msg")
         original.add_system_message("System msg")
 
         dict_list = original.to_dict_list()
-        reconstructed = History.from_dict_list(dict_list)
+        reconstructed = History.from_dict_list(dict_list, max_size=10)
 
         assert len(original) == len(reconstructed)
         original_messages = original.get_messages()
@@ -217,7 +232,7 @@ class TestHistory:
             assert orig == recon
 
     def test_history_with_alternating_messages(self):
-        history = History()
+        history = History(max_size=20)
 
         for i in range(5):
             history.add_user_message(f"User {i}")
@@ -232,7 +247,7 @@ class TestHistory:
             assert messages[i + 1].role == MessageRole.ASSISTANT
 
     def test_history_preserves_message_order(self):
-        history = History()
+        history = History(max_size=10)
 
         history.add_user_message("First")
         history.add_assistant_message("Second")
@@ -245,7 +260,7 @@ class TestHistory:
         assert messages[2].content == "Third"
 
     def test_history_with_special_characters(self):
-        history = History()
+        history = History(max_size=1)
         special_content = "Hello! 你好 🎉 @#$%"
 
         history.add_user_message(special_content)
@@ -254,7 +269,7 @@ class TestHistory:
         assert messages[0].content == special_content
 
     def test_history_with_multiline_content(self):
-        history = History()
+        history = History(max_size=1)
         multiline = "Line 1\nLine 2\nLine 3"
 
         history.add_user_message(multiline)
