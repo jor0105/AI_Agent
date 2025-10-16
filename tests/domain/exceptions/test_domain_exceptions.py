@@ -14,8 +14,6 @@ from src.domain.exceptions.domain_exceptions import (
 
 @pytest.mark.unit
 class TestAgentException:
-    """Testes para AgentException (exceção base)."""
-
     def test_create_agent_exception(self):
         exception = AgentException("Test error")
 
@@ -34,8 +32,6 @@ class TestAgentException:
 
 @pytest.mark.unit
 class TestInvalidAgentConfigException:
-    """Testes para InvalidAgentConfigException."""
-
     def test_create_with_field_and_reason(self):
         exception = InvalidAgentConfigException("model", "cannot be empty")
 
@@ -66,8 +62,6 @@ class TestInvalidAgentConfigException:
 
 @pytest.mark.unit
 class TestInvalidModelException:
-    """Testes para InvalidModelException."""
-
     def test_create_with_model_name(self):
         exception = InvalidModelException("invalid_model")
 
@@ -100,8 +94,6 @@ class TestInvalidModelException:
 
 @pytest.mark.unit
 class TestChatException:
-    """Testes para ChatException (exceção de comunicação)."""
-
     def test_create_with_message_only(self):
         exception = ChatException("Communication error")
 
@@ -136,8 +128,6 @@ class TestChatException:
 
 @pytest.mark.unit
 class TestAdapterNotFoundException:
-    """Testes para AdapterNotFoundException."""
-
     def test_create_with_adapter_name(self):
         exception = AdapterNotFoundException("CustomAdapter")
 
@@ -174,8 +164,6 @@ class TestAdapterNotFoundException:
 
 @pytest.mark.unit
 class TestExceptionHierarchy:
-    """Testes da hierarquia de exceções."""
-
     def test_agent_exceptions_hierarchy(self):
         config_exc = InvalidAgentConfigException("field", "reason")
         assert isinstance(config_exc, AgentException)
@@ -223,8 +211,6 @@ class TestExceptionHierarchy:
 
 @pytest.mark.unit
 class TestInvalidProviderException:
-    """Testes para InvalidProviderException."""
-
     def test_create_with_provider_and_available_list(self):
         available = {"openai", "ollama"}
         exception = InvalidProviderException("invalid", available)
@@ -262,8 +248,6 @@ class TestInvalidProviderException:
 
 @pytest.mark.unit
 class TestUnsupportedConfigException:
-    """Testes para UnsupportedConfigException."""
-
     def test_create_with_config_and_available_list(self):
         available = {"temperature", "max_tokens", "top_p"}
         exception = UnsupportedConfigException("invalid_config", available)
@@ -299,8 +283,6 @@ class TestUnsupportedConfigException:
 
 @pytest.mark.unit
 class TestInvalidConfigTypeException:
-    """Testes para InvalidConfigTypeException."""
-
     def test_create_with_config_and_type(self):
         exception = InvalidConfigTypeException("temperature", object)
 
@@ -334,8 +316,6 @@ class TestInvalidConfigTypeException:
 
 @pytest.mark.unit
 class TestNewExceptionHierarchy:
-    """Testes da hierarquia completa de exceções."""
-
     def test_all_new_agent_exceptions_inherit_from_agent_exception(self):
         exceptions = [
             InvalidProviderException("test", {"openai"}),

@@ -6,8 +6,6 @@ from src.domain.value_objects.message import Message, MessageRole
 
 @pytest.mark.unit
 class TestHistory:
-    """Testes para o Value Object History."""
-
     def test_create_empty_history(self):
         history = History()
 
@@ -280,8 +278,6 @@ class TestHistory:
 
 @pytest.mark.unit
 class TestHistoryDequePerformance:
-    """Testes para verificar uso de deque no History."""
-
     def test_history_uses_deque_internally(self):
         from collections import deque
 

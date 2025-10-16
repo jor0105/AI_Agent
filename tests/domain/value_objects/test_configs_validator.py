@@ -6,8 +6,6 @@ from src.domain.value_objects.configs_validator import SupportedConfigs
 
 @pytest.mark.unit
 class TestSupportedConfigs:
-    """Testes para SupportedConfigs value object."""
-
     def test_get_available_configs(self):
         configs = SupportedConfigs.get_available_configs()
 
@@ -36,8 +34,6 @@ class TestSupportedConfigs:
 
 @pytest.mark.unit
 class TestTemperatureValidation:
-    """Testes para validação de temperature."""
-
     def test_validate_temperature_valid_min(self):
         # Não deve lançar exceção
         SupportedConfigs.validate_temperature(0.0)
@@ -74,8 +70,6 @@ class TestTemperatureValidation:
 
 @pytest.mark.unit
 class TestMaxTokensValidation:
-    """Testes para validação de max_tokens."""
-
     def test_validate_max_tokens_valid_small(self):
         # Não deve lançar exceção
         SupportedConfigs.validate_max_tokens(1)
@@ -116,8 +110,6 @@ class TestMaxTokensValidation:
 
 @pytest.mark.unit
 class TestTopPValidation:
-    """Testes para validação de top_p."""
-
     def test_validate_top_p_valid_min(self):
         # Não deve lançar exceção
         SupportedConfigs.validate_top_p(0.0)
@@ -154,8 +146,6 @@ class TestTopPValidation:
 
 @pytest.mark.unit
 class TestValidateConfig:
-    """Testes para validação automática de configs."""
-
     def test_validate_config_temperature(self):
         # Válido
         SupportedConfigs.validate_config("temperature", 0.7)

@@ -5,8 +5,6 @@ from src.domain.value_objects.providers import SupportedProviders
 
 @pytest.mark.unit
 class TestSupportedProviders:
-    """Testes para SupportedProviders value object."""
-
     def test_get_available_providers(self):
         providers = SupportedProviders.get_available_providers()
 
@@ -36,7 +34,6 @@ class TestSupportedProviders:
     def test_providers_count(self):
         providers = SupportedProviders.get_available_providers()
 
-        # Atualmente devem existir exatamente 2 providers
         assert len(providers) == 2
 
     def test_providers_are_lowercase(self):

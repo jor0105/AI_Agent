@@ -5,8 +5,6 @@ from src.domain.value_objects.message import Message, MessageRole
 
 @pytest.mark.unit
 class TestMessageRole:
-    """Testes para o enum MessageRole."""
-
     def test_message_role_values(self):
         assert MessageRole.USER.value == "user"
         assert MessageRole.ASSISTANT.value == "assistant"
@@ -20,8 +18,6 @@ class TestMessageRole:
 
 @pytest.mark.unit
 class TestMessage:
-    """Testes para o Value Object Message."""
-
     def test_create_message_with_valid_data(self):
         message = Message(role=MessageRole.USER, content="Hello")
 

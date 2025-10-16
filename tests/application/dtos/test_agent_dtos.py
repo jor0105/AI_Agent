@@ -10,8 +10,6 @@ from src.application.dtos.agent_dtos import (
 
 @pytest.mark.unit
 class TestCreateAgentInputDTO:
-    """Testes para CreateAgentInputDTO."""
-
     def test_create_with_valid_data(self):
         dto = CreateAgentInputDTO(
             provider="openai",
@@ -104,7 +102,6 @@ class TestCreateAgentInputDTO:
         dto.validate()
 
     def test_validate_with_config(self):
-        """Testa validação com config dict."""
         dto = CreateAgentInputDTO(
             provider="openai",
             model="gpt-5-nano",
@@ -117,7 +114,6 @@ class TestCreateAgentInputDTO:
         assert dto.config == {"temperature": 0.7, "top_p": 0.9}
 
     def test_validate_empty_config(self):
-        """Testa validação com config vazio (padrão)."""
         dto = CreateAgentInputDTO(
             provider="openai",
             model="gpt-5-nano",
@@ -129,7 +125,6 @@ class TestCreateAgentInputDTO:
         assert dto.config == {}
 
     def test_create_with_history_max_size(self):
-        """Testa criação com history_max_size customizado."""
         dto = CreateAgentInputDTO(
             provider="openai",
             model="gpt-5-nano",
@@ -141,7 +136,6 @@ class TestCreateAgentInputDTO:
         assert dto.history_max_size == 20
 
     def test_default_history_max_size(self):
-        """Testa valor padrão de history_max_size."""
         dto = CreateAgentInputDTO(
             provider="openai",
             model="gpt-5-nano",
@@ -152,7 +146,6 @@ class TestCreateAgentInputDTO:
         assert dto.history_max_size == 10
 
     def test_validate_invalid_history_max_size(self):
-        """Testa validação de history_max_size inválido."""
         dto = CreateAgentInputDTO(
             provider="openai",
             model="gpt-5-nano",
@@ -165,7 +158,6 @@ class TestCreateAgentInputDTO:
             dto.validate()
 
     def test_validate_negative_history_max_size(self):
-        """Testa validação de history_max_size negativo."""
         dto = CreateAgentInputDTO(
             provider="openai",
             model="gpt-5-nano",
@@ -178,7 +170,6 @@ class TestCreateAgentInputDTO:
             dto.validate()
 
     def test_validate_invalid_config_type(self):
-        """Testa que config deve ser um dicionário."""
         dto = CreateAgentInputDTO(
             provider="openai",
             model="gpt-5-nano",
@@ -191,7 +182,6 @@ class TestCreateAgentInputDTO:
             dto.validate()
 
     def test_validate_non_int_history_max_size(self):
-        """Testa validação quando history_max_size não é inteiro."""
         dto = CreateAgentInputDTO(
             provider="openai",
             model="gpt-5-nano",
@@ -204,7 +194,6 @@ class TestCreateAgentInputDTO:
             dto.validate()
 
     def test_validate_non_string_provider(self):
-        """Testa validação quando provider não é string."""
         dto = CreateAgentInputDTO(
             provider=123,  # type: ignore
             model="gpt-5-nano",
@@ -216,7 +205,6 @@ class TestCreateAgentInputDTO:
             dto.validate()
 
     def test_validate_empty_provider(self):
-        """Testa validação com provider vazio."""
         dto = CreateAgentInputDTO(
             provider="",
             model="gpt-5-nano",
@@ -228,7 +216,6 @@ class TestCreateAgentInputDTO:
             dto.validate()
 
     def test_validate_whitespace_provider(self):
-        """Testa validação com provider apenas whitespace."""
         dto = CreateAgentInputDTO(
             provider="   ",
             model="gpt-5-nano",
@@ -242,8 +229,6 @@ class TestCreateAgentInputDTO:
 
 @pytest.mark.unit
 class TestAgentConfigOutputDTO:
-    """Testes para AgentConfigOutputDTO."""
-
     def test_create_with_all_fields(self):
         dto = AgentConfigOutputDTO(
             provider="openai",
@@ -328,7 +313,6 @@ class TestAgentConfigOutputDTO:
         assert result["history"] == history
 
     def test_to_dict_all_keys_present(self):
-        """Testa que to_dict retorna todas as chaves esperadas."""
         dto = AgentConfigOutputDTO(
             provider="openai",
             name="Test",
@@ -351,7 +335,6 @@ class TestAgentConfigOutputDTO:
         assert set(result.keys()) == expected_keys
 
     def test_to_dict_with_complex_config(self):
-        """Testa to_dict com config complexo."""
         complex_config = {
             "temperature": 0.7,
             "nested": {"key": "value"},
@@ -373,8 +356,6 @@ class TestAgentConfigOutputDTO:
 
 @pytest.mark.unit
 class TestChatInputDTO:
-    """Testes para ChatInputDTO."""
-
     def test_create_with_message(self):
         dto = ChatInputDTO(message="Hello")
 
@@ -414,7 +395,6 @@ class TestChatInputDTO:
         dto.validate()
 
     def test_validate_with_numeric_string_message(self):
-        """Testa validação com números como string (válido)."""
         dto = ChatInputDTO(message="12345")
         dto.validate()
 
@@ -428,8 +408,6 @@ class TestChatInputDTO:
 
 @pytest.mark.unit
 class TestChatOutputDTO:
-    """Testes para ChatOutputDTO."""
-
     def test_create_with_response(self):
         dto = ChatOutputDTO(response="AI response")
 
@@ -467,7 +445,6 @@ class TestChatOutputDTO:
         assert result["response"] == multiline
 
     def test_to_dict_with_special_characters(self):
-        """Testa to_dict com caracteres especiais."""
         special = "Response with special chars: 你好 🎉 @#$%"
         dto = ChatOutputDTO(response=special)
 
@@ -476,7 +453,6 @@ class TestChatOutputDTO:
         assert result["response"] == special
 
     def test_to_dict_has_only_response_key(self):
-        """Testa que to_dict retorna apenas a chave 'response'."""
         dto = ChatOutputDTO(response="Test")
 
         result = dto.to_dict()
@@ -487,8 +463,6 @@ class TestChatOutputDTO:
 
 @pytest.mark.unit
 class TestDTOsIntegration:
-    """Testes de integração entre DTOs."""
-
     def test_create_agent_to_config_flow(self):
         # Input DTO
         input_dto = CreateAgentInputDTO(
@@ -519,7 +493,6 @@ class TestDTOsIntegration:
         input_dto = ChatInputDTO(message="Hello")
         input_dto.validate()
 
-        # Simula resposta
         output_dto = ChatOutputDTO(response="Hi there!")
 
         assert input_dto.message == "Hello"
@@ -548,11 +521,10 @@ class TestDTOsIntegration:
         )
 
         dto.validate()
-        dto.validate()  # Deve passar novamente
-        dto.validate()  # E mais uma vez
+        dto.validate()
+        dto.validate()
 
     def test_chat_input_output_with_special_content(self):
-        """Testa flow de chat com conteúdo especial."""
         special_message = "こんにちは! How are you? 🤖"
         input_dto = ChatInputDTO(message=special_message)
         input_dto.validate()
