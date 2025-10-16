@@ -27,8 +27,8 @@ class Agent:
     model: str
     name: str
     instructions: str
-    history: History = field(default_factory=History)
     config: Dict[str, Any] = field(default_factory=dict)
+    history: History = field(default_factory=History)
 
     def __post_init__(self):
         """
