@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass, field
+from typing import Any, Dict, List
 
 
 @dataclass
@@ -10,25 +10,35 @@ class CreateAgentInputDTO:
     model: str
     name: str
     instructions: str
-    history_max_size: int = 10  # Valor padrão do tamanho máximo do histórico; pode ser alterado pelo usuário
+    config: Dict[str, Any] = field(default_factory=dict)
+    history_max_size: int = 10
 
     def validate(self) -> None:
-        if not self.model or not self.model.strip():
-            raise ValueError("O campo 'model' é obrigatório e não pode estar vazio")
-
-        if not self.name or not self.name.strip():
-            raise ValueError("O campo 'name' é obrigatório e não pode estar vazio")
-
-        if not self.instructions or not self.instructions.strip():
+        if not isinstance(self.provider, str) or not self.provider.strip():
             raise ValueError(
-                "O campo 'instructions' é obrigatório e não pode estar vazio"
+                "O campo 'provider' é obrigatório, deve ser uma string e não pode estar vazio"
             )
 
-        if self.history_max_size <= 0:
-            raise ValueError("O campo 'history_max_size' deve ser maior que zero")
+        if not isinstance(self.model, str) or not self.model.strip():
+            raise ValueError(
+                "O campo 'model' é obrigatório, deve ser uma string e não pode estar vazio"
+            )
 
-        if self.provider not in ("openai", "ollama"):
-            raise ValueError("O campo 'provider' deve ser 'openai' ou 'ollama'")
+        if not isinstance(self.name, str) or not self.name.strip():
+            raise ValueError(
+                "O campo 'name' é obrigatório, deve ser uma string e não pode estar vazio"
+            )
+
+        if not isinstance(self.instructions, str) or not self.instructions.strip():
+            raise ValueError(
+                "O campo 'instructions' é obrigatório, deve ser uma string e não pode estar vazio"
+            )
+
+        if not isinstance(self.config, dict):
+            raise ValueError("O campo 'config' deve ser um dicionário (dict)")
+
+        if not isinstance(self.history_max_size, int) or self.history_max_size <= 0:
+            raise ValueError("O campo 'history_max_size' deve ser um inteiro positivo")
 
 
 @dataclass
@@ -39,6 +49,7 @@ class AgentConfigOutputDTO:
     model: str
     name: str
     instructions: str
+    config: Dict[str, Any]
     history: List[Dict[str, str]]
 
     def to_dict(self) -> Dict[str, Any]:
@@ -47,6 +58,7 @@ class AgentConfigOutputDTO:
             "model": self.model,
             "name": self.name,
             "instructions": self.instructions,
+            "configs": self.config,
             "history": self.history,
         }
 
@@ -56,23 +68,12 @@ class ChatInputDTO:
     """DTO para entrada de mensagem de chat."""
 
     message: str
-    temperature: Optional[float] = None
-    max_tokens: Optional[int] = None
-    top_p: Optional[float] = None
-    stop: Optional[List[str]] = None
 
     def validate(self) -> None:
-        if not self.message or not self.message.strip():
-            raise ValueError("A mensagem não pode estar vazia")
-
-        if self.temperature is not None and not (0.0 <= self.temperature <= 2.0):
-            raise ValueError("temperature deve estar entre 0.0 e 2.0")
-
-        if self.max_tokens is not None and self.max_tokens <= 0:
-            raise ValueError("max_tokens deve ser maior que zero")
-
-        if self.top_p is not None and not (0.0 <= self.top_p <= 1.0):
-            raise ValueError("top_p deve estar entre 0.0 e 1.0")
+        if not isinstance(self.message, str) or not self.message.strip():
+            raise ValueError(
+                "O campo 'message' é obrigatório, deve ser uma string e não pode estar vazio"
+            )
 
 
 @dataclass
