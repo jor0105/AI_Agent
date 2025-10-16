@@ -15,18 +15,16 @@ class History:
     removendo automaticamente mensagens antigas sem recriar estrutura.
     """
 
-    MAX_SIZE: int = 10
+    max_size: int
     _messages: Deque[Message] = field(default_factory=deque)
 
     def __post_init__(self) -> None:
-        if not isinstance(self.MAX_SIZE, int) or self.MAX_SIZE <= 0:
-            raise ValueError(
-                f"MAX_SIZE deve ser maior que zero, recebido: {self.MAX_SIZE}"
-            )
+        if not isinstance(self.max_size, int) or self.max_size <= 0:
+            raise ValueError("Tamanho máximo do histórico deve ser maior que zero")
 
         # Converte _messages para deque com maxlen, independente do tipo inicial
         messages = list(self._messages) if self._messages else []
-        object.__setattr__(self, "_messages", deque(messages, maxlen=self.MAX_SIZE))
+        object.__setattr__(self, "_messages", deque(messages, maxlen=self.max_size))
 
     def add(self, message: Message) -> None:
         """
@@ -94,9 +92,7 @@ class History:
         return [message.to_dict() for message in self._messages]
 
     @classmethod
-    def from_dict_list(
-        cls, data: List[Dict[str, str]], max_size: int = 10
-    ) -> "History":
+    def from_dict_list(cls, data: List[Dict[str, str]], max_size: int) -> "History":
         """
         Cria uma instância de History a partir de uma lista de dicionários.
 
@@ -107,7 +103,7 @@ class History:
         Returns:
             Nova instância de History
         """
-        history = cls(MAX_SIZE=max_size)
+        history = cls(max_size=max_size)
         for item in data:
             message = Message.from_dict(item)
             history.add(message)

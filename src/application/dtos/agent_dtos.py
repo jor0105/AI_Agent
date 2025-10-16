@@ -10,7 +10,7 @@ class CreateAgentInputDTO:
     model: str
     name: str
     instructions: str
-    history_max_size: int = 10
+    history_max_size: int = 10  # Valor padrão do tamanho máximo do histórico; pode ser alterado pelo usuário
 
     def validate(self) -> None:
         if not self.model or not self.model.strip():
