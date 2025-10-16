@@ -24,11 +24,11 @@ class CreateAgentUseCase:
             input_dto.validate()
 
             agent = Agent(
+                provider=input_dto.provider,
                 model=input_dto.model,
                 name=input_dto.name,
                 instructions=input_dto.instructions,
-                provider=input_dto.provider,
-                history=History(MAX_SIZE=input_dto.history_max_size),
+                history=History(max_size=input_dto.history_max_size),
             )
 
             return agent

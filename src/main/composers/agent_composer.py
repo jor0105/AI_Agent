@@ -39,10 +39,10 @@ class AgentComposer:
         """
         try:
             input_dto = CreateAgentInputDTO(
+                provider=provider,
                 model=model,
                 name=name,
                 instructions=instructions,
-                provider=provider,
                 history_max_size=history_max_size,
             )
 
