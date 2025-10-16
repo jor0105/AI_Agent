@@ -235,3 +235,14 @@ class TestAgent:
         assert "name" in fields
         assert "instructions" in fields
         assert "history" in fields
+
+    def test_agent_with_invalid_provider(self):
+        with pytest.raises(
+            ValueError, match="O provider adicionado não está disponível"
+        ):
+            Agent(
+                provider="invalido",
+                model="gpt-5-nano",
+                name="Test",
+                instructions="Test",
+            )

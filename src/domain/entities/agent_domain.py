@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from src.domain.value_objects import History
+from src.domain.value_objects import History, SupportedProviders
 
 
 @dataclass
@@ -27,6 +27,10 @@ class Agent:
         # Se history_max_size foi passado como int em vez de History, cria History
         if not isinstance(self.history, History):
             object.__setattr__(self, "history", History())
+        if self.provider.lower() not in SupportedProviders.get_available_providers():
+            raise ValueError(
+                f"O provider adicionado não está disponível. Os providers disponíveis são {SupportedProviders.get_available_providers()}"
+            )
 
     def add_user_message(self, content: str) -> None:
         """

@@ -15,7 +15,7 @@ class History:
     removendo automaticamente mensagens antigas sem recriar estrutura.
     """
 
-    max_size: int
+    max_size: int = 10
     _messages: Deque[Message] = field(default_factory=deque)
 
     def __post_init__(self) -> None:
