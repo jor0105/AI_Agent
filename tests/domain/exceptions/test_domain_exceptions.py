@@ -5,7 +5,10 @@ from src.domain.exceptions.domain_exceptions import (
     AgentException,
     ChatException,
     InvalidAgentConfigException,
+    InvalidConfigTypeException,
     InvalidModelException,
+    InvalidProviderException,
+    UnsupportedConfigException,
 )
 
 
@@ -216,6 +219,143 @@ class TestExceptionHierarchy:
     def test_catch_base_exceptions(self):
         with pytest.raises(AgentException):
             raise InvalidAgentConfigException("field", "reason")
+
+
+@pytest.mark.unit
+class TestInvalidProviderException:
+    """Testes para InvalidProviderException."""
+
+    def test_create_with_provider_and_available_list(self):
+        available = {"openai", "ollama"}
+        exception = InvalidProviderException("invalid", available)
+
+        assert "invalid" in str(exception)
+        assert "não está disponível" in str(exception)
+        assert "openai" in str(exception) or "ollama" in str(exception)
+
+    def test_exception_message_format(self):
+        available = {"openai", "ollama"}
+        exception = InvalidProviderException("custom", available)
+
+        assert "custom" in str(exception)
+        assert "Providers disponíveis" in str(exception)
+
+    def test_is_agent_exception(self):
+        exception = InvalidProviderException("test", {"openai"})
+
+        assert isinstance(exception, AgentException)
+        assert isinstance(exception, Exception)
+
+    def test_raise_invalid_provider_exception(self):
+        with pytest.raises(InvalidProviderException):
+            raise InvalidProviderException("unknown", {"openai", "ollama"})
+
+    def test_available_providers_shown_in_message(self):
+        available = {"openai", "ollama", "anthropic"}
+        exception = InvalidProviderException("test", available)
+
+        message = str(exception)
+        # Verifica se todos providers disponíveis aparecem na mensagem
+        for provider in available:
+            assert provider in message
+
+
+@pytest.mark.unit
+class TestUnsupportedConfigException:
+    """Testes para UnsupportedConfigException."""
+
+    def test_create_with_config_and_available_list(self):
+        available = {"temperature", "max_tokens", "top_p"}
+        exception = UnsupportedConfigException("invalid_config", available)
+
+        assert "invalid_config" in str(exception)
+        assert "não é suportada" in str(exception)
+
+    def test_exception_message_format(self):
+        available = {"temperature", "max_tokens"}
+        exception = UnsupportedConfigException("custom", available)
+
+        assert "custom" in str(exception)
+        assert "Opções válidas" in str(exception)
+
+    def test_is_agent_exception(self):
+        exception = UnsupportedConfigException("test", {"temperature"})
+
+        assert isinstance(exception, AgentException)
+        assert isinstance(exception, Exception)
+
+    def test_raise_unsupported_config_exception(self):
+        with pytest.raises(UnsupportedConfigException):
+            raise UnsupportedConfigException("bad_config", {"temperature"})
+
+    def test_available_configs_shown_in_message(self):
+        available = {"temperature", "max_tokens", "top_p"}
+        exception = UnsupportedConfigException("test", available)
+
+        message = str(exception)
+        # Verifica se todas configs disponíveis aparecem na mensagem
+        assert "temperature" in message or "max_tokens" in message or "top_p" in message
+
+
+@pytest.mark.unit
+class TestInvalidConfigTypeException:
+    """Testes para InvalidConfigTypeException."""
+
+    def test_create_with_config_and_type(self):
+        exception = InvalidConfigTypeException("temperature", object)
+
+        assert "temperature" in str(exception)
+        assert "tipo inválido" in str(exception)
+        assert "object" in str(exception)
+
+    def test_exception_message_format(self):
+        exception = InvalidConfigTypeException("max_tokens", list)
+
+        assert "max_tokens" in str(exception)
+        assert "list" in str(exception)
+
+    def test_is_agent_exception(self):
+        exception = InvalidConfigTypeException("test", str)
+
+        assert isinstance(exception, AgentException)
+        assert isinstance(exception, Exception)
+
+    def test_raise_invalid_config_type_exception(self):
+        with pytest.raises(InvalidConfigTypeException):
+            raise InvalidConfigTypeException("field", dict)
+
+    def test_with_different_types(self):
+        types = [int, str, float, list, dict, object]
+
+        for t in types:
+            exception = InvalidConfigTypeException("test", t)
+            assert t.__name__ in str(exception)
+
+
+@pytest.mark.unit
+class TestNewExceptionHierarchy:
+    """Testes da hierarquia completa de exceções."""
+
+    def test_all_new_agent_exceptions_inherit_from_agent_exception(self):
+        exceptions = [
+            InvalidProviderException("test", {"openai"}),
+            UnsupportedConfigException("test", {"temperature"}),
+            InvalidConfigTypeException("test", str),
+        ]
+
+        for exc in exceptions:
+            assert isinstance(exc, AgentException)
+            assert isinstance(exc, Exception)
+
+    def test_catch_new_exceptions_as_agent_exception(self):
+        with pytest.raises(AgentException):
+            raise InvalidProviderException("test", {"openai"})
+
+        with pytest.raises(AgentException):
+            raise UnsupportedConfigException("test", {"temperature"})
+
+        with pytest.raises(AgentException):
+            raise InvalidConfigTypeException("test", str)
 
         with pytest.raises(ChatException):
             raise AdapterNotFoundException("adapter")
