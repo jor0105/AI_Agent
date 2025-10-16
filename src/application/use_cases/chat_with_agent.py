@@ -36,9 +36,10 @@ class ChatWithAgentUseCase:
         input_dto.validate()
 
         self.__logger.info(
-            f"Executando chat com agente '{agent.name}' (modelo: {agent.model})"
+            "Executando chat com agente '%s' (modelo: %s)", agent.name, agent.model
         )
-        self.__logger.debug(f"Mensagem do usuário: {input_dto.message[:100]}...")
+        # Usa formatação lazy para evitar construção de string desnecessária
+        self.__logger.debug("Mensagem do usuário: %s...", input_dto.message[:100])
 
         try:
             response = self.__chat_repository.chat(
@@ -59,12 +60,13 @@ class ChatWithAgentUseCase:
             agent.add_assistant_message(response)
 
             self.__logger.info("Chat executado com sucesso")
-            self.__logger.debug(f"Resposta (primeiros 100 chars): {response[:100]}...")
+            self.__logger.debug("Resposta (primeiros 100 chars): %s...", response[:100])
 
             return output_dto
 
         except ChatException:
-            self.__logger.error("ChatException durante execução do chat")
+            # já é uma exceção esperada da camada de domínio/repositorio
+            self.__logger.error("ChatException durante execução do chat", exc_info=True)
             raise
         except (ValueError, TypeError, KeyError) as e:
             error_map = {
@@ -79,10 +81,12 @@ class ChatWithAgentUseCase:
                 ),
             }
             msg, user_msg = error_map.get(type(e), ("Erro", "Erro durante o chat: {}"))
-            self.__logger.error(f"{msg}: {str(e)}")
+            # usa lazy formatting e registra exceção para debug
+            self.__logger.error("%s: %s", msg, str(e), exc_info=True)
             raise ChatException(user_msg.format(str(e)))
         except Exception as e:
-            self.__logger.error(f"Erro inesperado: {str(e)}")
+            # registra stacktrace completo
+            self.__logger.error("Erro inesperado: %s", str(e), exc_info=True)
             raise ChatException(
                 f"Erro inesperado durante comunicação com IA: {str(e)}",
                 original_error=e,

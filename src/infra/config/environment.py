@@ -49,7 +49,7 @@ class EnvironmentConfig:
             Valor da chave de API
 
         Raises:
-            EnvironmentError: Se a variável não for encontrada
+            EnvironmentError: Se a variável não for encontrada ou estiver vazia
         """
         # Garante que o ambiente foi inicializado
         if not cls._initialized:
@@ -66,13 +66,16 @@ class EnvironmentConfig:
                 return cls._cache[key]
 
             api_key = os.getenv(key)
-            if not api_key:
+
+            # Valida se a chave existe e não está vazia
+            if not api_key or not api_key.strip():
                 raise EnvironmentError(
-                    f"A variável de ambiente '{key}' não foi encontrada. "
+                    f"A variável de ambiente '{key}' não foi encontrada ou está vazia. "
                     f"Certifique-se de que ela está definida no arquivo .env"
                 )
 
-            # Armazena em cache
+            # Armazena em cache (já validado)
+            api_key = api_key.strip()
             cls._cache[key] = api_key
             return api_key
 
@@ -80,7 +83,7 @@ class EnvironmentConfig:
     def get_env(cls, key: str, default: Optional[str] = None) -> Optional[str]:
         """
         Obtém uma variável de ambiente com valor padrão opcional.
-        Thread-safe e com cache.
+        Thread-safe e com cache. Valida valores vazios.
 
         Args:
             key: Nome da variável de ambiente
@@ -103,9 +106,30 @@ class EnvironmentConfig:
                 return cls._cache[key]
 
             value = os.getenv(key, default)
-            if value is not None:
+
+            # Cacheia apenas valores não vazios
+            if value is not None and value.strip():
+                value = value.strip()
                 cls._cache[key] = value
+                return value
+            elif default is not None:
+                return default
+
             return value
+
+    @classmethod
+    def reload(cls) -> None:
+        """
+        Recarrega variáveis de ambiente do arquivo .env.
+        Útil para testes ou reconfigurações em runtime.
+        Thread-safe.
+
+        Example:
+            >>> EnvironmentConfig.reload()  # Recarrega o .env
+        """
+        with cls._lock:
+            load_dotenv(override=True)
+            cls._cache.clear()
 
     @classmethod
     def clear_cache(cls) -> None:

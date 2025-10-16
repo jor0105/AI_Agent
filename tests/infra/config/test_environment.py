@@ -218,3 +218,156 @@ class TestEnvironmentConfig:
 
             # load_dotenv deve ser chamado apenas uma vez
             assert mock_load.call_count == 1
+
+    def test_get_api_key_strips_whitespace(self):
+        """Testa que get_api_key remove espaços em branco."""
+        with patch.dict(os.environ, {"WHITESPACE_KEY": "  value_with_spaces  "}):
+            EnvironmentConfig.reset()
+            value = EnvironmentConfig.get_api_key("WHITESPACE_KEY")
+
+            assert value == "value_with_spaces"
+            assert value == EnvironmentConfig._cache["WHITESPACE_KEY"]
+
+    def test_get_api_key_with_only_whitespace_raises_error(self):
+        """Testa que apenas espaços em branco lança erro."""
+        with patch.dict(os.environ, {"WHITESPACE_ONLY": "   "}):
+            EnvironmentConfig.reset()
+
+            with pytest.raises(EnvironmentError, match="está vazia"):
+                EnvironmentConfig.get_api_key("WHITESPACE_ONLY")
+
+    def test_get_env_strips_whitespace(self):
+        """Testa que get_env remove espaços em branco."""
+        with patch.dict(os.environ, {"WHITESPACE_ENV": "  env_value  "}):
+            EnvironmentConfig.reset()
+            value = EnvironmentConfig.get_env("WHITESPACE_ENV")
+
+            assert value == "env_value"
+
+    def test_get_env_with_empty_string_returns_default(self):
+        """Testa que string vazia retorna default."""
+        with patch.dict(os.environ, {"EMPTY_ENV": ""}):
+            EnvironmentConfig.reset()
+            value = EnvironmentConfig.get_env("EMPTY_ENV", default="default")
+
+            assert value == "default"
+
+    def test_get_env_with_whitespace_only_returns_default(self):
+        """Testa que apenas espaços retorna default."""
+        with patch.dict(os.environ, {"WHITESPACE_ONLY_ENV": "   "}):
+            EnvironmentConfig.reset()
+            value = EnvironmentConfig.get_env("WHITESPACE_ONLY_ENV", default="default")
+
+            assert value == "default"
+
+    def test_get_env_does_not_cache_empty_values(self):
+        """Testa que valores vazios não são cacheados."""
+        with patch.dict(os.environ, {"EMPTY_CACHE": ""}):
+            EnvironmentConfig.reset()
+            EnvironmentConfig.get_env("EMPTY_CACHE", default="default")
+
+            # Valor vazio não deve estar em cache
+            assert "EMPTY_CACHE" not in EnvironmentConfig._cache
+
+    def test_reload_reloads_dotenv(self):
+        """Testa que reload() recarrega o arquivo .env."""
+        with patch("src.infra.config.environment.load_dotenv") as mock_load:
+            EnvironmentConfig.reset()
+            EnvironmentConfig()  # Inicializa
+
+            assert mock_load.call_count == 1
+
+            EnvironmentConfig.reload()
+
+            # load_dotenv deve ser chamado novamente com override=True
+            assert mock_load.call_count == 2
+            mock_load.assert_called_with(override=True)
+
+    def test_reload_clears_cache(self):
+        """Testa que reload() limpa o cache."""
+        with patch.dict(os.environ, {"RELOAD_KEY": "original"}):
+            EnvironmentConfig.reset()
+            _ = EnvironmentConfig.get_api_key("RELOAD_KEY")
+
+            # Popula cache
+            assert "RELOAD_KEY" in EnvironmentConfig._cache
+
+            EnvironmentConfig.reload()
+
+            # Cache deve estar limpo
+            assert "RELOAD_KEY" not in EnvironmentConfig._cache
+
+    def test_reload_allows_new_values(self):
+        """Testa que reload() permite carregar novos valores."""
+        with patch.dict(os.environ, {"RELOAD_TEST": "value1"}):
+            EnvironmentConfig.reset()
+            val1 = EnvironmentConfig.get_api_key("RELOAD_TEST")
+
+            EnvironmentConfig.reload()
+
+            with patch.dict(os.environ, {"RELOAD_TEST": "value2"}):
+                val2 = EnvironmentConfig.get_api_key("RELOAD_TEST")
+
+            assert val1 == "value1"
+            assert val2 == "value2"
+
+    def test_reload_is_thread_safe(self):
+        """Testa que reload() é thread-safe."""
+        with patch.dict(os.environ, {"THREAD_RELOAD": "initial"}):
+            EnvironmentConfig.reset()
+            EnvironmentConfig.get_api_key("THREAD_RELOAD")
+
+            errors = []
+
+            def reload_env():
+                try:
+                    EnvironmentConfig.reload()
+                except Exception as e:
+                    errors.append(e)
+
+            threads = [Thread(target=reload_env) for _ in range(10)]
+
+            for thread in threads:
+                thread.start()
+
+            for thread in threads:
+                thread.join()
+
+            # Não deve haver erros
+            assert len(errors) == 0
+
+    def test_multiple_api_keys_with_validation(self):
+        """Testa múltiplas chaves com validação."""
+        with patch.dict(
+            os.environ,
+            {
+                "KEY_VALID": "valid_value",
+                "KEY_EMPTY": "",
+                "KEY_WHITESPACE": "   ",
+                "KEY_NORMAL": "normal",
+            },
+        ):
+            EnvironmentConfig.reset()
+
+            # Válidas devem funcionar
+            assert EnvironmentConfig.get_api_key("KEY_VALID") == "valid_value"
+            assert EnvironmentConfig.get_api_key("KEY_NORMAL") == "normal"
+
+            # Vazias devem falhar
+            with pytest.raises(EnvironmentError):
+                EnvironmentConfig.get_api_key("KEY_EMPTY")
+
+            with pytest.raises(EnvironmentError):
+                EnvironmentConfig.get_api_key("KEY_WHITESPACE")
+
+    def test_cache_survives_multiple_get_env_calls(self):
+        """Testa que cache persiste entre chamadas get_env."""
+        with patch.dict(os.environ, {"PERSISTENT": "persist_value"}):
+            EnvironmentConfig.reset()
+
+            for i in range(5):
+                value = EnvironmentConfig.get_env("PERSISTENT")
+                assert value == "persist_value"
+
+            # Deve estar em cache
+            assert "PERSISTENT" in EnvironmentConfig._cache

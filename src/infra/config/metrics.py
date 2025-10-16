@@ -6,6 +6,7 @@ métricas de performance e uso dos adapters de chat.
 """
 
 import json
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
@@ -59,50 +60,78 @@ class ChatMetrics:
 class MetricsCollector:
     """
     Coletor de métricas para análise agregada.
+    Thread-safe e com limite de armazenamento para prevenir memory leak.
     """
 
-    def __init__(self):
+    # Constante para limite máximo de métricas
+    MAX_METRICS = 10000
+
+    def __init__(self, max_metrics: int = MAX_METRICS):
+        """
+        Inicializa o coletor de métricas.
+
+        Args:
+            max_metrics: Número máximo de métricas a armazenar (default: 10000)
+        """
         self._metrics: list[ChatMetrics] = []
+        self._lock = threading.Lock()
+        self._max_metrics = max_metrics
 
     def add(self, metrics: ChatMetrics) -> None:
-        """Adiciona métricas à coleção."""
-        self._metrics.append(metrics)
+        """
+        Adiciona métricas à coleção de forma thread-safe.
+        Remove as mais antigas se exceder o limite máximo.
+        """
+        with self._lock:
+            self._metrics.append(metrics)
+            # Remove as mais antigas se exceder o limite
+            if len(self._metrics) > self._max_metrics:
+                self._metrics = self._metrics[-self._max_metrics :]
 
     def get_all(self) -> list[ChatMetrics]:
-        """Retorna todas as métricas coletadas."""
-        return self._metrics.copy()
+        """Retorna cópia de todas as métricas coletadas (thread-safe)."""
+        with self._lock:
+            return self._metrics.copy()
 
     def get_summary(self) -> dict:
-        """Retorna resumo estatístico das métricas."""
-        if not self._metrics:
-            return {"total_requests": 0}
+        """
+        Retorna resumo estatístico das métricas (thread-safe).
 
-        total_requests = len(self._metrics)
-        successful = sum(1 for m in self._metrics if m.success)
-        failed = total_requests - successful
+        Returns:
+            Dicionário com estatísticas agregadas
+        """
+        with self._lock:
+            if not self._metrics:
+                return {"total_requests": 0}
 
-        latencies = [m.latency_ms for m in self._metrics]
-        avg_latency = sum(latencies) / len(latencies)
-        min_latency = min(latencies)
-        max_latency = max(latencies)
+            total_requests = len(self._metrics)
+            successful = sum(1 for m in self._metrics if m.success)
+            failed = total_requests - successful
 
-        total_tokens = sum(
-            m.tokens_used for m in self._metrics if m.tokens_used is not None
-        )
+            latencies = [m.latency_ms for m in self._metrics]
+            avg_latency = sum(latencies) / len(latencies)
+            min_latency = min(latencies)
+            max_latency = max(latencies)
 
-        return {
-            "total_requests": total_requests,
-            "successful": successful,
-            "failed": failed,
-            "success_rate": (successful / total_requests) * 100,
-            "avg_latency_ms": avg_latency,
-            "min_latency_ms": min_latency,
-            "max_latency_ms": max_latency,
-            "total_tokens": total_tokens,
-        }
+            total_tokens = sum(
+                m.tokens_used for m in self._metrics if m.tokens_used is not None
+            )
+
+            return {
+                "total_requests": total_requests,
+                "successful": successful,
+                "failed": failed,
+                "success_rate": (successful / total_requests) * 100,
+                "avg_latency_ms": avg_latency,
+                "min_latency_ms": min_latency,
+                "max_latency_ms": max_latency,
+                "total_tokens": total_tokens,
+            }
 
     def clear(self) -> None:
-        self._metrics.clear()
+        """Limpa todas as métricas de forma thread-safe."""
+        with self._lock:
+            self._metrics.clear()
 
     def export_json(self, filepath: Optional[str] = None) -> str:
         """
@@ -197,7 +226,7 @@ class MetricsCollector:
         lines.append("# HELP chat_requests_by_model Total requests by model")
         lines.append("# TYPE chat_requests_by_model counter")
 
-        model_counts = {}
+        model_counts: dict[str, int] = {}
         for m in self._metrics:
             model_counts[m.model] = model_counts.get(m.model, 0) + 1
 
