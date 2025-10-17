@@ -1,3 +1,4 @@
+import subprocess
 import time
 from typing import Any, Dict, List
 
@@ -52,6 +53,26 @@ class OllamaChatAdapter(ChatRepository):
         )
 
         return response_api
+
+    def __stop_model(self, model: str) -> None:
+        """
+        Para o modelo Ollama após o uso para liberar memória.
+
+        Args:
+            model: Nome do modelo a ser parado
+        """
+        try:
+            subprocess.run(
+                ["ollama", "stop", model],
+                capture_output=True,
+                timeout=10,
+                check=False,
+            )
+            self.__logger.debug(f"Modelo {model} parado com sucesso")
+        except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+            self.__logger.warning(f"Não foi possível parar o modelo {model}: {str(e)}")
+        except Exception as e:
+            self.__logger.warning(f"Erro ao tentar parar o modelo {model}: {str(e)}")
 
     def chat(
         self,
@@ -161,6 +182,9 @@ class OllamaChatAdapter(ChatRepository):
             raise ChatException(
                 f"Erro ao comunicar com Ollama: {str(e)}", original_error=e
             )
+        finally:
+            # Para o modelo automaticamente para liberar memória
+            self.__stop_model(model)
 
     def get_metrics(self) -> List[ChatMetrics]:
         return self.__metrics.copy()
