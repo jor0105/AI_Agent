@@ -64,7 +64,7 @@ class TestCreateAgentInputDTO:
             provider="openai", model="gpt-5-nano", name="", instructions="Test"
         )
 
-        with pytest.raises(ValueError, match="'name'.*obrigatório"):
+        with pytest.raises(ValueError, match="'name'.*válida"):
             dto.validate()
 
     def test_validate_whitespace_name(self):
@@ -72,7 +72,7 @@ class TestCreateAgentInputDTO:
             provider="openai", model="gpt-5-nano", name="   ", instructions="Test"
         )
 
-        with pytest.raises(ValueError, match="'name'.*obrigatório"):
+        with pytest.raises(ValueError, match="'name'.*válida"):
             dto.validate()
 
     def test_validate_empty_instructions(self):
@@ -80,7 +80,7 @@ class TestCreateAgentInputDTO:
             provider="openai", model="gpt-5-nano", name="Test", instructions=""
         )
 
-        with pytest.raises(ValueError, match="'instructions'.*obrigatório"):
+        with pytest.raises(ValueError, match="'instructions'.*válida"):
             dto.validate()
 
     def test_validate_whitespace_instructions(self):
@@ -88,8 +88,46 @@ class TestCreateAgentInputDTO:
             provider="openai", model="gpt-5-nano", name="Test", instructions="   "
         )
 
-        with pytest.raises(ValueError, match="'instructions'.*obrigatório"):
+        with pytest.raises(ValueError, match="'instructions'.*válida"):
             dto.validate()
+
+    def test_validate_none_name(self):
+        dto = CreateAgentInputDTO(
+            provider="openai", model="gpt-5-nano", name=None, instructions="Test"
+        )
+
+        dto.validate()
+        assert dto.name is None
+
+    def test_validate_none_instructions(self):
+        dto = CreateAgentInputDTO(
+            provider="openai", model="gpt-5-nano", name="Test", instructions=None
+        )
+
+        dto.validate()
+        assert dto.instructions is None
+
+    def test_validate_both_none(self):
+        dto = CreateAgentInputDTO(
+            provider="openai", model="gpt-5-nano", name=None, instructions=None
+        )
+
+        dto.validate()
+        assert dto.name is None
+        assert dto.instructions is None
+
+    def test_create_with_only_required_fields(self):
+        dto = CreateAgentInputDTO(
+            provider="openai",
+            model="gpt-5-nano",
+        )
+
+        assert dto.provider == "openai"
+        assert dto.model == "gpt-5-nano"
+        assert dto.name is None
+        assert dto.instructions is None
+        assert dto.config == {}
+        assert dto.history_max_size == 10
 
     def test_validate_all_fields_valid(self):
         dto = CreateAgentInputDTO(
@@ -352,6 +390,50 @@ class TestAgentConfigOutputDTO:
         result = dto.to_dict()
 
         assert result["configs"] == complex_config
+
+    def test_create_with_none_name(self):
+        dto = AgentConfigOutputDTO(
+            provider="openai",
+            name=None,
+            model="gpt-5-nano",
+            instructions="Test",
+            config={},
+            history=[],
+        )
+
+        assert dto.name is None
+        result = dto.to_dict()
+        assert result["name"] is None
+
+    def test_create_with_none_instructions(self):
+        dto = AgentConfigOutputDTO(
+            provider="openai",
+            name="Test",
+            model="gpt-5-nano",
+            instructions=None,
+            config={},
+            history=[],
+        )
+
+        assert dto.instructions is None
+        result = dto.to_dict()
+        assert result["instructions"] is None
+
+    def test_create_with_both_none(self):
+        dto = AgentConfigOutputDTO(
+            provider="openai",
+            name=None,
+            model="gpt-5-nano",
+            instructions=None,
+            config={},
+            history=[],
+        )
+
+        assert dto.name is None
+        assert dto.instructions is None
+        result = dto.to_dict()
+        assert result["name"] is None
+        assert result["instructions"] is None
 
 
 @pytest.mark.unit

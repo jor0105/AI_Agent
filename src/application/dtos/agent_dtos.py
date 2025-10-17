@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -8,8 +8,8 @@ class CreateAgentInputDTO:
 
     provider: str
     model: str
-    name: str
-    instructions: str
+    name: Optional[str] = None
+    instructions: Optional[str] = None
     config: Dict[str, Any] = field(default_factory=dict)
     history_max_size: int = 10
 
@@ -24,14 +24,18 @@ class CreateAgentInputDTO:
                 "O campo 'model' é obrigatório, deve ser uma string e não pode estar vazio"
             )
 
-        if not isinstance(self.name, str) or not self.name.strip():
+        if self.name is not None and (
+            not isinstance(self.name, str) or not self.name.strip()
+        ):
             raise ValueError(
-                "O campo 'name' é obrigatório, deve ser uma string e não pode estar vazio"
+                "O campo 'name' deve ser uma string válida e não pode estar vazio"
             )
 
-        if not isinstance(self.instructions, str) or not self.instructions.strip():
+        if self.instructions is not None and (
+            not isinstance(self.instructions, str) or not self.instructions.strip()
+        ):
             raise ValueError(
-                "O campo 'instructions' é obrigatório, deve ser uma string e não pode estar vazio"
+                "O campo 'instructions' deve ser uma string válida e não pode estar vazio"
             )
 
         if not isinstance(self.config, dict):
@@ -47,8 +51,8 @@ class AgentConfigOutputDTO:
 
     provider: str
     model: str
-    name: str
-    instructions: str
+    name: Optional[str]
+    instructions: Optional[str]
     config: Dict[str, Any]
     history: List[Dict[str, str]]
 

@@ -26,6 +26,15 @@ def main() -> None:
     response = agent2.chat(user_message)
     print(f"Resposta do agente: {response}")
 
+    # Terceiro exemplo: Agente sem name e instructions (opcionais)
+    agent3 = AIAgent(
+        provider="openai",
+        model="gpt-5-mini",
+    )
+    print("\nAgente 3 criado apenas com provider e model")
+    configs = agent3.get_configs()
+    print(f"Name: {configs['name']}, Instructions: {configs['instructions']}")
+
 
 if __name__ == "__main__":
     main()

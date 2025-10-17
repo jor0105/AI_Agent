@@ -87,7 +87,7 @@ class OllamaChatAdapter(ChatRepository):
 
         Args:
             model: Nome do modelo
-            instructions: Instruções do sistema
+            instructions: Instruções do sistema (opcional)
             config: Configurações internas da IA
             history: Histórico de conversas (lista de dicts com 'role' e 'content')
             user_ask: Pergunta do usuário
@@ -104,7 +104,8 @@ class OllamaChatAdapter(ChatRepository):
             self.__logger.debug(f"Iniciando chat com modelo {model} no Ollama")
 
             messages = []
-            messages.append({"role": "system", "content": instructions})
+            if instructions and instructions.strip():
+                messages.append({"role": "system", "content": instructions})
             messages.extend(history)
             messages.append({"role": "user", "content": user_ask})
 

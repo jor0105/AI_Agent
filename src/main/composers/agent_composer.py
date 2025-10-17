@@ -1,5 +1,4 @@
-from dataclasses import field
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from src.application.dtos import CreateAgentInputDTO
 from src.application.use_cases.chat_with_agent import ChatWithAgentUseCase
@@ -19,25 +18,28 @@ class AgentComposer:
     def create_agent(
         provider: str,
         model: str,
-        name: str,
-        instructions: str,
-        config: Dict[str, Any] = field(default_factory=dict),
+        name: Optional[str] = None,
+        instructions: Optional[str] = None,
+        config: Optional[Dict[str, Any]] = None,
         history_max_size: int = 10,
     ) -> Agent:
         """
         Cria um novo agente utilizando o CreateAgentUseCase.
 
         Args:
-            model: Nome do modelo de IA
-            name: Nome do agente
-            instructions: Instruções do agente
             provider: Provider específico ("openai" ou "ollama")
-            configs: Configurações extras do agente, como max_tokens e temperature
+            model: Nome do modelo de IA
+            name: Nome do agente (opcional)
+            instructions: Instruções do agente (opcional)
+            configs: Configurações extras do agente, como max_tokens e temperature (opcional)
             history_max_size: Tamanho máximo do histórico (padrão: 10)
 
         Returns:
             Agent: Nova instância do agente
         """
+        if config is None:
+            config = {}
+
         input_dto = CreateAgentInputDTO(
             provider=provider,
             model=model,

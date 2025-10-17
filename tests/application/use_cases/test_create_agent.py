@@ -246,6 +246,56 @@ class TestCreateAgentUseCase:
         with pytest.raises(InvalidAgentConfigException):
             use_case.execute(input_dto)
 
+    def test_execute_with_none_name(self):
+        use_case = CreateAgentUseCase()
+        input_dto = CreateAgentInputDTO(
+            provider="openai",
+            model="gpt-5-nano",
+            name=None,
+            instructions="Test",
+        )
+
+        agent = use_case.execute(input_dto)
+        assert agent.name is None
+
+    def test_execute_with_none_instructions(self):
+        use_case = CreateAgentUseCase()
+        input_dto = CreateAgentInputDTO(
+            provider="openai",
+            model="gpt-5-nano",
+            name="Test",
+            instructions=None,
+        )
+
+        agent = use_case.execute(input_dto)
+        assert agent.instructions is None
+
+    def test_execute_with_both_none(self):
+        use_case = CreateAgentUseCase()
+        input_dto = CreateAgentInputDTO(
+            provider="openai",
+            model="gpt-5-nano",
+            name=None,
+            instructions=None,
+        )
+
+        agent = use_case.execute(input_dto)
+        assert agent.name is None
+        assert agent.instructions is None
+
+    def test_execute_with_only_required_fields(self):
+        use_case = CreateAgentUseCase()
+        input_dto = CreateAgentInputDTO(
+            provider="openai",
+            model="gpt-5-nano",
+        )
+
+        agent = use_case.execute(input_dto)
+        assert agent.provider == "openai"
+        assert agent.model == "gpt-5-nano"
+        assert agent.name is None
+        assert agent.instructions is None
+
     def test_execute_with_empty_provider_raises_error(self):
         use_case = CreateAgentUseCase()
         input_dto = CreateAgentInputDTO(

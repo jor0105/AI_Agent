@@ -1,4 +1,3 @@
-from dataclasses import field
 from typing import Any, Dict, List, Optional
 
 from src.application.dtos import ChatInputDTO
@@ -19,9 +18,9 @@ class AIAgent:
         self,
         provider: str,
         model: str,
-        name: str,
-        instructions: str,
-        config: Dict[str, Any] = field(default_factory=dict),
+        name: Optional[str] = None,
+        instructions: Optional[str] = None,
+        config: Optional[Dict[str, Any]] = None,
         history_max_size: int = 10,
     ) -> None:
         """
@@ -30,9 +29,9 @@ class AIAgent:
         Args:
             provider: Provider específico ("openai" ou "ollama") - define qual API usar
             model: Nome do modelo de IA
-            name: Nome do agente
-            instructions: Instruções/prompt do agente
-            configs: Configurações extras do agente, como max_tokens e temperature
+            name: Nome do agente (opcional)
+            instructions: Instruções/prompt do agente (opcional)
+            configs: Configurações extras do agente, como max_tokens e temperature (opcional)
             history_max_size: Tamanho máximo do histórico (padrão: 10)
         """
         self.__agent: Agent = AgentComposer.create_agent(
@@ -109,3 +108,26 @@ class AIAgent:
             collector.add(metric)
 
         return collector.export_json(filepath)
+
+    def export_metrics_prometheus(self, filepath: Optional[str] = None) -> str:
+        """
+        Exporta métricas em formato Prometheus.
+
+        Args:
+            filepath: Caminho do arquivo para salvar (opcional)
+
+        Returns:
+            str: String no formato Prometheus com as métricas
+        """
+        from src.infra.config.metrics import MetricsCollector
+
+        collector = MetricsCollector()
+        for metric in self.get_metrics():
+            collector.add(metric)
+
+        prometheus_text = collector.export_prometheus()
+
+        if filepath:
+            collector.export_prometheus_to_file(filepath)
+
+        return prometheus_text

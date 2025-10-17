@@ -269,6 +269,7 @@ class TestOpenAIChatAdapterIntegration:
         assert isinstance(response, str)
 
     def test_chat_with_empty_instructions(self):
+        """Testa chat com instructions vazio (testando comportamento do adapter)."""
         _get_openai_api_key()
 
         adapter = OpenAIChatAdapter()
@@ -276,6 +277,24 @@ class TestOpenAIChatAdapterIntegration:
         response = adapter.chat(
             model=IA_OPENAI_TEST_2,
             instructions="",
+            config={},
+            history=[],
+            user_ask="What is 1+1?",
+        )
+
+        assert response is not None
+        assert isinstance(response, str)
+        assert len(response) > 0
+
+    def test_chat_with_none_instructions(self):
+        """Testa chat com instructions=None."""
+        _get_openai_api_key()
+
+        adapter = OpenAIChatAdapter()
+
+        response = adapter.chat(
+            model=IA_OPENAI_TEST_2,
+            instructions=None,
             config={},
             history=[],
             user_ask="What is 1+1?",

@@ -42,16 +42,67 @@ class TestAgentComposer:
             )
 
     def test_create_agent_with_empty_name_raises_error(self):
+        """Testa que name vazio (quando fornecido) levanta erro."""
         with pytest.raises(InvalidAgentConfigException):
             AgentComposer.create_agent(
                 provider="openai", model="gpt-5-nano", name="", instructions="Test"
             )
 
     def test_create_agent_with_empty_instructions_raises_error(self):
+        """Testa que instructions vazio (quando fornecido) levanta erro."""
         with pytest.raises(InvalidAgentConfigException):
             AgentComposer.create_agent(
                 provider="openai", model="gpt-5-nano", name="Test", instructions=""
             )
+
+    def test_create_agent_with_none_name(self):
+        """Testa que name=None é aceito."""
+        agent = AgentComposer.create_agent(
+            provider="openai",
+            model="gpt-5-nano",
+            name=None,
+            instructions="Test",
+            config={},
+        )
+
+        assert agent.name is None
+
+    def test_create_agent_with_none_instructions(self):
+        """Testa que instructions=None é aceito."""
+        agent = AgentComposer.create_agent(
+            provider="openai",
+            model="gpt-5-nano",
+            name="Test",
+            instructions=None,
+            config={},
+        )
+
+        assert agent.instructions is None
+
+    def test_create_agent_with_both_none(self):
+        """Testa que name e instructions podem ser None ao mesmo tempo."""
+        agent = AgentComposer.create_agent(
+            provider="openai",
+            model="gpt-5-nano",
+            name=None,
+            instructions=None,
+            config={},
+        )
+
+        assert agent.name is None
+        assert agent.instructions is None
+
+    def test_create_agent_with_only_required_fields(self):
+        """Testa criação apenas com campos obrigatórios."""
+        agent = AgentComposer.create_agent(
+            provider="openai",
+            model="gpt-5-nano",
+        )
+
+        assert agent.provider == "openai"
+        assert agent.model == "gpt-5-nano"
+        assert agent.name is None
+        assert agent.instructions is None
 
     def test_create_chat_use_case_returns_use_case(self):
         use_case = AgentComposer.create_chat_use_case(

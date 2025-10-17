@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from src.domain.exceptions.domain_exceptions import (
     InvalidConfigTypeException,
@@ -25,8 +25,8 @@ class Agent:
 
     provider: str
     model: str
-    name: str
-    instructions: str
+    name: Optional[str] = None
+    instructions: Optional[str] = None
     config: Dict[str, Any] = field(default_factory=dict)
     history: History = field(default_factory=History)
 
