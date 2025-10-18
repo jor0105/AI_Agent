@@ -1,6 +1,6 @@
 import subprocess
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ollama import ChatResponse, chat
 
@@ -77,7 +77,7 @@ class OllamaChatAdapter(ChatRepository):
     def chat(
         self,
         model: str,
-        instructions: str,
+        instructions: Optional[str],
         config: Dict[str, Any],
         history: List[Dict[str, str]],
         user_ask: str,

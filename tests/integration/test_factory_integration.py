@@ -66,31 +66,39 @@ class TestChatAdapterFactoryIntegration:
         mock_get_api_key.return_value = "test-key"
         mock_client = Mock()
         mock_response = Mock()
-        mock_message = Mock()
-        mock_message.content = "OpenAI response"
-        mock_choice = Mock()
-        mock_choice.message = mock_message
-        mock_response.choices = [mock_choice]
-        mock_client.chat.completions.create.return_value = mock_response
+        mock_response.output_text = "OpenAI response"
+        mock_client.responses.create.return_value = mock_response
         mock_get_client.return_value = mock_client
 
         adapter = ChatAdapterFactory.create(provider="openai", model="gpt-5-mini")
 
         response = adapter.chat(
-            model="gpt-5-mini", instructions="Be helpful", user_ask="Hello", history=[]
+            model="gpt-5-mini",
+            instructions="Be helpful",
+            config={},
+            history=[],
+            user_ask="Hello",
         )
 
         assert response == "OpenAI response"
-        assert mock_client.chat.completions.create.called
+        assert mock_client.responses.create.called
 
     @patch("src.infra.adapters.Ollama.ollama_chat_adapter.chat")
     def test_factory_adapter_can_chat_ollama(self, mock_ollama_chat):
-        mock_ollama_chat.return_value = {"message": {"content": "Ollama response"}}
+        mock_response = Mock()
+        mock_message = Mock()
+        mock_message.content = "Ollama response"
+        mock_response.message = mock_message
+        mock_ollama_chat.return_value = mock_response
 
         adapter = ChatAdapterFactory.create(provider="ollama", model="gemma3:4b")
 
         response = adapter.chat(
-            model="gemma3:4b", instructions="Be helpful", user_ask="Hello", history=[]
+            model="gemma3:4b",
+            instructions="Be helpful",
+            config={},
+            history=[],
+            user_ask="Hello",
         )
 
         assert response == "Ollama response"
@@ -169,12 +177,8 @@ class TestChatAdapterFactoryIntegration:
         mock_get_api_key.return_value = "test-key"
         mock_client = Mock()
         mock_response = Mock()
-        mock_message = Mock()
-        mock_message.content = "Response with history"
-        mock_choice = Mock()
-        mock_choice.message = mock_message
-        mock_response.choices = [mock_choice]
-        mock_client.chat.completions.create.return_value = mock_response
+        mock_response.output_text = "Response with history"
+        mock_client.responses.create.return_value = mock_response
         mock_get_client.return_value = mock_client
 
         adapter = ChatAdapterFactory.create(provider="openai", model="gpt-5-nano")
@@ -187,19 +191,24 @@ class TestChatAdapterFactoryIntegration:
         response = adapter.chat(
             model="gpt-5-nano",
             instructions="System prompt",
-            user_ask="New question",
+            config={},
             history=history,
+            user_ask="New question",
         )
 
         assert response == "Response with history"
 
-        call_args = mock_client.chat.completions.create.call_args
-        messages = call_args.kwargs["messages"]
+        call_args = mock_client.responses.create.call_args
+        messages = call_args.kwargs["input"]
         assert len(messages) >= 3  # system + history + user
 
     @patch("src.infra.adapters.Ollama.ollama_chat_adapter.chat")
     def test_factory_with_ollama_and_different_models(self, mock_ollama_chat):
-        mock_ollama_chat.return_value = {"message": {"content": "Local response"}}
+        mock_response = Mock()
+        mock_message = Mock()
+        mock_message.content = "Local response"
+        mock_response.message = mock_message
+        mock_ollama_chat.return_value = mock_response
 
         models = ["gemma3:4b", "phi4-mini:latest", "llama2"]
 
@@ -208,7 +217,11 @@ class TestChatAdapterFactoryIntegration:
             assert isinstance(adapter, OllamaChatAdapter)
 
             response = adapter.chat(
-                model=model, instructions="Test", user_ask="Test", history=[]
+                model=model,
+                instructions="Test",
+                config={},
+                history=[],
+                user_ask="Test",
             )
 
             assert response == "Local response"

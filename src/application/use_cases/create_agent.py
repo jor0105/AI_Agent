@@ -1,6 +1,6 @@
 from src.application.dtos import CreateAgentInputDTO
 from src.domain.entities.agent_domain import Agent
-from src.domain.exceptions import AgentException, InvalidAgentConfigException
+from src.domain.exceptions import InvalidAgentConfigException
 from src.domain.value_objects import History
 
 
@@ -19,22 +19,22 @@ class CreateAgentUseCase:
 
         Raises:
             InvalidAgentConfigException: Se os dados de entrada forem inválidos
+            InvalidProviderException: Se o provider não for suportado
+            UnsupportedConfigException: Se uma config não for suportada
+            InvalidConfigTypeException: Se o tipo de uma config for inválido
         """
         try:
             input_dto.validate()
-
-            agent = Agent(
-                provider=input_dto.provider,
-                model=input_dto.model,
-                name=input_dto.name,
-                instructions=input_dto.instructions,
-                config=input_dto.config,
-                history=History(max_size=input_dto.history_max_size),
-            )
-
-            return agent
-
         except ValueError as e:
             raise InvalidAgentConfigException("input_dto", str(e))
-        except AgentException as e:
-            raise InvalidAgentConfigException("provider", str(e)) from e
+
+        agent = Agent(
+            provider=input_dto.provider,
+            model=input_dto.model,
+            name=input_dto.name,
+            instructions=input_dto.instructions,
+            config=input_dto.config,
+            history=History(max_size=input_dto.history_max_size),
+        )
+
+        return agent

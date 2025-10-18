@@ -3,7 +3,7 @@ import pytest
 from src.application.use_cases.chat_with_agent import ChatWithAgentUseCase
 from src.application.use_cases.get_config_agents import GetAgentConfigUseCase
 from src.domain.entities.agent_domain import Agent
-from src.domain.exceptions import InvalidAgentConfigException
+from src.domain.exceptions import InvalidAgentConfigException, InvalidProviderException
 from src.main.composers.agent_composer import AgentComposer
 
 
@@ -174,7 +174,7 @@ class TestAgentComposer:
             )
 
     def test_create_agent_with_invalid_provider_raises_error(self):
-        with pytest.raises(InvalidAgentConfigException):
+        with pytest.raises(InvalidProviderException):
             AgentComposer.create_agent(
                 provider="invalid_provider",
                 model="gpt-5-nano",

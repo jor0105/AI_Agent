@@ -177,7 +177,7 @@ class TestGetAgentConfigUseCase:
         assert output.history[4]["role"] == "user"
         assert output.history[5]["role"] == "assistant"
 
-    def test_execute_to_dict_includes_configs_key(self):
+    def test_execute_to_dict_includes_config_key(self):
         use_case = GetAgentConfigUseCase()
         custom_config = {"temperature": 0.5}
         agent = Agent(
@@ -191,8 +191,8 @@ class TestGetAgentConfigUseCase:
         output = use_case.execute(agent)
         result = output.to_dict()
 
-        assert "configs" in result
-        assert result["configs"] == custom_config
+        assert "config" in result
+        assert result["config"] == custom_config
 
     def test_execute_with_all_config_types(self):
         use_case = GetAgentConfigUseCase()

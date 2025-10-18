@@ -55,6 +55,7 @@ class AgentConfigOutputDTO:
     instructions: Optional[str]
     config: Dict[str, Any]
     history: List[Dict[str, str]]
+    history_max_size: int = 10
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -62,8 +63,9 @@ class AgentConfigOutputDTO:
             "model": self.model,
             "name": self.name,
             "instructions": self.instructions,
-            "configs": self.config,
+            "config": self.config,
             "history": self.history,
+            "history_max_size": self.history_max_size,
         }
 
 

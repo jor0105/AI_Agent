@@ -314,7 +314,7 @@ class TestAgentConfigOutputDTO:
         assert result["instructions"] == "Instructions"
         assert result["history"] == [{"role": "user", "content": "Hi"}]
         assert result["provider"] == "ollama"
-        assert result["configs"] == {"temperature": 0.8}
+        assert result["config"] == {"temperature": 0.8}
 
     def test_to_dict_with_empty_history(self):
         dto = AgentConfigOutputDTO(
@@ -367,8 +367,9 @@ class TestAgentConfigOutputDTO:
             "model",
             "name",
             "instructions",
-            "configs",
+            "config",
             "history",
+            "history_max_size",
         }
         assert set(result.keys()) == expected_keys
 
@@ -389,7 +390,7 @@ class TestAgentConfigOutputDTO:
 
         result = dto.to_dict()
 
-        assert result["configs"] == complex_config
+        assert result["config"] == complex_config
 
     def test_create_with_none_name(self):
         dto = AgentConfigOutputDTO(
@@ -646,4 +647,4 @@ class TestDTOsIntegration:
 
         result = output_dto.to_dict()
 
-        assert result["configs"] == original_config
+        assert result["config"] == original_config

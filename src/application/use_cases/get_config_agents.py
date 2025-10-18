@@ -22,4 +22,5 @@ class GetAgentConfigUseCase:
             instructions=agent.instructions,
             config=agent.config,
             history=agent.history.to_dict_list(),  # Converte History para list[dict]
+            history_max_size=agent.history.max_size,
         )

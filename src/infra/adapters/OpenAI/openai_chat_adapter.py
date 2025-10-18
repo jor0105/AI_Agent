@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from src.application.interfaces.chat_repository import ChatRepository
 from src.domain.exceptions import ChatException
@@ -60,7 +60,7 @@ class OpenAIChatAdapter(ChatRepository):
     def chat(
         self,
         model: str,
-        instructions: str,
+        instructions: Optional[str],
         config: Dict[str, Any],
         history: List[Dict[str, str]],
         user_ask: str,

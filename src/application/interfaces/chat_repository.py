@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 class ChatRepository(ABC):
@@ -7,7 +7,7 @@ class ChatRepository(ABC):
     def chat(
         self,
         model: str,
-        instructions: str,
+        instructions: Optional[str],
         config: Dict[str, Any],
         history: List[Dict[str, str]],
         user_ask: str,
