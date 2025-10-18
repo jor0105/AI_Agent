@@ -325,7 +325,6 @@ class TestOllamaChatAdapterIntegration:
         assert isinstance(response, str)
 
     def test_chat_with_empty_instructions(self):
-        """Testa chat com instructions vazio (testando comportamento do adapter)."""
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_2)
 
@@ -344,7 +343,6 @@ class TestOllamaChatAdapterIntegration:
         assert len(response) > 0
 
     def test_chat_with_none_instructions(self):
-        """Testa chat com instructions=None."""
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_2)
 

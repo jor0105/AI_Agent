@@ -11,8 +11,6 @@ IA_OPENAI_TEST_2: str = "gpt-5-nano"
 
 @pytest.mark.unit
 class TestOpenAIChatAdapter:
-    """Testes para OpenAIChatAdapter."""
-
     @patch(
         "src.infra.adapters.OpenAI.openai_chat_adapter.EnvironmentConfig.get_api_key"
     )
@@ -47,7 +45,6 @@ class TestOpenAIChatAdapter:
         mock_client = Mock()
         mock_response = MagicMock()
         mock_response.output_text = "OpenAI response"
-        # Estrutura correta da API OpenAI
         mock_response.usage.total_tokens = 100
         mock_response.usage.input_tokens = 50
         mock_response.usage.output_tokens = 50
@@ -493,7 +490,6 @@ class TestOpenAIChatAdapter:
     )
     @patch("src.infra.adapters.OpenAI.openai_chat_adapter.ClientOpenAI.get_client")
     def test_chat_collects_metrics_on_success(self, mock_get_client, mock_get_api_key):
-        """Testa se as métricas são coletadas corretamente em caso de sucesso."""
         mock_get_api_key.return_value = "test-api-key"
 
         mock_client = Mock()
@@ -529,7 +525,6 @@ class TestOpenAIChatAdapter:
     )
     @patch("src.infra.adapters.OpenAI.openai_chat_adapter.ClientOpenAI.get_client")
     def test_chat_collects_metrics_on_failure(self, mock_get_client, mock_get_api_key):
-        """Testa se as métricas são coletadas corretamente em caso de erro."""
         mock_get_api_key.return_value = "test-api-key"
 
         mock_client = Mock()
@@ -654,7 +649,6 @@ class TestOpenAIChatAdapter:
     )
     @patch("src.infra.adapters.OpenAI.openai_chat_adapter.ClientOpenAI.get_client")
     def test_chat_with_long_history(self, mock_get_client, mock_get_api_key):
-        """Testa chat com histórico longo."""
         mock_get_api_key.return_value = "test-api-key"
 
         mock_client = Mock()
@@ -692,7 +686,6 @@ class TestOpenAIChatAdapter:
     )
     @patch("src.infra.adapters.OpenAI.openai_chat_adapter.ClientOpenAI.get_client")
     def test_chat_with_config_parameter(self, mock_get_client, mock_get_api_key):
-        """Testa se o parâmetro config é aceito corretamente."""
         mock_get_api_key.return_value = "test-api-key"
 
         mock_client = Mock()
@@ -725,7 +718,6 @@ class TestOpenAIChatAdapter:
     def test_chat_metrics_contain_error_message_on_empty_response(
         self, mock_get_client, mock_get_api_key
     ):
-        """Testa se a mensagem de erro é registrada nas métricas."""
         mock_get_api_key.return_value = "test-api-key"
 
         mock_client = Mock()

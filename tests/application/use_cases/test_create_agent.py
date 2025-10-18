@@ -376,7 +376,6 @@ class TestCreateAgentUseCase:
             use_case.execute(input_dto)
 
     def test_execute_with_non_dict_config_raises_error(self):
-        """Testa que config não-dict levanta exceção."""
         use_case = CreateAgentUseCase()
         input_dto = CreateAgentInputDTO(
             provider="openai",
@@ -390,7 +389,6 @@ class TestCreateAgentUseCase:
             use_case.execute(input_dto)
 
     def test_execute_with_list_as_config_raises_error(self):
-        """Testa que config como lista levanta exceção."""
         use_case = CreateAgentUseCase()
         input_dto = CreateAgentInputDTO(
             provider="openai",

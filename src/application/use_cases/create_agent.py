@@ -1,6 +1,6 @@
 from src.application.dtos import CreateAgentInputDTO
 from src.domain.entities.agent_domain import Agent
-from src.domain.exceptions import InvalidAgentConfigException
+from src.domain.exceptions import AgentException, InvalidAgentConfigException
 from src.domain.value_objects import History
 
 
@@ -36,3 +36,5 @@ class CreateAgentUseCase:
 
         except ValueError as e:
             raise InvalidAgentConfigException("input_dto", str(e))
+        except AgentException as e:
+            raise InvalidAgentConfigException("provider", str(e)) from e

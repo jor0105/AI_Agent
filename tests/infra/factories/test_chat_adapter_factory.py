@@ -33,7 +33,6 @@ class TestChatAdapterFactory:
         assert isinstance(adapter, OllamaChatAdapter)
 
     def test_create_with_invalid_provider(self):
-        """Testa que provider inválido lança erro."""
         with pytest.raises(ValueError, match="Provider inválido"):
             ChatAdapterFactory.create(provider="invalid", model="gpt-5")
 
@@ -62,7 +61,6 @@ class TestChatAdapterFactory:
         assert adapter1 is adapter2
 
     def test_cache_considers_provider(self):
-        """Testa que diferentes providers criam adapters diferentes."""
         ChatAdapterFactory.clear_cache()
 
         adapter1 = ChatAdapterFactory.create(provider="openai", model="model-name")

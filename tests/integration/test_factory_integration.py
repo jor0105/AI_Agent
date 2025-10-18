@@ -10,8 +10,6 @@ from src.infra.factories.chat_adapter_factory import ChatAdapterFactory
 
 @pytest.mark.integration
 class TestChatAdapterFactoryIntegration:
-    """Testes de integração para ChatAdapterFactory."""
-
     @patch(
         "src.infra.adapters.OpenAI.openai_chat_adapter.EnvironmentConfig.get_api_key"
     )

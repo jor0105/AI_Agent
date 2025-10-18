@@ -8,8 +8,6 @@ from src.presentation.agent_controller import AIAgent
 
 @pytest.mark.unit
 class TestAIAgentInitialization:
-    """Testes de inicialização do AIAgent."""
-
     def test_initialization_creates_agent(self):
         controller = AIAgent(
             provider="openai",
@@ -139,8 +137,6 @@ class TestAIAgentInitialization:
 
 @pytest.mark.unit
 class TestAIAgentChat:
-    """Testes do método chat."""
-
     @patch("src.presentation.agent_controller.AgentComposer.create_chat_use_case")
     def test_chat_returns_response(self, mock_create_chat):
         mock_use_case = Mock()
@@ -249,8 +245,6 @@ class TestAIAgentChat:
 
 @pytest.mark.unit
 class TestAIAgentGetConfigs:
-    """Testes do método get_configs."""
-
     @patch("src.presentation.agent_controller.AgentComposer.create_get_config_use_case")
     def test_get_configs_returns_dict(self, mock_create_config):
         mock_use_case = Mock()
@@ -336,8 +330,6 @@ class TestAIAgentGetConfigs:
 
 @pytest.mark.unit
 class TestAIAgentClearHistory:
-    """Testes do método clear_history."""
-
     def test_clear_history_method_exists(self):
         controller = AIAgent(
             provider="openai", model="gpt-5-mini", name="Test", instructions="Test"
@@ -446,8 +438,6 @@ class TestAIAgentClearHistory:
 
 @pytest.mark.unit
 class TestAIAgentMetrics:
-    """Testes dos métodos de métricas."""
-
     @patch("src.presentation.agent_controller.AgentComposer.create_chat_use_case")
     def test_get_metrics_returns_list(self, mock_create_chat):
         from src.infra.config.metrics import ChatMetrics
@@ -499,7 +489,6 @@ class TestAIAgentMetrics:
 
     @patch("src.presentation.agent_controller.AgentComposer.create_chat_use_case")
     def test_get_metrics_with_multiple_metrics(self, mock_create_chat):
-        """Testa get_metrics com múltiplas métricas."""
         from src.infra.config.metrics import ChatMetrics
 
         mock_use_case = Mock()
@@ -611,7 +600,6 @@ class TestAIAgentMetrics:
 
     @patch("src.presentation.agent_controller.AgentComposer.create_chat_use_case")
     def test_export_metrics_json_with_empty_metrics(self, mock_create_chat):
-        """Testa exportação JSON quando não há métricas."""
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = []
         mock_create_chat.return_value = mock_use_case
@@ -627,7 +615,6 @@ class TestAIAgentMetrics:
 
     @patch("src.presentation.agent_controller.AgentComposer.create_chat_use_case")
     def test_export_metrics_prometheus_with_empty_metrics(self, mock_create_chat):
-        """Testa exportação Prometheus quando não há métricas."""
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = []
         mock_create_chat.return_value = mock_use_case
@@ -644,8 +631,6 @@ class TestAIAgentMetrics:
 
 @pytest.mark.unit
 class TestAIAgentIntegration:
-    """Testes de integração entre métodos do AIAgent."""
-
     @patch("src.presentation.agent_controller.AgentComposer.create_chat_use_case")
     def test_chat_and_get_configs_together(self, mock_create_chat):
         """Testa uso combinado de chat e get_configs."""
@@ -742,7 +727,6 @@ class TestAIAgentEdgeCases:
     """Testes de casos extremos e edge cases."""
 
     def test_initialization_with_very_long_instructions(self):
-        """Testa inicialização com instruções muito longas."""
         long_instructions = "A" * 10000
         controller = AIAgent(
             provider="openai",
@@ -755,7 +739,6 @@ class TestAIAgentEdgeCases:
         assert agent.instructions == long_instructions
 
     def test_initialization_with_special_characters_in_name(self):
-        """Testa inicialização com caracteres especiais no nome."""
         special_name = "Test-Agent_123!@#$%"
         controller = AIAgent(
             provider="openai",
@@ -768,7 +751,6 @@ class TestAIAgentEdgeCases:
         assert agent.name == special_name
 
     def test_initialization_with_unicode_characters(self):
-        """Testa inicialização com caracteres Unicode."""
         unicode_name = "测试代理 🤖"
         unicode_instructions = "Seja útil e educado 你好"
 
@@ -785,7 +767,6 @@ class TestAIAgentEdgeCases:
 
     @patch("src.presentation.agent_controller.AgentComposer.create_chat_use_case")
     def test_chat_with_very_long_message(self, mock_create_chat):
-        """Testa chat com mensagem muito longa."""
         mock_use_case = Mock()
         mock_output = Mock()
         mock_output.response = "Response"
@@ -805,7 +786,6 @@ class TestAIAgentEdgeCases:
 
     @patch("src.presentation.agent_controller.AgentComposer.create_chat_use_case")
     def test_chat_with_unicode_message(self, mock_create_chat):
-        """Testa chat com mensagem Unicode."""
         mock_use_case = Mock()
         mock_output = Mock()
         mock_output.response = "回复"
@@ -822,7 +802,6 @@ class TestAIAgentEdgeCases:
         assert response == "回复"
 
     def test_initialization_with_history_max_size_zero(self):
-        """Testa que inicialização com tamanho zero de histórico lança erro."""
         with pytest.raises(InvalidAgentConfigException, match="history_max_size"):
             AIAgent(
                 provider="openai",
@@ -851,7 +830,6 @@ class TestAIAgentEdgeCases:
             pass
 
     def test_initialization_with_empty_config_dict(self):
-        """Testa inicialização com dict de config vazio."""
         controller = AIAgent(
             provider="openai",
             model="gpt-5",

@@ -9,8 +9,6 @@ from src.infra.config.environment import EnvironmentConfig
 
 @pytest.mark.unit
 class TestEnvironmentConfigThreadSafety:
-    """Testes para thread-safety do Singleton."""
-
     def setup_method(self):
         EnvironmentConfig.reset()
         os.environ["TEST_VAR"] = "test_value"

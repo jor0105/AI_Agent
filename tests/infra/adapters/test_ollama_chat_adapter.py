@@ -336,7 +336,6 @@ class TestOllamaChatAdapter:
 
     @patch("src.infra.adapters.Ollama.ollama_chat_adapter.chat")
     def test_chat_collects_metrics_on_success(self, mock_chat):
-        """Testa se as métricas são coletadas corretamente em caso de sucesso."""
         mock_response = MagicMock()
         mock_response.message.content = "Success response"
         mock_response.get.return_value = 100  # eval_count
@@ -361,7 +360,6 @@ class TestOllamaChatAdapter:
 
     @patch("src.infra.adapters.Ollama.ollama_chat_adapter.chat")
     def test_chat_collects_metrics_on_failure(self, mock_chat):
-        """Testa se as métricas são coletadas corretamente em caso de erro."""
         mock_chat.side_effect = RuntimeError("Test error")
 
         adapter = OllamaChatAdapter()
@@ -386,7 +384,6 @@ class TestOllamaChatAdapter:
 
     @patch("src.infra.adapters.Ollama.ollama_chat_adapter.chat")
     def test_chat_collects_multiple_metrics(self, mock_chat):
-        """Testa se múltiplas métricas são coletadas em várias chamadas."""
         mock_response = MagicMock()
         mock_response.message.content = "Response"
         mock_response.get.return_value = None
@@ -429,7 +426,6 @@ class TestOllamaChatAdapter:
 
     @patch("src.infra.adapters.Ollama.ollama_chat_adapter.chat")
     def test_chat_with_empty_string_in_history(self, mock_chat):
-        """Testa chat com strings vazias no histórico."""
         mock_response = MagicMock()
         mock_response.message.content = "Response"
         mock_response.get.return_value = None
@@ -457,7 +453,6 @@ class TestOllamaChatAdapter:
 
     @patch("src.infra.adapters.Ollama.ollama_chat_adapter.chat")
     def test_chat_with_long_history(self, mock_chat):
-        """Testa chat com histórico longo."""
         mock_response = MagicMock()
         mock_response.message.content = "Response"
         mock_response.get.return_value = None
