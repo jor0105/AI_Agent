@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "1.0.0",
+  "rules": [
+    {
+      "pattern": "src/createagents/infra/config/**",
+      "profile": "security-touch",
+      "reason": "Configuracao de logging, sanitizacao e leitura de ambiente."
+    },
+    {
+      "pattern": "src/createagents/infra/adapters/**",
+      "profile": "security-touch",
+      "reason": "Adapters de provedor manipulam credenciais e chamadas externas."
+    },
+    {
+      "pattern": "src/createagents/__init__.py",
+      "profile": "high-risk",
+      "reason": "Superficie publica do pacote publicado no PyPI."
+    },
+    {
+      "pattern": "src/createagents/main/facade/**",
+      "profile": "high-risk",
+      "reason": "Facade publica CreateAgent alterada."
+    },
+    {
+      "pattern": "src/createagents/domain/interfaces/**",
+      "profile": "high-risk",
+      "reason": "Contratos de dominio, incluindo BaseTool, sao API publica."
+    },
+    {
+      "pattern": "src/createagents/main/composers/**",
+      "profile": "high-risk",
+      "reason": "Composition root; wiring de todas as camadas."
+    },
+    {
+      "pattern": "pyproject.toml",
+      "profile": "high-risk",
+      "reason": "Dependencias, versao e configuracao de tooling alteradas."
+    },
+    {
+      "pattern": "uv.lock",
+      "profile": "high-risk",
+      "reason": "Lockfile de dependencias alterado."
+    },
+    {
+      "pattern": ".pre-commit-config.yaml",
+      "profile": "high-risk",
+      "reason": "Gates de qualidade alterados."
+    },
+    {
+      "pattern": ".github/workflows/**",
+      "profile": "high-risk",
+      "reason": "Pipeline de CI, docs ou publicacao alterado."
+    },
+    {
+      "pattern": "src/**/*.py",
+      "profile": "standard",
+      "reason": "Codigo Python de producao alterado."
+    },
+    {
+      "pattern": "tests/**/*.py",
+      "profile": "standard",
+      "reason": "Testes Python alterados."
+    },
+    {
+      "pattern": ".agents/**",
+      "profile": "high-risk",
+      "reason": "Infra de agents alterada."
+    },
+    {
+      "pattern": ".claude/agents/**",
+      "profile": "high-risk",
+      "reason": "Espelho local de agents alterado."
+    },
+    {
+      "pattern": ".github/agents/**",
+      "profile": "high-risk",
+      "reason": "Espelho local de agents alterado."
+    },
+    {
+      "pattern": ".codex/agents/**",
+      "profile": "high-risk",
+      "reason": "Espelho local de agents alterado."
+    },
+    {
+      "pattern": "opencode.json",
+      "profile": "high-risk",
+      "reason": "Runtime de agents alterado."
+    },
+    {
+      "pattern": "package.json",
+      "profile": "high-risk",
+      "reason": "Scripts oficiais de validacao alterados."
+    },
+    {
+      "pattern": "mkdocs.yml",
+      "profile": "quick",
+      "reason": "Configuracao do site de documentacao alterada."
+    },
+    {
+      "pattern": "docs/**",
+      "profile": "quick",
+      "reason": "Mudanca documental."
+    },
+    {
+      "pattern": "**/*.md",
+      "profile": "quick",
+      "reason": "Mudanca documental."
+    }
+  ]
+}

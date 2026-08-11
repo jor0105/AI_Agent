@@ -1,94 +1,19 @@
 import json
 import threading
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Optional
 
-
-@dataclass
-class ChatMetrics:
-    """
-    Represents the metrics for a single chat interaction.
-
-    Attributes:
-        model: The name of the model used.
-        latency_ms: The request latency in milliseconds.
-        tokens_used: The total number of tokens used, if available.
-        prompt_tokens: The number of prompt tokens, if available.
-        completion_tokens: The number of response tokens, if available.
-        timestamp: The timestamp of the request.
-        success: A boolean indicating whether the request was successful.
-        error_message: An error message, if any.
-    """
-
-    model: str
-    latency_ms: float
-    tokens_used: Optional[int] = None
-    prompt_tokens: Optional[int] = None
-    completion_tokens: Optional[int] = None
-    load_duration_ms: Optional[float] = None
-    prompt_eval_duration_ms: Optional[float] = None
-    eval_duration_ms: Optional[float] = None
-    timestamp: datetime = field(default_factory=datetime.now)
-    success: bool = True
-    error_message: Optional[str] = None
-
-    def __post_init__(self) -> None:
-        """Rounds float metrics to 2 decimal places."""
-        if self.latency_ms is not None:
-            self.latency_ms = round(self.latency_ms, 2)
-        if self.load_duration_ms is not None:
-            self.load_duration_ms = round(self.load_duration_ms, 2)
-        if self.prompt_eval_duration_ms is not None:
-            self.prompt_eval_duration_ms = round(
-                self.prompt_eval_duration_ms, 2
-            )
-        if self.eval_duration_ms is not None:
-            self.eval_duration_ms = round(self.eval_duration_ms, 2)
-
-    def to_dict(self) -> dict:
-        """Converts the metrics to a dictionary."""
-        return {
-            'model': self.model,
-            'latency_ms': self.latency_ms,
-            'tokens_used': self.tokens_used,
-            'prompt_tokens': self.prompt_tokens,
-            'completion_tokens': self.completion_tokens,
-            'load_duration_ms': self.load_duration_ms,
-            'prompt_eval_duration_ms': self.prompt_eval_duration_ms,
-            'eval_duration_ms': self.eval_duration_ms,
-            'timestamp': self.timestamp.isoformat(),
-            'success': self.success,
-            'error_message': self.error_message,
-        }
-
-    def __str__(self) -> str:
-        """Returns a string representation of the metrics."""
-        tokens_info = (
-            f', tokens={self.tokens_used}' if self.tokens_used else ''
-        )
-        detailed_timing = ''
-        if self.load_duration_ms:
-            detailed_timing += f', load={self.load_duration_ms:.2f}ms'
-        if self.prompt_eval_duration_ms:
-            detailed_timing += f', p_eval={self.prompt_eval_duration_ms:.2f}ms'
-        if self.eval_duration_ms:
-            detailed_timing += f', eval={self.eval_duration_ms:.2f}ms'
-        status = '✓' if self.success else '✗'
-        return f'[{status}] {self.model}: {self.latency_ms:.2f}ms{tokens_info}{detailed_timing}'
+from ...domain import ChatMetrics
 
 
 class MetricsCollector:
-    """
-    A thread-safe collector for aggregated metrics analysis.
+    """A thread-safe collector for aggregated metrics analysis.
+
     It has a storage limit to prevent memory leaks.
     """
 
     MAX_METRICS = 10000
 
-    def __init__(self, max_metrics: int = MAX_METRICS):
-        """
-        Initializes the metrics collector.
+    def __init__(self, max_metrics: int = MAX_METRICS) -> None:
+        """Initializes the metrics collector.
 
         Args:
             max_metrics: The maximum number of metrics to store (default: 10,000).
@@ -98,8 +23,8 @@ class MetricsCollector:
         self._max_metrics = max_metrics
 
     def add(self, metrics: ChatMetrics) -> None:
-        """
-        Adds metrics to the collection in a thread-safe manner.
+        """Adds metrics to the collection in a thread-safe manner.
+
         If the collection exceeds the maximum size, the oldest metrics are removed.
         """
         with self._lock:
@@ -113,8 +38,7 @@ class MetricsCollector:
             return self._metrics.copy()
 
     def get_summary(self) -> dict:
-        """
-        Returns a statistical summary of the metrics in a thread-safe manner.
+        """Returns a statistical summary of the metrics in a thread-safe manner.
 
         Returns:
             A dictionary containing aggregated statistics.
@@ -154,9 +78,8 @@ class MetricsCollector:
         with self._lock:
             self._metrics.clear()
 
-    def export_json(self, filepath: Optional[str] = None) -> str:
-        """
-        Exports the metrics in JSON format.
+    def export_json(self, filepath: str | None = None) -> str:
+        """Exports the metrics in JSON format.
 
         Args:
             filepath: An optional file path to save the JSON data.
@@ -179,8 +102,7 @@ class MetricsCollector:
         return json_str
 
     def export_prometheus(self) -> str:
-        """
-        Exports metrics in a Prometheus-compatible format.
+        """Exports metrics in a Prometheus-compatible format.
 
         This method generates metrics in the Prometheus text format, including:
         - `chat_requests_total`: Total number of requests.
@@ -259,8 +181,7 @@ class MetricsCollector:
         return '\n'.join(lines)
 
     def export_prometheus_to_file(self, filepath: str) -> None:
-        """
-        Exports metrics to a file in Prometheus format.
+        """Exports metrics to a file in Prometheus format.
 
         Args:
             filepath: The file path to save the metrics.

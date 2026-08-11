@@ -1,10 +1,11 @@
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from ....utils.text_sanitizer import TextSanitizer
 from .base_command import CommandHandler
 
 if TYPE_CHECKING:
-    from ....application.facade import CreateAgent
+    from ..protocols import AgentFacade
+
+_PREVIEW_MAX_CHARS = 50
 
 
 class ConfigsCommandHandler(CommandHandler):
@@ -14,43 +15,47 @@ class ConfigsCommandHandler(CommandHandler):
     This follows SRP by handling only config-related functionality.
     """
 
-    def can_handle(self, user_input: str) -> bool:
-        """Check if input is a configs command."""
-        normalized = self._normalize_input(user_input)
-        return normalized in self.get_aliases()
-
-    def execute(self, agent: 'CreateAgent', user_input: str) -> None:
+    def execute(self, agent: 'AgentFacade', user_input: str) -> None:
         """Execute the configs command.
 
         Args:
-            agent: The CreateAgent instance.
+            agent: The agent facade.
             user_input: The user's input string.
         """
-        configs = agent.get_configs()
         config_str = '## Agent Configuration\n\n'
-        for k, v in configs.items():
-            if k == 'history' and isinstance(v, list):
-                config_str += f'**{k}:** {len(v)} messages in history\n\n'
-                for msg in v:
-                    role = msg.get('role', 'unknown')
-                    content = str(msg.get('content', ''))
-                    # Create a preview of the content
-                    preview = (
-                        (content[:50] + '...')
-                        if len(content) > 50
-                        else content
-                    )
-                    preview = preview.replace('\n', ' ')
-                    # Use indented bullets for better visual hierarchy
-                    config_str += f'  - **{role}**: {preview}\n'
-                config_str += '\n'
+        for key, value in agent.get_configs().items():
+            if key == 'history' and isinstance(value, list):
+                config_str += self.__format_history(key, value)
             else:
-                config_str += f'**{k}:** {v}\n'
-        formatted_config = TextSanitizer.format_markdown_for_terminal(
-            config_str
-        )
-        self._renderer.render_system_message(formatted_config)
+                config_str += f'**{key}:** {value}\n'
+        self._render_markdown(config_str)
 
-    def get_aliases(self) -> List[str]:
+    @staticmethod
+    def __format_history(key: str, history: list[dict[str, Any]]) -> str:
+        """Render the history entry as a count plus one preview per message.
+
+        Args:
+            key: The configuration key being rendered.
+            history: The stored messages, each with a role and content.
+
+        Returns:
+            The Markdown block for this entry, ending in a blank line.
+        """
+        block = f'**{key}:** {len(history)} messages in history\n\n'
+        for message in history:
+            role = message.get('role', 'unknown')
+            content = str(message.get('content', ''))
+            preview = (
+                f'{content[:_PREVIEW_MAX_CHARS]}...'
+                if len(content) > _PREVIEW_MAX_CHARS
+                else content
+            )
+            single_line = preview.replace('\n', ' ')
+            # Indented bullets give the messages a visual hierarchy under
+            # the entry they belong to.
+            block += f'  - **{role}**: {single_line}\n'
+        return block + '\n'
+
+    def get_aliases(self) -> list[str]:
         """Get configs command aliases."""
         return ['/configs', 'get_configs']

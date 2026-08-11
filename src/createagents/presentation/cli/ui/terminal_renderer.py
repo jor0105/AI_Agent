@@ -1,5 +1,12 @@
 import sys
+from collections.abc import AsyncIterator
 from datetime import datetime
+
+from rich import box
+from rich.console import Console
+from rich.live import Live
+from rich.panel import Panel
+from rich.text import Text
 
 from .color_scheme import ColorScheme
 from .terminal_formatter import TerminalFormatter
@@ -12,7 +19,7 @@ class TerminalRenderer:
     This follows SRP by focusing solely on rendering operations.
     """
 
-    def __init__(self, show_timestamps: bool = False):
+    def __init__(self, show_timestamps: bool = False) -> None:
         """Initialize the terminal renderer.
 
         Args:
@@ -20,6 +27,7 @@ class TerminalRenderer:
         """
         self._formatter = TerminalFormatter()
         self._show_timestamps = show_timestamps
+        self._console = Console()
 
     def _get_timestamp(self) -> str:
         """Get formatted timestamp for messages.
@@ -29,7 +37,7 @@ class TerminalRenderer:
         """
         if not self._show_timestamps:
             return ''
-        now = datetime.now()
+        now = datetime.now().astimezone()
         return f'{ColorScheme.get_timestamp_color()}{now.strftime("%H:%M")}{ColorScheme.RESET} '
 
     def render_welcome_screen(self) -> None:
@@ -77,10 +85,11 @@ class TerminalRenderer:
             icon: Optional icon to display before message.
         """
         timestamp = self._get_timestamp()
-        box = self._formatter.format_rounded_box(
+        # Not named `box`: that is the `rich` module imported above.
+        rendered = self._formatter.format_rounded_box(
             message, color, align, icon, timestamp
         )
-        print(box)
+        print(rendered)
 
     def render_user_message(self, message: str) -> None:
         """Render a user message (right-aligned, blue).
@@ -102,62 +111,44 @@ class TerminalRenderer:
             message, ColorScheme.get_ai_color(), align='left', icon='🤖'
         )
 
-    async def render_ai_message_streaming(self, token_generator) -> None:
-        """Renders AI message tokens in real-time inside purple box.
+    async def render_ai_message_streaming(
+        self, token_generator: AsyncIterator[str]
+    ) -> None:
+        """Render AI tokens in real time inside a purple panel.
+
+        The panel only appears once the first token arrives, so the
+        "AI is thinking..." indicator stays visible until then.
 
         Args:
-            token_generator: AsyncGenerator that yields tokens as strings.
+            token_generator: Async iterator yielding response tokens.
         """
-        from rich.live import Live  # pylint: disable=import-outside-toplevel
-        from rich.text import Text  # pylint: disable=import-outside-toplevel
-        from rich.panel import Panel  # pylint: disable=import-outside-toplevel
-        from rich import box  # pylint: disable=import-outside-toplevel
-        from rich.console import Console  # pylint: disable=import-outside-toplevel
+        first_token = await anext(aiter(token_generator), None)
+        if first_token is None:
+            self.clear_thinking_indicator()
+            return
 
-        # Initialize console if not already done (assuming it's not part of __init__ yet)
-        if not hasattr(self, '_console'):
-            self._console = Console()
+        self.clear_thinking_indicator()
 
-        # Wait for the first token before creating the panel
-        # This keeps "AI thinking..." visible until AI actually starts responding
-        full_response = ''
-        first_token_received = False
+        full_response = first_token
+        with Live(
+            self.__build_panel(full_response),
+            console=self._console,
+            refresh_per_second=20,
+        ) as live:
+            async for token in token_generator:
+                full_response += token
+                live.update(self.__build_panel(full_response))
 
-        async for token in token_generator:
-            # On first token: clear thinking indicator and start the Live display
-            if not first_token_received:
-                self.clear_thinking_indicator()
-                first_token_received = True
-                full_response = token
-
-                # Create initial panel with first token
-                text = Text(full_response)
-                panel = Panel(
-                    text,
-                    style='bold purple',
-                    box=box.ROUNDED,
-                    padding=(0, 1),
-                    expand=False,
-                )
-
-                # Start Live display and continue with remaining tokens
-                with Live(
-                    panel, console=self._console, refresh_per_second=20
-                ) as live:
-                    # Continue consuming remaining tokens
-                    async for next_token in token_generator:
-                        full_response += next_token
-                        # Update the text and panel
-                        text = Text(full_response)
-                        panel = Panel(
-                            text,
-                            style='bold purple',
-                            box=box.ROUNDED,
-                            padding=(0, 1),
-                            expand=False,
-                        )
-                        live.update(panel)
-                break  # Exit outer loop after Live context completes
+    @staticmethod
+    def __build_panel(text: str) -> Panel:
+        """Wrap streamed text in the rounded panel used for AI replies."""
+        return Panel(
+            Text(text),
+            style='bold purple',
+            box=box.ROUNDED,
+            padding=(0, 1),
+            expand=False,
+        )
 
     def render_system_message(self, message: str) -> None:
         """Render a system message (left-aligned, cyan).
@@ -166,7 +157,10 @@ class TerminalRenderer:
             message: The system message.
         """
         self.render_message_box(
-            message, ColorScheme.get_system_color(), align='left', icon='ℹ️'
+            message,
+            ColorScheme.get_system_color(),
+            align='left',
+            icon='ℹ️',  # noqa: RUF001 - intentional UI glyph
         )
 
     def render_success_message(self, message: str) -> None:

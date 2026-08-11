@@ -1,21 +1,27 @@
-from typing import Any, Dict, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Any
 
 from ...application.dtos import CreateAgentInputDTO
 from ...application.use_cases import (
     ChatWithAgentUseCase,
     CreateAgentUseCase,
     GetAgentConfigUseCase,
-    GetAllAvailableToolsUseCase,
     GetSystemAvailableToolsUseCase,
 )
 from ...domain import Agent, BaseTool
-from ...infra import ChatAdapterFactory, LoggingConfig
+from ...infra import (
+    AvailableToolsRegistry,
+    ChatAdapterFactory,
+    LoggingConfig,
+    create_logger,
+)
 
 
 class AgentComposer:
-    """
-    A composer responsible for creating and composing the necessary
-    dependencies for agent-related use cases.
+    """Composition root for agent-related use cases.
+
+    The only place allowed to know about every layer at once: it builds the
+    use cases and injects their concrete dependencies.
     """
 
     __logger = LoggingConfig.get_logger(__name__)
@@ -24,14 +30,13 @@ class AgentComposer:
     def create_agent(
         provider: str,
         model: str,
-        name: Optional[str] = None,
-        instructions: Optional[str] = None,
-        config: Optional[Dict[str, Any]] = None,
-        tools: Optional[Sequence[Union[str, BaseTool]]] = None,
+        name: str | None = None,
+        instructions: str | None = None,
+        config: dict[str, Any] | None = None,
+        tools: Sequence[str | BaseTool] | None = None,
         history_max_size: int = 10,
     ) -> Agent:
-        """
-        Creates a new agent using the CreateAgentUseCase.
+        """Creates a new agent using the CreateAgentUseCase.
 
         Args:
             provider: The specific provider ("openai" or "ollama").
@@ -71,7 +76,10 @@ class AgentComposer:
             history_max_size=history_max_size,
         )
 
-        use_case = CreateAgentUseCase()
+        use_case = CreateAgentUseCase(
+            tool_registry=AvailableToolsRegistry(),
+            logger=create_logger(__name__),
+        )
         agent = use_case.execute(input_dto)
 
         AgentComposer.__logger.info(
@@ -80,66 +88,43 @@ class AgentComposer:
         return agent
 
     @staticmethod
-    def create_chat_use_case(
-        provider: str,
-        model: str,
-    ) -> ChatWithAgentUseCase:
-        """
-        Creates the ChatWithAgentUseCase with its dependencies injected.
+    def create_chat_use_case(provider: str) -> ChatWithAgentUseCase:
+        """Creates the ChatWithAgentUseCase with its dependencies injected.
 
         Args:
             provider: The specific provider ("openai" or "ollama").
-            model: The name of the AI model.
 
         Returns:
             A configured ChatWithAgentUseCase.
         """
         AgentComposer.__logger.debug(
-            'Composing chat use case - Provider: %s, Model: %s',
-            provider,
-            model,
+            'Composing chat use case - Provider: %s', provider
         )
 
-        chat_adapter = ChatAdapterFactory.create(provider, model)
-        use_case = ChatWithAgentUseCase(chat_repository=chat_adapter)
+        chat_adapter = ChatAdapterFactory.create(provider)
+        use_case = ChatWithAgentUseCase(
+            chat_repository=chat_adapter,
+            logger=create_logger(__name__),
+        )
 
         AgentComposer.__logger.debug('Chat use case composed successfully')
         return use_case
 
     @staticmethod
     def create_get_config_use_case() -> GetAgentConfigUseCase:
-        """
-        Creates the GetAgentConfigUseCase.
+        """Creates the GetAgentConfigUseCase.
 
         Returns:
             A configured GetAgentConfigUseCase.
         """
         AgentComposer.__logger.debug('Composing get config use case')
-        return GetAgentConfigUseCase()
-
-    @staticmethod
-    def create_get_all_available_tools_use_case() -> (
-        GetAllAvailableToolsUseCase
-    ):
-        """
-        Creates the GetAllAvailableToolsUseCase.
-
-        This use case returns both system tools and agent tools.
-
-        Returns:
-            A configured GetAllAvailableToolsUseCase.
-        """
-        AgentComposer.__logger.debug(
-            'Composing get all available tools use case'
-        )
-        return GetAllAvailableToolsUseCase()
+        return GetAgentConfigUseCase(logger=create_logger(__name__))
 
     @staticmethod
     def create_get_system_available_tools_use_case() -> (
         GetSystemAvailableToolsUseCase
     ):
-        """
-        Creates the GetSystemAvailableToolsUseCase.
+        """Creates the GetSystemAvailableToolsUseCase.
 
         This use case returns only system tools provided by the framework.
 
@@ -149,4 +134,7 @@ class AgentComposer:
         AgentComposer.__logger.debug(
             'Composing get system available tools use case'
         )
-        return GetSystemAvailableToolsUseCase()
+        return GetSystemAvailableToolsUseCase(
+            tool_registry=AvailableToolsRegistry(),
+            logger=create_logger(__name__),
+        )

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Finding",
+  "type": "object",
+  "required": [
+    "artifactType",
+    "schemaVersion",
+    "reviewId",
+    "findingId",
+    "status",
+    "severity",
+    "confidence",
+    "topic",
+    "summary",
+    "impact",
+    "recommendedAction",
+    "blocking",
+    "evidence"
+  ],
+  "properties": {
+    "artifactType": { "const": "finding" },
+    "schemaVersion": { "type": "string" },
+    "reviewId": { "type": "string" },
+    "findingId": { "type": "string" },
+    "status": { "type": "string", "enum": ["open", "accepted", "dismissed"] },
+    "severity": { "type": "string", "enum": ["blocker", "warning", "nit"] },
+    "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+    "topic": { "type": "string" },
+    "summary": { "type": "string" },
+    "impact": { "type": "string" },
+    "recommendedAction": { "type": "string" },
+    "blocking": { "type": "boolean" },
+    "packId": { "type": ["string", "null"] },
+    "checklistIds": { "type": "array", "items": { "type": "string" } },
+    "evidence": {
+      "type": "object",
+      "required": ["file", "snippet"],
+      "properties": {
+        "file": { "type": "string" },
+        "line": { "type": ["integer", "null"] },
+        "snippet": { "type": "string" }
+      }
+    }
+  }
+}

@@ -1,18 +1,20 @@
-from ...domain import Agent
-from ...infra import LoggingConfig
+from ...domain import Agent, LoggerInterface, NullLogger
 from ..dtos import AgentConfigOutputDTO
 
 
 class GetAgentConfigUseCase:
     """Use case for retrieving agent configurations."""
 
-    def __init__(self):
-        """Initialize the GetAgentConfigUseCase with logging."""
-        self.__logger = LoggingConfig.get_logger(__name__)
+    def __init__(self, logger: LoggerInterface | None = None) -> None:
+        """Initialize the use case.
+
+        Args:
+            logger: Optional logger injected by the composition root.
+        """
+        self.__logger = logger or NullLogger()
 
     def execute(self, agent: Agent) -> AgentConfigOutputDTO:
-        """
-        Returns the agent's configurations as a DTO.
+        """Returns the agent's configurations as a DTO.
 
         Args:
             agent: The agent instance.

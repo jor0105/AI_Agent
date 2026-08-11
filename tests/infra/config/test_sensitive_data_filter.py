@@ -301,7 +301,8 @@ class TestSensitiveDataFilter:
                 result = SensitiveDataFilter.filter(f'password=secret{i % 10}')
                 with lock:
                     results.append(result)
-            except Exception as e:
+            # Capture worker failures for the assertion after all futures finish.
+            except Exception as e:  # noqa: BLE001
                 with lock:
                     errors.append(str(e))
 

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Final, FrozenSet, List
+from typing import Final
 
 
 class FileType(Enum):
@@ -15,7 +15,7 @@ class FileType(Enum):
 
 
 # Supported file extensions for text-based reading
-TEXT_EXTENSIONS: Final[FrozenSet[str]] = frozenset(
+TEXT_EXTENSIONS: Final[frozenset[str]] = frozenset(
     {
         'txt',
         'log',
@@ -38,10 +38,10 @@ TEXT_EXTENSIONS: Final[FrozenSet[str]] = frozenset(
     }
 )
 
-EXCEL_EXTENSIONS: Final[FrozenSet[str]] = frozenset({'xls', 'xlsx', 'xlsm'})
+EXCEL_EXTENSIONS: Final[frozenset[str]] = frozenset({'xls', 'xlsx', 'xlsm'})
 
 # Document types that unstructured can handle
-DOCUMENT_EXTENSIONS: Final[FrozenSet[str]] = frozenset(
+DOCUMENT_EXTENSIONS: Final[frozenset[str]] = frozenset(
     {
         'doc',
         'docx',
@@ -61,7 +61,7 @@ MAX_FILE_SIZE_BYTES: Final[int] = 100 * 1024 * 1024
 TIKTOKEN_ENCODING: Final[str] = 'cl100k_base'
 
 # Common encodings to try when reading text files
-COMMON_ENCODINGS: Final[List[str]] = [
+COMMON_ENCODINGS: Final[list[str]] = [
     'utf-8',
     'latin-1',
     'iso-8859-1',

@@ -1,9 +1,34 @@
-import json
+import asyncio
+import atexit
+import time
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..interfaces import LoggerInterface
 from ..value_objects import BaseTool
+
+_TOOL_THREAD_POOL = ThreadPoolExecutor(
+    max_workers=8,
+    thread_name_prefix='tool-exec',
+)
+_SYNC_TOOL_POLL_INTERVAL = 0.001
+atexit.register(
+    _TOOL_THREAD_POOL.shutdown,
+    wait=False,
+    cancel_futures=True,
+)
+
+
+async def _wait_for_sync_result(future: Future[Any]) -> Any:
+    """Wait for a synchronous tool without binding it to an event loop."""
+    try:
+        while not future.done():
+            await asyncio.sleep(_SYNC_TOOL_POLL_INTERVAL)
+        return future.result()
+    except asyncio.CancelledError:
+        future.cancel()
+        raise
 
 
 @dataclass
@@ -20,11 +45,11 @@ class ToolExecutionResult:
 
     tool_name: str
     success: bool
-    result: Optional[Any] = None
-    error: Optional[str] = None
-    execution_time_ms: Optional[float] = None
+    result: Any | None = None
+    error: str | None = None
+    execution_time_ms: float | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the result to a dictionary.
 
         Returns:
@@ -46,8 +71,7 @@ class ToolExecutionResult:
         """
         if self.success:
             return f"Tool '{self.tool_name}' executed successfully:\n{self.result}"
-        else:
-            return f"Tool '{self.tool_name}' failed with error: {self.error}"
+        return f"Tool '{self.tool_name}' failed with error: {self.error}"
 
 
 class ToolExecutor:
@@ -70,7 +94,7 @@ class ToolExecutor:
         ```
     """
 
-    def __init__(self, tools: List[BaseTool], logger: LoggerInterface):
+    def __init__(self, tools: list[BaseTool], logger: LoggerInterface) -> None:
         """Initialize the executor with available tools and logger.
 
         Args:
@@ -78,7 +102,7 @@ class ToolExecutor:
                    If None, no tools will be available.
             logger: Logger instance for logging tool execution events.
         """
-        self._tools_map: Dict[str, BaseTool] = {}
+        self._tools_map: dict[str, BaseTool] = {}
         self.__logger = logger
 
         for tool in tools:
@@ -97,7 +121,7 @@ class ToolExecutor:
             ],
         )
 
-    def get_available_tool_names(self) -> List[str]:
+    def get_available_tool_names(self) -> list[str]:
         """Get list of available tool names.
 
         Returns:
@@ -139,8 +163,6 @@ class ToolExecutor:
             )
             ```
         """
-        import time  # pylint: disable=import-outside-toplevel
-
         start_time = time.time()
 
         self.__logger.info("Attempting to execute tool: '%s'", tool_name)
@@ -168,16 +190,14 @@ class ToolExecutor:
                 len(kwargs),
             )
 
-            import asyncio  # pylint: disable=import-outside-toplevel
-
             if asyncio.iscoroutinefunction(tool.execute):
                 result = await tool.execute(**kwargs)
             else:
-                # Run synchronous tools in a separate thread to avoid blocking
-                loop = asyncio.get_running_loop()
-                result = await loop.run_in_executor(
-                    None, lambda: tool.execute(**kwargs)
+                future = _TOOL_THREAD_POOL.submit(
+                    tool.execute,
+                    **kwargs,
                 )
+                result = await _wait_for_sync_result(future)
 
             execution_time = (time.time() - start_time) * 1000
 
@@ -198,221 +218,57 @@ class ToolExecutor:
             )
 
         except TypeError as e:
-            error_msg = f"Invalid arguments for tool '{tool_name}': {str(e)}"
-            execution_time = (time.time() - start_time) * 1000
-            self.__logger.error(
-                "TypeError executing tool '%s': %s (execution time: %.2fms)",
+            return self.__failure(
                 tool_name,
-                error_msg,
-                execution_time,
-                exc_info=True,
-            )
-            return ToolExecutionResult(
-                tool_name=tool_name,
-                success=False,
-                error=error_msg,
-                execution_time_ms=execution_time,
+                start_time,
+                f"Invalid arguments for tool '{tool_name}': {e!s}",
             )
 
         except (ValueError, RuntimeError) as e:
-            error_msg = f"Error executing tool '{tool_name}': {str(e)}"
-            execution_time = (time.time() - start_time) * 1000
-            self.__logger.error(
-                "Runtime/Value error executing tool '%s': %s (execution time: %.2fms)",
+            return self.__failure(
                 tool_name,
-                error_msg,
-                execution_time,
-                exc_info=True,
-            )
-            return ToolExecutionResult(
-                tool_name=tool_name,
-                success=False,
-                error=error_msg,
-                execution_time_ms=execution_time,
+                start_time,
+                f"Error executing tool '{tool_name}': {e!s}",
             )
 
-        except Exception as e:
-            error_msg = f"Error executing tool '{tool_name}': {str(e)}"
-            execution_time = (time.time() - start_time) * 1000
-            self.__logger.error(
-                "Exception executing tool '%s': %s (execution time: %.2fms)",
+        # A bug in third-party tool code must degrade to a failed result, not
+        # crash the agent mid-conversation. `__failure` logs the traceback.
+        except Exception as e:  # noqa: BLE001
+            return self.__failure(
                 tool_name,
-                error_msg,
-                execution_time,
-                exc_info=True,
-            )
-            return ToolExecutionResult(
-                tool_name=tool_name,
-                success=False,
-                error=error_msg,
-                execution_time_ms=execution_time,
+                start_time,
+                f"Internal error in tool '{tool_name}': "
+                f'{type(e).__name__}: {e!s}',
             )
 
-    async def execute_multiple_tools(
-        self, tool_calls: List[Dict[str, Any]], parallel: bool = False
-    ) -> List[ToolExecutionResult]:
-        """Execute multiple tools in sequence or parallel.
+    def __failure(
+        self, tool_name: str, start_time: float, error_msg: str
+    ) -> ToolExecutionResult:
+        """Log a failed execution and build its result.
+
+        Must be called from inside an `except` block: the active exception is
+        what gives the log record its traceback.
 
         Args:
-            tool_calls: List of tool call specifications.
-                       Each dict should have 'name' and 'arguments' keys.
-            parallel: If True, execute tools in parallel using asyncio.gather().
-                     If False (default), execute tools sequentially.
-                     Use parallel execution with caution as it may cause
-                     race conditions if tools have side effects.
+            tool_name: Name of the tool that failed.
+            start_time: When the execution attempt started.
+            error_msg: The caller-facing description of the failure.
 
         Returns:
-            List of ToolExecutionResult objects.
-
-        Example:
-            ```python
-            tool_calls = [
-                {"name": "web_search", "arguments": {"query": "Python"}},
-            ]
-            # Sequential execution (default)
-            results = await executor.execute_multiple_tools(tool_calls)
-
-            # Parallel execution
-            results = await executor.execute_multiple_tools(tool_calls, parallel=True)
-            ```
+            The failed `ToolExecutionResult`, timed from `start_time`.
         """
-        execution_mode = 'parallel' if parallel else 'sequence'
-        self.__logger.info(
-            'Executing %s tool(s) in %s', len(tool_calls), execution_mode
+        execution_time = (time.time() - start_time) * 1000
+        # Called from the caller's `except` block, so the active exception is
+        # still set and the traceback is captured.
+        self.__logger.exception(  # noqa: LOG004
+            "Error executing tool '%s': %s (execution time: %.2fms)",
+            tool_name,
+            error_msg,
+            execution_time,
         )
-        self.__logger.debug(
-            'Tool calls: %s',
-            [call.get('name', 'unknown') for call in tool_calls],
+        return ToolExecutionResult(
+            tool_name=tool_name,
+            success=False,
+            error=error_msg,
+            execution_time_ms=execution_time,
         )
-
-        if parallel:
-            return await self._execute_parallel(tool_calls)
-        else:
-            return await self._execute_sequential(tool_calls)
-
-    async def _execute_sequential(
-        self, tool_calls: List[Dict[str, Any]]
-    ) -> List[ToolExecutionResult]:
-        """Execute tools sequentially.
-
-        Args:
-            tool_calls: List of tool call specifications.
-
-        Returns:
-            List of ToolExecutionResult objects.
-        """
-        results = []
-
-        for idx, call in enumerate(tool_calls, 1):
-            tool_name = call.get('name', '')
-            arguments = call.get('arguments', {})
-
-            self.__logger.debug(
-                "Processing tool call %s/%s: '%s'",
-                idx,
-                len(tool_calls),
-                tool_name,
-            )
-
-            if isinstance(arguments, str):
-                try:
-                    arguments = json.loads(arguments)
-                    self.__logger.debug(
-                        "Parsed JSON arguments for '%s'", tool_name
-                    )
-                except json.JSONDecodeError as e:
-                    error_msg = f'Invalid JSON arguments: {arguments}'
-                    self.__logger.error(
-                        "Failed to parse arguments for '%s': %s", tool_name, e
-                    )
-                    results.append(
-                        ToolExecutionResult(
-                            tool_name=tool_name,
-                            success=False,
-                            error=error_msg,
-                        )
-                    )
-                    continue
-
-            result = await self.execute_tool(tool_name, **arguments)
-            results.append(result)
-
-        successful = sum(1 for r in results if r.success)
-        self.__logger.info(
-            'Completed sequential execution of %s tool(s): %s successful, %s failed',
-            len(tool_calls),
-            successful,
-            len(tool_calls) - successful,
-        )
-
-        return results
-
-    async def _execute_parallel(
-        self, tool_calls: List[Dict[str, Any]]
-    ) -> List[ToolExecutionResult]:
-        """Execute tools in parallel using asyncio.gather().
-
-        WARNING: Parallel execution may cause race conditions if tools
-        have side effects or depend on each other's results.
-
-        Args:
-            tool_calls: List of tool call specifications.
-
-        Returns:
-            List of ToolExecutionResult objects.
-        """
-        import asyncio  # pylint: disable=import-outside-toplevel
-
-        tasks = []
-
-        for idx, call in enumerate(tool_calls, 1):
-            tool_name = call.get('name', '')
-            arguments = call.get('arguments', {})
-
-            self.__logger.debug(
-                "Preparing parallel tool call %s/%s: '%s'",
-                idx,
-                len(tool_calls),
-                tool_name,
-            )
-
-            # Parse JSON arguments if needed
-            if isinstance(arguments, str):
-                try:
-                    arguments = json.loads(arguments)
-                    self.__logger.debug(
-                        "Parsed JSON arguments for '%s'", tool_name
-                    )
-                except json.JSONDecodeError as e:
-                    error_msg = f'Invalid JSON arguments: {arguments}'
-                    self.__logger.error(
-                        "Failed to parse arguments for '%s': %s", tool_name, e
-                    )
-
-                    # Create a coroutine that returns the error result
-                    async def error_result():
-                        return ToolExecutionResult(
-                            tool_name=tool_name,
-                            success=False,
-                            error=error_msg,
-                        )
-
-                    tasks.append(error_result())
-                    continue
-
-            # Create task for this tool execution
-            task = self.execute_tool(tool_name, **arguments)
-            tasks.append(task)
-
-        # Execute all tasks in parallel
-        results = await asyncio.gather(*tasks, return_exceptions=False)
-
-        successful = sum(1 for r in results if r.success)
-        self.__logger.info(
-            'Completed parallel execution of %s tool(s): %s successful, %s failed',
-            len(tool_calls),
-            successful,
-            len(tool_calls) - successful,
-        )
-
-        return list(results)

@@ -17,9 +17,13 @@ import os
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import List, Optional
+from typing import ClassVar
 
 from .sensitive_data_filter import SensitiveDataFilter
+
+#: Root logger of the distributed package. Derived from `__name__` so a
+#: package rename cannot silently detach the null handler installed below.
+PACKAGE_LOGGER_NAME: str = __name__.split('.')[0]
 
 
 class ErrorOnlyFilter(logging.Filter):
@@ -85,16 +89,16 @@ class LoggingConfig:
 
     _configured: bool = False
     _log_level: int = DEFAULT_LOG_LEVEL
-    _handlers: List[logging.Handler] = []
+    _handlers: ClassVar[list[logging.Handler]] = []
 
     @classmethod
     def configure(
         cls,
-        level: Optional[int] = None,
-        format_string: Optional[str] = None,
+        level: int | None = None,
+        format_string: str | None = None,
         include_timestamp: bool = True,
         log_to_file: bool = False,
-        log_file_path: Optional[str] = None,
+        log_file_path: str | None = None,
         max_bytes: int = DEFAULT_MAX_BYTES,
         backup_count: int = DEFAULT_BACKUP_COUNT,
         json_format: bool = False,
@@ -111,10 +115,8 @@ class LoggingConfig:
             backup_count: The number of backup files to keep (default: 5).
             json_format: Whether to use a structured JSON format.
         """
-        # Remove a verificação anterior - sempre reconfigurar se chamado
-        # if cls._configured:
-        #     return
-
+        # Always reconfigure when called; there is no early return on
+        # `cls._configured` by design.
         level = level or cls._get_log_level_from_env()
         log_to_file = (
             log_to_file or os.getenv('LOG_TO_FILE', 'false').lower() == 'true'
@@ -138,19 +140,18 @@ class LoggingConfig:
         root_logger = logging.getLogger()
         root_logger.setLevel(level)
 
-        # Remove todos os handlers existentes
+        # Drop every handler already attached to the root logger.
         for handler in root_logger.handlers[:]:
             root_logger.removeHandler(handler)
         cls._handlers.clear()
 
-        # Força todos os loggers existentes a respeitarem o novo nível e adiciona filtro
+        # Force every existing logger onto the new level, stripping the
+        # handlers it may have accumulated so records reach the root only.
         for logger_name in list(logging.Logger.manager.loggerDict):
             logger = logging.getLogger(logger_name)
             logger.setLevel(level)
-            # Remove handlers antigos
             for handler in logger.handlers[:]:
                 logger.removeHandler(handler)
-            # Se nível é ERROR, adiciona filtro
             if level >= logging.ERROR:
                 logger.addFilter(ErrorOnlyFilter())
 
@@ -163,7 +164,8 @@ class LoggingConfig:
         console_handler.setLevel(level)
         console_handler.setFormatter(formatter)
 
-        # Se o nível é ERROR ou CRITICAL, adiciona um filtro para bloquear INFO/WARNING
+        # At ERROR or CRITICAL, filter out the INFO/WARNING records that the
+        # handler level alone would still let through from child loggers.
         if level >= logging.ERROR:
             console_handler.addFilter(ErrorOnlyFilter())
 
@@ -183,7 +185,6 @@ class LoggingConfig:
             file_handler.setLevel(level)
             file_handler.setFormatter(formatter)
 
-            # Se o nível é ERROR ou CRITICAL, adiciona um filtro para bloquear INFO/WARNING
             if level >= logging.ERROR:
                 file_handler.addFilter(ErrorOnlyFilter())
 
@@ -202,7 +203,7 @@ class LoggingConfig:
         cls.configure(level=level)
 
     @classmethod
-    def _resolve_log_file_path(cls, log_file_path: Optional[str]) -> str:
+    def _resolve_log_file_path(cls, log_file_path: str | None) -> str:
         """Resolves and validates the log file path.
 
         This method centralizes the logic for path validation to improve readability.
@@ -290,3 +291,26 @@ class LoggingConfig:
             A list of active handlers.
         """
         return cls._handlers.copy()
+
+    @classmethod
+    def silence_package_logger(cls) -> None:
+        """Keep the library quiet until the host application opts in.
+
+        Without a handler, Python's `lastResort` handler writes WARNING and
+        above straight to stderr, so a library that never calls `configure`
+        would still print. A `NullHandler` on the package root suppresses
+        that without capturing anything, which is the standard practice for
+        libraries. Idempotent: repeated calls add no further handlers.
+        """
+        package_logger = logging.getLogger(PACKAGE_LOGGER_NAME)
+        already_silenced = any(
+            isinstance(handler, logging.NullHandler)
+            for handler in package_logger.handlers
+        )
+        if not already_silenced:
+            package_logger.addHandler(logging.NullHandler())
+
+
+# Applied at import time: the package must be silent by default, before any
+# consumer code has a chance to emit its first record.
+LoggingConfig.silence_package_logger()

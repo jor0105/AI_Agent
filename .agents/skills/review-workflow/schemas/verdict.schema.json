@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Verdict",
+  "type": "object",
+  "required": [
+    "artifactType",
+    "schemaVersion",
+    "reviewId",
+    "status",
+    "verdict",
+    "summary",
+    "blockingReasons",
+    "advisories",
+    "metrics"
+  ],
+  "properties": {
+    "artifactType": { "const": "verdict" },
+    "schemaVersion": { "type": "string" },
+    "reviewId": { "type": "string" },
+    "status": { "type": "string", "enum": ["draft", "final"] },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "APPROVED",
+        "CHANGES_REQUIRED",
+        "SECURITY_REVIEW_REQUIRED",
+        "INCOMPLETE"
+      ]
+    },
+    "summary": { "type": "string" },
+    "blockingReasons": { "type": "array", "items": { "type": "string" } },
+    "advisories": { "type": "array", "items": { "type": "string" } },
+    "securityOutcome": { "type": "string" },
+    "metrics": {
+      "type": "object",
+      "required": [
+        "blockingFindings",
+        "warningFindings",
+        "nitFindings",
+        "failedBlockingGates",
+        "failedAdvisoryGates"
+      ],
+      "properties": {
+        "blockingFindings": { "type": "integer", "minimum": 0 },
+        "warningFindings": { "type": "integer", "minimum": 0 },
+        "nitFindings": { "type": "integer", "minimum": 0 },
+        "failedBlockingGates": { "type": "integer", "minimum": 0 },
+        "failedAdvisoryGates": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

@@ -112,13 +112,20 @@ nav:
   - Guia do Usuário:
       - Instalação: user-guide/installation-user.md
       - Uso Básico: user-guide/basic-usage-user.md
+      - Uso da CLI: user-guide/cli-usage.md
+      - Guia de Streaming: user-guide/streaming-guide.md
       - Exemplos: user-guide/examples-user.md
       - FAQ: user-guide/faq-user.md
   - Guia do Desenvolvedor:
       - Arquitetura: dev-guide/architecture-developer.md
+      - Arquitetura CLI: dev-guide/cli-architecture.md
+      - Guia Async: dev-guide/async-guide.md
+      - Logging: dev-guide/logging_guide.md
       - Exemplos Técnicos: dev-guide/technical-examples.md
       - Como Contribuir: dev-guide/contribute.md
   - Referência:
       - API Reference: reference/api.md
+      - API de Streaming: reference/streaming-api.md
+      - API de Métricas: reference/metrics-api.md
       - Ferramentas: reference/tools.md
-      - Comandos: reference/commands.md
+      - Comandos CLI: reference/commands.md

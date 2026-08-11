@@ -1,4 +1,5 @@
-import json
+import ast
+import operator
 import time
 from typing import Any
 
@@ -6,6 +7,30 @@ import pytest
 
 from createagents.domain import BaseTool, ToolExecutionResult, ToolExecutor
 from createagents.domain.interfaces import LoggerInterface
+
+
+def _evaluate_number(node: ast.AST) -> int | float:
+    """Evaluate the small arithmetic subset used by the calculator fixture."""
+    if isinstance(node, ast.Constant) and type(node.value) in {int, float}:
+        return node.value
+
+    binary_operations = {
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.Div: operator.truediv,
+    }
+    if isinstance(node, ast.BinOp) and type(node.op) in binary_operations:
+        operation = binary_operations[type(node.op)]
+        return operation(
+            _evaluate_number(node.left), _evaluate_number(node.right)
+        )
+
+    unary_operations = {ast.UAdd: operator.pos, ast.USub: operator.neg}
+    if isinstance(node, ast.UnaryOp) and type(node.op) in unary_operations:
+        return unary_operations[type(node.op)](_evaluate_number(node.operand))
+
+    raise ValueError('Only numeric arithmetic is supported')
 
 
 class MockLogger(LoggerInterface):
@@ -49,10 +74,11 @@ class MockCalculatorTool(BaseTool):
 
     def execute(self, expression: str) -> str:
         try:
-            result = eval(expression)
+            tree = ast.parse(expression, mode='eval')
+            result = _evaluate_number(tree.body)
             return f'Result: {result}'
-        except Exception as e:
-            raise ValueError(f'Invalid expression: {e}')
+        except (SyntaxError, TypeError, ValueError, ZeroDivisionError) as e:
+            raise ValueError(f'Invalid expression: {e}') from e
 
 
 class MockGreeterTool(BaseTool):
@@ -148,54 +174,18 @@ class TestToolExecutor:
         assert result.error is not None
 
     @pytest.mark.asyncio
-    async def test_execute_multiple_tools(self, mock_logger):
-        tools = [MockCalculatorTool(), MockGreeterTool()]
-        executor = ToolExecutor(tools, mock_logger)
-
-        tool_calls = [
-            {'name': 'calculator', 'arguments': {'expression': '10 * 5'}},
-            {'name': 'greeter', 'arguments': {'name': 'Bob'}},
-        ]
-
-        results = await executor.execute_multiple_tools(tool_calls)
-
-        assert len(results) == 2
-        assert results[0].success is True
-        assert '50' in results[0].result
-        assert results[1].success is True
-        assert 'Bob' in results[1].result
-
-    @pytest.mark.asyncio
-    async def test_execute_multiple_tools_with_json_string_arguments(
+    async def test_execute_tool_rejects_non_arithmetic_expression(
         self, mock_logger
     ):
-        tools = [MockGreeterTool()]
+        tools = [MockCalculatorTool()]
         executor = ToolExecutor(tools, mock_logger)
 
-        tool_calls = [
-            {'name': 'greeter', 'arguments': json.dumps({'name': 'Charlie'})},
-        ]
+        result = await executor.execute_tool(
+            'calculator', expression="__import__('os').getcwd()"
+        )
 
-        results = await executor.execute_multiple_tools(tool_calls)
-
-        assert len(results) == 1
-        assert results[0].success is True
-        assert 'Charlie' in results[0].result
-
-    @pytest.mark.asyncio
-    async def test_execute_multiple_tools_with_invalid_json(self, mock_logger):
-        tools = [MockGreeterTool()]
-        executor = ToolExecutor(tools, mock_logger)
-
-        tool_calls = [
-            {'name': 'greeter', 'arguments': 'invalid json {{{'},
-        ]
-
-        results = await executor.execute_multiple_tools(tool_calls)
-
-        assert len(results) == 1
-        assert results[0].success is False
-        assert 'invalid json' in results[0].error.lower()
+        assert result.success is False
+        assert result.error is not None
 
     def test_tool_execution_result_to_dict(self):
         result = ToolExecutionResult(
@@ -330,81 +320,6 @@ class TestToolExecutorEdgeCases:
         assert result.success is True
         assert isinstance(result.result, dict)
 
-    @pytest.mark.asyncio
-    async def test_execute_multiple_tools_with_empty_list(self, mock_logger):
-        executor = ToolExecutor([], mock_logger)
-
-        results = await executor.execute_multiple_tools([])
-
-        assert results == []
-        assert isinstance(results, list)
-
-    @pytest.mark.asyncio
-    async def test_execute_multiple_tools_handles_partial_failures(
-        self, mock_logger
-    ):
-        class SuccessTool(BaseTool):
-            name = 'success'
-            description = 'Always succeeds'
-
-            def execute(self) -> str:
-                return 'success'
-
-        class FailTool(BaseTool):
-            name = 'fail'
-            description = 'Always fails'
-
-            def execute(self) -> str:
-                raise ValueError('Expected failure')
-
-        tools = [SuccessTool(), FailTool()]
-        executor = ToolExecutor(tools, mock_logger)
-
-        tool_calls = [
-            {'name': 'success', 'arguments': {}},
-            {'name': 'fail', 'arguments': {}},
-            {'name': 'success', 'arguments': {}},
-        ]
-
-        results = await executor.execute_multiple_tools(tool_calls)
-
-        assert len(results) == 3
-        assert results[0].success is True
-        assert results[1].success is False
-        assert results[2].success is True
-
-    @pytest.mark.asyncio
-    async def test_execute_multiple_tools_continues_after_failure(
-        self, mock_logger
-    ):
-        class CounterTool(BaseTool):
-            name = 'counter'
-            description = 'Counts calls'
-            call_count = 0
-
-            def execute(self) -> str:
-                CounterTool.call_count += 1
-                return f'Call {CounterTool.call_count}'
-
-        tools = [CounterTool()]
-        executor = ToolExecutor(tools, mock_logger)
-
-        CounterTool.call_count = 0
-
-        tool_calls = [
-            {'name': 'counter', 'arguments': {}},
-            {'name': 'nonexistent', 'arguments': {}},
-            {'name': 'counter', 'arguments': {}},
-        ]
-
-        results = await executor.execute_multiple_tools(tool_calls)
-
-        assert len(results) == 3
-        assert results[0].success is True
-        assert results[1].success is False
-        assert results[2].success is True
-        assert CounterTool.call_count == 2
-
     def test_get_available_tool_names_after_initialization(self, mock_logger):
         class Tool1(BaseTool):
             name = 'tool_one'
@@ -485,122 +400,3 @@ class TestToolExecutorEdgeCases:
         assert result_dict['result'] is None
         assert result_dict['error'] is None
         assert result_dict['execution_time_ms'] is None
-
-
-@pytest.mark.unit
-class TestParallelExecution:
-    """Tests for parallel tool execution functionality."""
-
-    @pytest.mark.asyncio
-    async def test_execute_multiple_tools_parallel(self, mock_logger):
-        """Test that parallel execution works correctly."""
-
-        class SlowTool(BaseTool):
-            name = 'slow'
-            description = 'A slow tool'
-
-            def execute(self, id: str) -> str:
-                time.sleep(0.05)  # 50ms delay
-                return f'Result from {id}'
-
-        tools = [SlowTool()]
-        executor = ToolExecutor(tools, mock_logger)
-
-        tool_calls = [
-            {'name': 'slow', 'arguments': {'id': '1'}},
-            {'name': 'slow', 'arguments': {'id': '2'}},
-            {'name': 'slow', 'arguments': {'id': '3'}},
-        ]
-
-        # Execute in parallel
-        start_time = time.time()
-        results = await executor.execute_multiple_tools(
-            tool_calls, parallel=True
-        )
-        parallel_time = time.time() - start_time
-
-        assert len(results) == 3
-        assert all(r.success for r in results)
-        # Parallel execution should be faster than sequential
-        # 3 * 50ms = 150ms sequential, should be ~50ms parallel
-        # Allow up to 120ms for parallel (accounting for overhead)
-        assert parallel_time < 0.12, (
-            f'Parallel took {parallel_time}s, expected < 0.12s'
-        )
-
-    @pytest.mark.asyncio
-    async def test_execute_multiple_tools_sequential_is_default(
-        self, mock_logger
-    ):
-        """Test that sequential execution is the default behavior."""
-        tools = [MockGreeterTool()]
-        executor = ToolExecutor(tools, mock_logger)
-
-        tool_calls = [
-            {'name': 'greeter', 'arguments': {'name': 'Alice'}},
-            {'name': 'greeter', 'arguments': {'name': 'Bob'}},
-        ]
-
-        # Default should be sequential
-        results = await executor.execute_multiple_tools(tool_calls)
-
-        assert len(results) == 2
-        assert all(r.success for r in results)
-
-    @pytest.mark.asyncio
-    async def test_parallel_execution_handles_failures(self, mock_logger):
-        """Test that parallel execution handles tool failures correctly."""
-
-        class SuccessTool(BaseTool):
-            name = 'success'
-            description = 'Always succeeds'
-
-            def execute(self) -> str:
-                return 'success'
-
-        class FailTool(BaseTool):
-            name = 'fail'
-            description = 'Always fails'
-
-            def execute(self) -> str:
-                raise ValueError('Expected failure')
-
-        tools = [SuccessTool(), FailTool()]
-        executor = ToolExecutor(tools, mock_logger)
-
-        tool_calls = [
-            {'name': 'success', 'arguments': {}},
-            {'name': 'fail', 'arguments': {}},
-            {'name': 'success', 'arguments': {}},
-        ]
-
-        results = await executor.execute_multiple_tools(
-            tool_calls, parallel=True
-        )
-
-        assert len(results) == 3
-        assert results[0].success is True
-        assert results[1].success is False
-        assert results[2].success is True
-
-    @pytest.mark.asyncio
-    async def test_parallel_execution_with_invalid_json(self, mock_logger):
-        """Test parallel execution handles invalid JSON arguments."""
-        tools = [MockGreeterTool()]
-        executor = ToolExecutor(tools, mock_logger)
-
-        tool_calls = [
-            {'name': 'greeter', 'arguments': {'name': 'Alice'}},
-            {'name': 'greeter', 'arguments': 'invalid json {{{'},
-            {'name': 'greeter', 'arguments': {'name': 'Bob'}},
-        ]
-
-        results = await executor.execute_multiple_tools(
-            tool_calls, parallel=True
-        )
-
-        assert len(results) == 3
-        assert results[0].success is True
-        assert results[1].success is False
-        assert 'invalid json' in results[1].error.lower()
-        assert results[2].success is True

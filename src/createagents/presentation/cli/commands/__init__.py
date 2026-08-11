@@ -7,9 +7,9 @@ from .metrics_command import MetricsCommandHandler
 from .tools_command import ToolsCommandHandler
 
 __all__ = [
-    'CommandHandler',
     'ChatCommandHandler',
     'ClearCommandHandler',
+    'CommandHandler',
     'ConfigsCommandHandler',
     'HelpCommandHandler',
     'MetricsCommandHandler',

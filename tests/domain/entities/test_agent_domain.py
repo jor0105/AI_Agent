@@ -151,7 +151,7 @@ class TestAgent:
         ]
         providers = ['openai', 'openai', 'ollama', 'ollama']
 
-        for model, provider in zip(models, providers):
+        for model, provider in zip(models, providers, strict=True):
             agent = Agent(
                 provider=provider,
                 model=model,
@@ -570,6 +570,75 @@ class TestAgent:
         assert agent.config['temperature'] == 1.5
         assert agent.config['max_tokens'] == 2048
         assert agent.config['top_p'] == 0.95
+
+    def test_agent_config_scenarios_think_accepts_boolean_and_string(self):
+        agent_bool = Agent(
+            provider='openai',
+            model='gpt-5-nano',
+            name='Test',
+            instructions='Test',
+            config={'think': True},
+        )
+        assert agent_bool.config['think'] is True
+
+        agent_str = Agent(
+            provider='openai',
+            model='gpt-5-nano',
+            name='Test',
+            instructions='Test',
+            config={'think': 'medium'},
+        )
+        assert agent_str.config['think'] == 'medium'
+
+    def test_agent_config_scenarios_think_invalid_type(self):
+        with pytest.raises(InvalidAgentConfigException, match='think'):
+            Agent(
+                provider='openai',
+                model='gpt-5-nano',
+                name='Test',
+                instructions='Test',
+                config={'think': 123},
+            )
+
+    def test_agent_config_scenarios_top_k_accepts_positive_integer(self):
+        agent = Agent(
+            provider='openai',
+            model='gpt-5-nano',
+            name='Test',
+            instructions='Test',
+            config={'top_k': 25},
+        )
+        assert agent.config['top_k'] == 25
+
+    def test_agent_config_scenarios_top_k_invalid_value(self):
+        with pytest.raises(InvalidAgentConfigException, match='top_k'):
+            Agent(
+                provider='openai',
+                model='gpt-5-nano',
+                name='Test',
+                instructions='Test',
+                config={'top_k': 0},
+            )
+
+    def test_agent_config_scenarios_stream_accepts_boolean(self):
+        agent = Agent(
+            provider='openai',
+            model='gpt-5-nano',
+            name='Test',
+            instructions='Test',
+            config={'stream': True},
+        )
+        assert agent.config['stream'] is True
+
+    def test_agent_config_scenarios_stream_rejects_non_boolean(self):
+        with pytest.raises(InvalidAgentConfigException, match='stream'):
+            Agent(
+                provider='openai',
+                model='gpt-5-nano',
+                name='Test',
+                instructions='Test',
+                config={'stream': 'yes'},
+            )
 
     def test_agent_history_initial_state(self):
         agent = Agent(

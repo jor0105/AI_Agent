@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Review Session",
+  "type": "object",
+  "required": [
+    "artifactType",
+    "schemaVersion",
+    "reviewId",
+    "status",
+    "createdAt",
+    "updatedAt",
+    "change",
+    "changedFiles",
+    "statistics"
+  ],
+  "properties": {
+    "artifactType": { "const": "review-session" },
+    "schemaVersion": { "type": "string" },
+    "reviewId": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": [
+        "initialized",
+        "planned",
+        "reviewing",
+        "awaiting_security",
+        "apply-ready",
+        "completed",
+        "blocked"
+      ]
+    },
+    "createdAt": { "type": "string" },
+    "updatedAt": { "type": "string" },
+    "change": {
+      "type": "object",
+      "required": ["changeType", "changedBy", "securityTouch"],
+      "properties": {
+        "changeType": { "type": "string" },
+        "changedBy": { "type": "string" },
+        "securityTouch": { "type": "string", "enum": ["yes", "no", "auto"] },
+        "baseRef": { "type": ["string", "null"] },
+        "headRef": { "type": ["string", "null"] }
+      }
+    },
+    "changedFiles": { "type": "array", "items": { "type": "string" } },
+    "statistics": {
+      "type": "object",
+      "required": [
+        "totalItems",
+        "completedItems",
+        "findingCount",
+        "blockingFindingCount"
+      ],
+      "properties": {
+        "totalItems": { "type": "integer", "minimum": 0 },
+        "completedItems": { "type": "integer", "minimum": 0 },
+        "findingCount": { "type": "integer", "minimum": 0 },
+        "blockingFindingCount": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

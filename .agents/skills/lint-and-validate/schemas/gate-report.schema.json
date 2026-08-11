@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Gate Report",
+  "type": "object",
+  "required": [
+    "artifactType",
+    "schemaVersion",
+    "reviewId",
+    "status",
+    "createdAt",
+    "updatedAt",
+    "gates"
+  ],
+  "properties": {
+    "artifactType": {
+      "const": "gate-report"
+    },
+    "schemaVersion": {
+      "type": "string"
+    },
+    "reviewId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "running", "completed"]
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "gateId",
+          "label",
+          "command",
+          "blocking",
+          "status",
+          "startedAt",
+          "finishedAt",
+          "durationSeconds",
+          "exitCode",
+          "outcome"
+        ],
+        "properties": {
+          "gateId": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          },
+          "blocking": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "passed", "failed", "skipped", "external_failure"]
+          },
+          "classification": {
+            "type": "string",
+            "enum": ["code", "environment", "not_configured", "not_applicable"]
+          },
+          "startedAt": {
+            "type": "string"
+          },
+          "finishedAt": {
+            "type": "string"
+          },
+          "durationSeconds": {
+            "type": "number"
+          },
+          "durationMs": {
+            "type": "integer"
+          },
+          "exitCode": {
+            "type": "integer"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "logPath": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

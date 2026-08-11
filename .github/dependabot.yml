@@ -1,0 +1,56 @@
+---
+# Counterpart to the SHA-pinned actions in .github/workflows/: pinning stops
+# a hijacked tag from reaching CI, but it also freezes the action forever.
+# Dependabot is what keeps a pinned SHA from becoming a stale, unpatched one.
+#
+# PRs target `develop`, as required by docs/dev-guide/contribute.md, and use a
+# `chore` prefix so the titles satisfy .github/hooks/validate-commit-msg.sh.
+version: 2
+
+updates:
+  # GitHub Actions: bumps the pinned SHA and the version comment together.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    target-branch: develop
+    open-pull-requests-limit: 5
+    # Wait before adopting a fresh release: a compromised version is usually
+    # yanked within days, and this window keeps it out of CI.
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+      semver-minor-days: 14
+      semver-patch-days: 7
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      # One PR for the routine bumps; majors stay separate to force review.
+      actions-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # Python dependencies, resolved through uv.lock rather than pyproject alone.
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    target-branch: develop
+    open-pull-requests-limit: 5
+    # Wait before adopting a fresh release: a compromised version is usually
+    # yanked within days, and this window keeps it out of CI.
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+      semver-minor-days: 14
+      semver-patch-days: 7
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      python-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]

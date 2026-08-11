@@ -1,9 +1,20 @@
+import json
 import os
 
 import pytest
 
-from createagents.application import CreateAgent
-from createagents.domain import InvalidAgentConfigException
+from createagents.application.interfaces import ChatRepository
+from createagents.domain import (
+    BaseTool,
+    ChatMetrics,
+    InvalidAgentConfigException,
+    InvalidProviderException,
+)
+from createagents.infra import (
+    AvailableTools,
+    ChatAdapterFactory,
+)
+from createagents.main import CreateAgent
 
 IA_OLLAMA_TEST_1: str = 'granite4:latest'
 IA_OLLAMA_TEST_2: str = 'gpt-oss:120b-cloud'
@@ -22,15 +33,17 @@ def _get_openai_api_key():
 
     try:
         api_key = EnvironmentConfig.get_api_key(ClientOpenAI.API_OPENAI_NAME)
-        return api_key
-    except EnvironmentError:
+    except OSError:
         pytest.skip(
             f'Skipping integration test: {ClientOpenAI.API_OPENAI_NAME} not found in .env file'
         )
+    else:
+        return api_key
 
 
 def _check_ollama_available():
-    import subprocess
+    # Integration-only probe for an optional local Ollama installation.
+    import subprocess  # nosec B404
 
     if os.getenv('CI'):
         pytest.skip(
@@ -38,7 +51,7 @@ def _check_ollama_available():
         )
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603, B607
             ['ollama', 'list'], capture_output=True, timeout=5
         )
         if result.returncode != 0:
@@ -48,18 +61,76 @@ def _check_ollama_available():
 
 
 def _check_ollama_model_available(model: str):
-    import subprocess
+    # Integration-only probe for an optional local Ollama installation.
+    import subprocess  # nosec B404
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603, B607
             ['ollama', 'list'], capture_output=True, text=True, timeout=5
         )
         if model not in result.stdout:
             pytest.skip(
                 f'Model {model} is not available in Ollama. Run: ollama pull {model}'
             )
-    except Exception as e:
-        pytest.skip(f'Could not verify available models: {e}')
+    except (OSError, subprocess.SubprocessError) as error:
+        pytest.skip(
+            f'Could not verify available models: {type(error).__name__}'
+        )
+
+
+class _SimpleTool(BaseTool):
+    def __init__(self, name: str, description: str):
+        self.name = name
+        self.description = description
+
+    def execute(self, *args, **kwargs):
+        return 'simple-result'
+
+
+class _StubChatRepository(ChatRepository):
+    def __init__(self):
+        self._metrics: list[ChatMetrics] = []
+        self._call_count = 0
+
+    async def chat(
+        self,
+        model: str,
+        instructions,
+        config,
+        tools,
+        history,
+        user_ask: str,
+    ):
+        self._call_count += 1
+        self._metrics.append(
+            ChatMetrics(
+                model=model,
+                latency_ms=12.5,
+                tokens_used=5,
+                success=True,
+            )
+        )
+        return f'Stub response #{self._call_count} to: {user_ask}'
+
+    def get_metrics(self):
+        return self._metrics
+
+
+@pytest.fixture
+def stub_chat_repository(monkeypatch):
+    ChatAdapterFactory.clear_cache()
+    stub_repo = _StubChatRepository()
+
+    def _fake_create(cls, provider, model):
+        return stub_repo
+
+    monkeypatch.setattr(
+        ChatAdapterFactory,
+        'create',
+        classmethod(_fake_create),
+    )
+
+    return stub_repo
 
 
 @pytest.mark.integration
@@ -141,7 +212,7 @@ class TestCreateAgentInitializationErrors:
         assert configs['instructions'] is None
 
     def test_initialization_with_invalid_provider_raises_error(self):
-        with pytest.raises(Exception):
+        with pytest.raises(InvalidProviderException):
             CreateAgent(
                 provider='invalid_provider_xyz',
                 model='gpt-5-mini',
@@ -296,7 +367,8 @@ class TestCreateAgentInitializationSuccessOllama:
 
 @pytest.mark.integration
 class TestCreateAgentChatOpenAI:
-    def test_simple_chat_with_openai(self):
+    @pytest.mark.asyncio
+    async def test_simple_chat_with_openai(self):
         _get_openai_api_key()
 
         agent = CreateAgent(
@@ -306,14 +378,15 @@ class TestCreateAgentChatOpenAI:
             instructions='You are a helpful assistant. Answer briefly.',
         )
 
-        response = agent.chat('What is 2+2?')
+        response = await agent.chat('What is 2+2?')
 
         assert response is not None
         assert isinstance(response, str)
         assert len(response) > 0
         assert '4' in response
 
-    def test_multiple_chats_with_history_openai(self):
+    @pytest.mark.asyncio
+    async def test_multiple_chats_with_history_openai(self):
         _get_openai_api_key()
 
         agent = CreateAgent(
@@ -323,14 +396,15 @@ class TestCreateAgentChatOpenAI:
             instructions='You are a helpful assistant. Remember the context.',
         )
 
-        response1 = agent.chat('My name is Jordan')
+        response1 = await agent.chat('My name is Jordan')
         assert response1 is not None
 
-        response2 = agent.chat('What is my name?')
+        response2 = await agent.chat('What is my name?')
         assert response2 is not None
         assert 'Jordan' in response2 or 'jordan' in response2.lower()
 
-    def test_chat_with_empty_message_openai(self):
+    @pytest.mark.asyncio
+    async def test_chat_with_empty_message_openai(self):
         _get_openai_api_key()
 
         agent = CreateAgent(
@@ -340,13 +414,11 @@ class TestCreateAgentChatOpenAI:
             instructions='Answer any question',
         )
 
-        try:
-            response = agent.chat('')
-            assert isinstance(response, str)
-        except Exception:
-            pass
+        with pytest.raises(ValueError, match='message'):
+            await agent.chat('')
 
-    def test_chat_with_long_message_openai(self):
+    @pytest.mark.asyncio
+    async def test_chat_with_long_message_openai(self):
         _get_openai_api_key()
 
         agent = CreateAgent(
@@ -357,13 +429,14 @@ class TestCreateAgentChatOpenAI:
         )
 
         long_message = 'This is a test. ' * 100
-        response = agent.chat(long_message)
+        response = await agent.chat(long_message)
 
         assert response is not None
         assert isinstance(response, str)
         assert len(response) > 0
 
-    def test_chat_with_unicode_openai(self):
+    @pytest.mark.asyncio
+    async def test_chat_with_unicode_openai(self):
         _get_openai_api_key()
 
         agent = CreateAgent(
@@ -373,7 +446,7 @@ class TestCreateAgentChatOpenAI:
             instructions='You are a multilingual assistant.',
         )
 
-        response = agent.chat('Olá! Como você está? 你好 🌍')
+        response = await agent.chat('Olá! Como você está? 你好 🌍')
 
         assert response is not None
         assert isinstance(response, str)
@@ -382,7 +455,8 @@ class TestCreateAgentChatOpenAI:
 
 @pytest.mark.integration
 class TestCreateAgentChatOllama:
-    def test_simple_chat_with_ollama(self):
+    @pytest.mark.asyncio
+    async def test_simple_chat_with_ollama(self):
         _check_ollama_available()
         _check_ollama_model_available(IA_OLLAMA_TEST_2)
 
@@ -393,13 +467,14 @@ class TestCreateAgentChatOllama:
             instructions='You are a helpful assistant. Answer briefly.',
         )
 
-        response = agent.chat('What is 2+2?')
+        response = await agent.chat('What is 2+2?')
 
         assert response is not None
         assert isinstance(response, str)
         assert len(response) > 0
 
-    def test_multiple_chats_with_history_ollama(self):
+    @pytest.mark.asyncio
+    async def test_multiple_chats_with_history_ollama(self):
         _check_ollama_available()
         _check_ollama_model_available(IA_OLLAMA_TEST_1)
 
@@ -410,14 +485,15 @@ class TestCreateAgentChatOllama:
             instructions='You are a helpful assistant. Always remember and recall information from previous messages when asked.',
         )
 
-        response1 = agent.chat('My favorite color is blue')
+        response1 = await agent.chat('My favorite color is blue')
         assert response1 is not None
 
-        response2 = agent.chat('What is my favorite color?')
+        response2 = await agent.chat('What is my favorite color?')
         assert response2 is not None
         assert 'blue' in response2.lower() or 'color' in response2.lower()
 
-    def test_chat_with_unicode_ollama(self):
+    @pytest.mark.asyncio
+    async def test_chat_with_unicode_ollama(self):
         _check_ollama_available()
         _check_ollama_model_available(IA_OLLAMA_TEST_1)
 
@@ -428,7 +504,7 @@ class TestCreateAgentChatOllama:
             instructions='You are a multilingual assistant.',
         )
 
-        response = agent.chat('Olá! 🌍')
+        response = await agent.chat('Olá! 🌍')
 
         assert response is not None
         assert isinstance(response, str)
@@ -437,7 +513,8 @@ class TestCreateAgentChatOllama:
 
 @pytest.mark.integration
 class TestCreateAgentHistory:
-    def test_clear_history_openai(self):
+    @pytest.mark.asyncio
+    async def test_clear_history_openai(self):
         _get_openai_api_key()
 
         agent = CreateAgent(
@@ -447,7 +524,7 @@ class TestCreateAgentHistory:
             instructions='Remember our conversation.',
         )
 
-        agent.chat('My name is Jordan')
+        await agent.chat('My name is Jordan')
 
         configs = agent.get_configs()
         assert len(configs['history']) > 0
@@ -457,7 +534,8 @@ class TestCreateAgentHistory:
         configs = agent.get_configs()
         assert len(configs['history']) == 0
 
-    def test_clear_history_ollama(self):
+    @pytest.mark.asyncio
+    async def test_clear_history_ollama(self):
         _check_ollama_available()
         _check_ollama_model_available(IA_OLLAMA_TEST_1)
 
@@ -468,7 +546,7 @@ class TestCreateAgentHistory:
             instructions='Remember context.',
         )
 
-        agent.chat('Hello')
+        await agent.chat('Hello')
 
         configs = agent.get_configs()
         assert len(configs['history']) > 0
@@ -478,7 +556,8 @@ class TestCreateAgentHistory:
         configs = agent.get_configs()
         assert len(configs['history']) == 0
 
-    def test_history_max_size_enforcement_openai(self):
+    @pytest.mark.asyncio
+    async def test_history_max_size_enforcement_openai(self):
         _get_openai_api_key()
 
         agent = CreateAgent(
@@ -489,9 +568,9 @@ class TestCreateAgentHistory:
             history_max_size=2,
         )
 
-        agent.chat('First message')
-        agent.chat('Second message')
-        agent.chat('Third message')
+        await agent.chat('First message')
+        await agent.chat('Second message')
+        await agent.chat('Third message')
 
         configs = agent.get_configs()
         assert len(configs['history']) <= 2
@@ -499,7 +578,8 @@ class TestCreateAgentHistory:
 
 @pytest.mark.integration
 class TestCreateAgentMetrics:
-    def test_get_metrics_after_chat_openai(self):
+    @pytest.mark.asyncio
+    async def test_get_metrics_after_chat_openai(self):
         _get_openai_api_key()
 
         agent = CreateAgent(
@@ -509,7 +589,7 @@ class TestCreateAgentMetrics:
             instructions='Answer briefly.',
         )
 
-        agent.chat('Hello')
+        await agent.chat('Hello')
 
         metrics = agent.get_metrics()
 
@@ -522,7 +602,8 @@ class TestCreateAgentMetrics:
         assert hasattr(first_metric, 'latency_ms')
         assert first_metric.latency_ms > 0
 
-    def test_get_metrics_after_multiple_chats_openai(self):
+    @pytest.mark.asyncio
+    async def test_get_metrics_after_multiple_chats_openai(self):
         _get_openai_api_key()
 
         agent = CreateAgent(
@@ -532,15 +613,16 @@ class TestCreateAgentMetrics:
             instructions='Answer briefly.',
         )
 
-        agent.chat('First')
-        agent.chat('Second')
-        agent.chat('Third')
+        await agent.chat('First')
+        await agent.chat('Second')
+        await agent.chat('Third')
 
         metrics = agent.get_metrics()
 
         assert len(metrics) >= 3
 
-    def test_export_metrics_json_openai(self):
+    @pytest.mark.asyncio
+    async def test_export_metrics_json_openai(self):
         _get_openai_api_key()
 
         agent = CreateAgent(
@@ -550,7 +632,7 @@ class TestCreateAgentMetrics:
             instructions='Answer briefly.',
         )
 
-        agent.chat('Test')
+        await agent.chat('Test')
 
         json_str = agent.export_metrics_json()
 
@@ -559,7 +641,8 @@ class TestCreateAgentMetrics:
         assert 'summary' in json_str
         assert 'metrics' in json_str
 
-    def test_export_metrics_prometheus_openai(self):
+    @pytest.mark.asyncio
+    async def test_export_metrics_prometheus_openai(self):
         _get_openai_api_key()
 
         agent = CreateAgent(
@@ -569,7 +652,7 @@ class TestCreateAgentMetrics:
             instructions='Answer briefly.',
         )
 
-        agent.chat('Test')
+        await agent.chat('Test')
 
         prom_str = agent.export_metrics_prometheus()
 
@@ -577,7 +660,8 @@ class TestCreateAgentMetrics:
         assert isinstance(prom_str, str)
         assert 'chat_requests_total' in prom_str
 
-    def test_get_metrics_after_chat_ollama(self):
+    @pytest.mark.asyncio
+    async def test_get_metrics_after_chat_ollama(self):
         _check_ollama_available()
         _check_ollama_model_available(IA_OLLAMA_TEST_1)
 
@@ -588,7 +672,7 @@ class TestCreateAgentMetrics:
             instructions='Answer briefly.',
         )
 
-        agent.chat('Hello')
+        await agent.chat('Hello')
 
         metrics = agent.get_metrics()
 
@@ -648,7 +732,8 @@ class TestCreateAgentGetConfigs:
 
 @pytest.mark.integration
 class TestCreateAgentEdgeCases:
-    def test_agent_with_very_long_instructions_openai(self):
+    @pytest.mark.asyncio
+    async def test_agent_with_very_long_instructions_openai(self):
         _get_openai_api_key()
 
         long_instructions = 'You are a helpful assistant. ' * 100
@@ -660,7 +745,7 @@ class TestCreateAgentEdgeCases:
             instructions=long_instructions,
         )
 
-        response = agent.chat('Hello')
+        response = await agent.chat('Hello')
 
         assert response is not None
         assert isinstance(response, str)
@@ -678,7 +763,8 @@ class TestCreateAgentEdgeCases:
         configs = agent.get_configs()
         assert configs['name'] == 'Agent-Test_123!@#'
 
-    def test_chat_after_clear_history_openai(self):
+    @pytest.mark.asyncio
+    async def test_chat_after_clear_history_openai(self):
         _get_openai_api_key()
 
         agent = CreateAgent(
@@ -688,15 +774,16 @@ class TestCreateAgentEdgeCases:
             instructions='Remember context',
         )
 
-        response1 = agent.chat('My name is Alice')
+        response1 = await agent.chat('My name is Alice')
         assert response1 is not None
 
         agent.clear_history()
 
-        response2 = agent.chat('What is my name?')
+        response2 = await agent.chat('What is my name?')
         assert response2 is not None
 
-    def test_multiple_agents_same_model_independent(self):
+    @pytest.mark.asyncio
+    async def test_multiple_agents_same_model_independent(self):
         _get_openai_api_key()
 
         agent1 = CreateAgent(
@@ -713,12 +800,13 @@ class TestCreateAgentEdgeCases:
             instructions='You are agent 2',
         )
 
-        agent1.chat('Hello from agent 1')
+        await agent1.chat('Hello from agent 1')
 
         configs2 = agent2.get_configs()
         assert len(configs2['history']) == 0
 
-    def test_agent_with_minimal_config(self):
+    @pytest.mark.asyncio
+    async def test_agent_with_minimal_config(self):
         _get_openai_api_key()
 
         agent = CreateAgent(
@@ -728,9 +816,100 @@ class TestCreateAgentEdgeCases:
             instructions='Be helpful',
         )
 
-        response = agent.chat('Hi')
+        response = await agent.chat('Hi')
         assert response is not None
 
         configs = agent.get_configs()
         assert configs['history_max_size'] == 10
         assert configs['config'] == {}
+
+
+@pytest.mark.integration
+class TestCreateAgentToolAndMetricsOffline:
+    def test_get_system_available_tools_matches_registry(
+        self, stub_chat_repository
+    ):
+        agent = CreateAgent(
+            provider='openai',
+            model=IA_OPENAI_TEST_2,
+            name='System Tools Agent',
+            instructions='Inspect tools.',
+        )
+
+        expected_tools = AvailableTools.get_system_tools()
+        assert agent.get_system_available_tools() == expected_tools
+
+    def test_get_all_available_tools_merges_agent_tools(
+        self, stub_chat_repository
+    ):
+        custom_tool = _SimpleTool('CustomTool', 'Runs diagnostics')
+
+        agent = CreateAgent(
+            provider='openai',
+            model=IA_OPENAI_TEST_2,
+            name='Custom Tool Agent',
+            instructions='Use tools when needed.',
+            tools=[custom_tool],
+        )
+
+        all_tools = agent.get_all_available_tools()
+        system_tools = AvailableTools.get_system_tools()
+
+        assert 'customtool' in all_tools
+        assert all_tools['customtool'] == 'Runs diagnostics'
+        assert set(system_tools.keys()).issubset(all_tools.keys())
+
+    def test_get_all_available_tools_skips_system_duplicates(
+        self, stub_chat_repository
+    ):
+        duplicate_tool = _SimpleTool('CurrentDate', 'duplicate description')
+
+        agent = CreateAgent(
+            provider='openai',
+            model=IA_OPENAI_TEST_2,
+            name='Duplicate Tool Agent',
+            instructions='Test duplicates.',
+            tools=[duplicate_tool],
+        )
+
+        all_tools = agent.get_all_available_tools()
+        system_tools = AvailableTools.get_system_tools()
+
+        assert 'currentdate' in all_tools
+        assert all_tools['currentdate'] == system_tools['currentdate']
+        assert all_tools['currentdate'] != 'duplicate description'
+
+    @pytest.mark.asyncio
+    async def test_metrics_export_and_history_flow(
+        self, stub_chat_repository, tmp_path
+    ):
+        agent = CreateAgent(
+            provider='openai',
+            model=IA_OPENAI_TEST_2,
+            name='Metrics Export Agent',
+            instructions='Track metrics.',
+        )
+
+        response = await agent.chat('Hello stub integration')
+        assert 'Stub response' in response
+
+        metrics = agent.get_metrics()
+        assert len(metrics) == 1
+        assert metrics[0].model == IA_OPENAI_TEST_2
+
+        json_path = tmp_path / 'metrics.json'
+        json_str = agent.export_metrics_json(str(json_path))
+        data = json.loads(json_str)
+
+        assert data['summary']['total_requests'] == 1
+        assert data['metrics'][0]['model'] == IA_OPENAI_TEST_2
+        assert json_path.read_text() == json_str
+
+        prom_path = tmp_path / 'metrics.prom'
+        prom_str = agent.export_metrics_prometheus(str(prom_path))
+        assert 'chat_requests_total 1' in prom_str
+        assert prom_path.read_text() == prom_str
+
+        assert len(agent.get_configs()['history']) == 2
+        agent.clear_history()
+        assert len(agent.get_configs()['history']) == 0

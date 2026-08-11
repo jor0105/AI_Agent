@@ -2,50 +2,57 @@
 
 Documentação completa da arquitetura do **Create Agents AI**, baseada em **Clean Architecture** e **princípios SOLID**.
 
----
+______________________________________________________________________
 
 ## 📐 Estrutura de Camadas
 
 ```
 ┌─────────────────────────────────────┐
-│        application                 │  CreateAgent Controller
-│     (Interface do Usuário)          │
+│       PRESENTATION                  │  CLI, UI (ChatCLIApplication)
+│     (Interface do Usuário)          │  Command Handlers, Terminal UI
 └──────────────┬──────────────────────┘
                │
 ┌──────────────▼──────────────────────┐
-│        APPLICATION                  │  Use Cases & DTOs
-│    (Lógica da Aplicação)            │
+│        APPLICATION                  │  Facade (CreateAgent)
+│    (Lógica da Aplicação)            │  Use Cases, DTOs, Services
 └──────────────┬──────────────────────┘
                │
 ┌──────────────▼──────────────────────┐
-│          DOMAIN                     │  Entities, Rules
-│    (Regras de Negócio)              │
+│          DOMAIN                     │  Entities, Rules, Interfaces
+│    (Regras de Negócio)              │  Agent, ToolExecutor, LoggerInterface
 └──────────────▲──────────────────────┘
                │
 ┌──────────────┴──────────────────────┐
-│      INFRASTRUCTURE                 │  Adapters, Config
-│    (Detalhes Técnicos)              │
+│      INFRASTRUCTURE                 │  Adapters, Handlers, Config
+│    (Detalhes Técnicos)              │  OpenAI, Ollama, Tools, Metrics
 └─────────────────────────────────────┘
 ```
 
----
+______________________________________________________________________
 
 ## 🎯 Camadas
 
-### 1. Domain (Domínio)
+### 1. Presentation (Apresentação)
 
-**Localização:** `src/createagents/domain/`
+**Localização:** `src/createagents/presentation/`
 
-**Responsabilidade:** Regras de negócio puras, independentes de tecnologia.
+**Responsabilidade:** Interface de usuário e interação externa.
 
 **Componentes:**
 
-- **Entities:** `Agent` (entidade principal)
-- **Value Objects:** `Message`, `MessageRole`, `History`, `SupportedConfigs`, `SupportedProviders`, `BaseTool` (ferramentas)
-- **Domain Services:** `ToolExecutor`, `ToolExecutionResult` (execução segura de ferramentas)
-- **Exceptions:** `domain.exceptions` (ex.: `AgentException`, `InvalidAgentConfigException`, `UnsupportedConfigException`)
+- **CLI Application:** `ChatCLIApplication` — aplicação CLI interativa para chat com agentes
+- **Command Handlers:** Sistema baseado no **Command Pattern**
+  - `ChatCommandHandler` — processamento de mensagens de chat
+  - `HelpCommandHandler` — exibe ajuda e comandos disponíveis
+  - `MetricsCommandHandler` — mostra métricas de performance
+  - `ConfigsCommandHandler` — exibe configurações do agente
+  - `ToolsCommandHandler` — lista ferramentas disponíveis
+  - `ClearCommandHandler` — limpa histórico de conversação
+- **UI Components:** `TerminalRenderer`, `TerminalFormatter`, `ColorScheme` — renderização colorida no terminal
+- **I/O:** `InputReader` — leitura de entrada do usuário
+- **Registry:** `CommandRegistry` — registro e resolução de comandos
 
----
+______________________________________________________________________
 
 ### 2. Application (Aplicação)
 
@@ -55,18 +62,38 @@ Documentação completa da arquitetura do **Create Agents AI**, baseada em **Cle
 
 **Componentes:**
 
-- **Facade / Controller:** `CreateAgent` — fachada simples que cria agentes e expõe métodos como `chat`, `get_configs`, `get_all_available_tools`, `clear_history`, `export_metrics_*`.
+- **Facade / Controller:** `CreateAgent` — vive em `main/facade/`, cria agentes e expõe `chat` (async), `get_configs`, `get_all_available_tools`, `clear_history`, `export_metrics_*`.
 - **Use Cases (application/use_cases):**
-  - `CreateAgentUseCase` — criação e validação de agentes (invocado por `AgentComposer`).
-  - `ChatWithAgentUseCase` — orquestra mensagens entre `Agent` e `ChatRepository` (adapters).
+  - `CreateAgentUseCase` — cria e valida agentes, resolvendo nomes de tools em instâncias pela porta `ToolRegistry` (invocado por `AgentComposer`).
+  - `ChatWithAgentUseCase` — orquestra mensagens **assíncronas** entre `Agent` e `ChatRepository` (adapters).
   - `GetAgentConfigUseCase` — retorna as configurações do agente.
-  - `GetAllAvailableToolsUseCase` / `GetSystemAvailableToolsUseCase` — listagem de tools disponíveis.
-- **DTOs (application/dtos):** Objetos de transferência como `CreateAgentInputDTO`, `ChatInputDTO`, `AgentConfigOutputDTO` usados para comunicação entre controller/use-cases.
-- **Interfaces (application/interfaces):** `ChatRepository` — contrato que os adapters (`OpenAIChatAdapter`, `OllamaChatAdapter`) implementam para manter a camada de aplicação independente das integrações.
+  - `GetSystemAvailableToolsUseCase` — lista as tools nativas do framework.
+- **DTOs (application/dtos):** Objetos de transferência:
+  - `CreateAgentInputDTO`, `ChatInputDTO`, `AgentConfigOutputDTO` — comunicação entre controller/use-cases
+  - **`StreamingResponseDTO`** — wrapper para AsyncGenerator que permite iteração e await de respostas em streaming
+- **Interfaces (application/interfaces):** portas que a infraestrutura implementa:
+  - `ChatRepository` — contrato dos adapters de chat, com suporte **assíncrono**
+  - `ToolRegistry` — leitura do catálogo de tools, sem que a aplicação conheça `infra`
 
----
+______________________________________________________________________
 
-### 3. Infrastructure (Infraestrutura)
+### 3. Domain (Domínio)
+
+**Localização:** `src/createagents/domain/`
+
+**Responsabilidade:** Regras de negócio puras, independentes de tecnologia.
+
+**Componentes:**
+
+- **Entities:** `Agent` (entidade principal)
+- **Value Objects:** `Message`, `MessageRole`, `History`, `SupportedConfigs`, `SupportedProviders`, `BaseTool` (ferramentas), `ChatMetrics`
+- **Domain Services:** `ToolExecutor` (execução **assíncrona** de ferramentas), `ToolExecutionResult`
+- **Interfaces (domain/interfaces):** **`LoggerInterface`** — abstração de logging no domínio (DIP - Dependency Inversion Principle)
+- **Exceptions:** `domain.exceptions` (ex.: `AgentException`, `InvalidAgentConfigException`, `UnsupportedConfigException`)
+
+______________________________________________________________________
+
+### 4. Infrastructure (Infraestrutura)
 
 **Localização:** `src/createagents/infra/`
 
@@ -74,16 +101,27 @@ Documentação completa da arquitetura do **Create Agents AI**, baseada em **Cle
 
 **Componentes:**
 
-- **Adapters:**
-  - `OpenAIChatAdapter` - Integração com OpenAI
-  - `OllamaChatAdapter` - Integração com Ollama
+- **Adapters (Chat):**
+  - `OpenAIChatAdapter` — integração com OpenAI
+  - `OllamaChatAdapter` — integração com Ollama
+- **Handlers (Async Streaming):**
+  - `OpenAIHandler` / `OpenAIStreamHandler` — processamento de chamadas não-streaming e streaming OpenAI
+  - `OllamaHandler` / `OllamaStreamHandler` — processamento de chamadas não-streaming e streaming Ollama
+- **Clients:**
+  - `OpenAIClient` — cliente HTTP para OpenAI
+  - `OllamaClient` — cliente HTTP para Ollama
+- **Common Adapters:**
+  - `MetricsRecorder` — base abstrata da gravação de métricas; `OpenAIMetricsRecorder` e `OllamaMetricsRecorder` implementam apenas a leitura de uso específica de cada provider
+  - `BaseStreamHandler` / `StreamUsageTotals` — orçamento de iterações de tools e acumulação de métricas no streaming
 - **Tools:**
-  - `CurrentDateTool` - Ferramenta de data/hora
-  - `ReadLocalFileTool` - Leitura de arquivos
-- **Factory:** `ChatAdapterFactory` - Criação de adapters
-- **Config:** `EnvironmentConfig`, `LoggingConfig`, `MetricsCollector`
+  - `AvailableTools` — catálogo das tools nativas, com carga preguiçosa das que dependem de extras
+  - `AvailableToolsRegistry` — adapta o catálogo à porta `ToolRegistry`
+  - `CurrentDateTool` — ferramenta de data/hora
+  - `ReadLocalFileTool` — leitura de arquivos (PDF, Excel, CSV, Parquet, JSON, YAML, TXT)
+- **Factory:** `ChatAdapterFactory` — resolve o provider para o adapter concreto. Cada chamada devolve uma instância nova: o adapter é dono das métricas da conversa, então compartilhá-lo faria um agente reportar as métricas de outro.
+- **Config:** `EnvironmentConfig`, `LoggingConfig`, `StandardLogger` (implementação de `LoggerInterface`), `ChatMetrics`
 
----
+______________________________________________________________________
 
 ## 🎨 Princípios SOLID
 
@@ -104,7 +142,7 @@ Aberto para extensão, fechado para modificação:
 ```python
 # Adicionar novo provider sem modificar código existente
 class ClaudeAdapter(ChatRepository):
-    def chat(self, ...): pass
+    async def chat(self, ...): pass
 ```
 
 ### Liskov Substitution (LSP)
@@ -137,9 +175,14 @@ Depende de abstrações, não de implementações:
 class ChatWithAgentUseCase:
     def __init__(self, chat_repository: ChatRepository):  # Interface
         self.__chat_repository = chat_repository
+
+# Exemplo com LoggerInterface (DIP no domínio)
+class ToolExecutor:
+    def __init__(self, logger: LoggerInterface):  # Abstração
+        self._logger = logger  # Não depende de StandardLogger diretamente
 ```
 
----
+______________________________________________________________________
 
 ## 🔧 Padrões de Design
 
@@ -198,22 +241,53 @@ class Message:
     content: str
 ```
 
----
+______________________________________________________________________
 
 ## 🔄 Fluxo de Dados
 
+### Fluxo Síncrono (await response)
+
 ```
 User → CreateAgent.chat()
-    → ChatWithAgentUseCase.execute()
-        → ChatRepository.chat()
-            → OpenAIChatAdapter / OllamaChatAdapter
-                → API Externa (OpenAI / Ollama)
-            ← Response
-        ← ChatOutputDTO
-    ← response: str
+    → ChatWithAgentUseCase.execute() [async]
+        → ChatRepository.chat() [async]
+            → OpenAIHandler / OllamaHandler
+                → StreamHandler (processa streaming)
+                    → API Externa (OpenAI / Ollama)
+                    ← Tokens em streaming
+                ← Response completo
+            ← AsyncGenerator
+        ← StreamingResponseDTO
+    ← await response (string completa)
 ```
 
----
+### Fluxo Assíncrono (async for)
+
+```
+User → CreateAgent.chat()
+    → ChatWithAgentUseCase.execute() [async]
+        → ChatRepository.chat() [async]
+            → StreamHandler.handle_streaming()
+                → async for token in api_stream:
+                    → yield token  # Streaming em tempo real
+            ← AsyncGenerator[str]
+        ← StreamingResponseDTO
+    → async for token in response:
+        → print(token, end='')  # Exibe token por token
+```
+
+### Fluxo CLI
+
+```
+Terminal → ChatCLIApplication.run()
+    → CommandRegistry.find_handler(user_input)
+        → CommandHandler.execute()
+            → CreateAgent.chat() [se ChatCommandHandler]
+                → async for token in response:
+                    → TerminalRenderer.render_token()
+```
+
+______________________________________________________________________
 
 ## 💡 Benefícios da Arquitetura
 
@@ -244,6 +318,32 @@ agent = CreateAgent(provider="ollama", model="llama2")
 - Responsabilidades claras
 - Fácil localizar e corrigir bugs
 
----
+______________________________________________________________________
 
-**Versão:** 0.1.2 | **Atualização:** 25/11/2025
+## 🔄 Padrões Assíncronos
+
+### Streaming com AsyncGenerator
+
+```python
+# Handler retorna AsyncGenerator
+async def handle_streaming(self, ...) -> AsyncGenerator[str, None]:
+    async for chunk in api_response:
+        yield chunk  # Stream em tempo real
+
+# DTO encapsula AsyncGenerator
+class StreamingResponseDTO:
+    def __init__(self, generator: AsyncGenerator[str, None]):
+        self._generator = generator
+
+    async def __anext__(self):  # Permite async for
+        return await self._generator.__anext__()
+
+    def __await__(self):  # Permite await
+        async def _consume():
+            return ''.join([token async for token in self])
+        return _consume().__await__()
+```
+
+______________________________________________________________________
+
+**Versão:** 0.2.0 | **Atualização:** 07/08/2026

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "external_failure",
+  "profile": "security-touch",
+  "effectiveProfile": "security-touch",
+  "profileReason": "Fluxos de autenticacao exigem escalacao de seguranca.",
+  "changedFiles": ["src/features/auth/AuthProvider.tsx"],
+  "gates": [
+    {
+      "name": "build",
+      "label": "Build",
+      "command": "npm run build",
+      "blocking": true,
+      "status": "external_failure",
+      "classification": "environment",
+      "durationMs": 0,
+      "exitCode": 127,
+      "logPath": null,
+      "details": "command not found"
+    }
+  ],
+  "escalations": {
+    "reviewRequired": true,
+    "securityRequired": true,
+    "testerRecommended": false,
+    "reasons": [
+      "Perfil security-touch exige security-engineer.",
+      "Fluxo com toque de seguranca pede review final."
+    ]
+  },
+  "sessionDir": null,
+  "summary": "1 external_failure"
+}

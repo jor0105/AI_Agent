@@ -45,3 +45,64 @@ pip install --upgrade createagents[file-tools]
 ## 10. Onde encontrar exemplos avançados?
 
 Veja [Exemplos](examples-user.md) e a documentação avançada.
+
+## 11. Como usar a CLI interativa?
+
+Basta chamar o método `start_cli()` do agente:
+
+```python
+from createagents import CreateAgent
+
+agent = CreateAgent(provider="openai", model="gpt-4")
+agent.start_cli()  # Inicia CLI interativa
+```
+
+ℹ️ [Guia completo da CLI](cli-usage.md)
+
+## 12. Como funciona o streaming?
+
+O método `chat()` retorna um `StreamingResponseDTO` que pode ser:
+
+- **Awaited**: `response_text = await agent.chat("mensagem")`
+- **Iterado**: `async for token in await agent.chat("mensagem"): ...`
+
+O streaming é controlado pelo parâmetro `stream` na configuração:
+
+```python
+# Habilitar streaming
+agent = CreateAgent(provider="openai", model="gpt-4", config={"stream": True})
+
+# Desabilitar streaming
+agent = CreateAgent(provider="openai", model="gpt-4", config={"stream": False})
+```
+
+ℹ️ [Guia de Streaming](streaming-guide.md)
+
+## 13. Posso desabilitar o streaming?
+
+Sim! Configure `stream: False` ao criar o agente:
+
+```python
+agent = CreateAgent(
+    provider="openai",
+    model="gpt-4",
+    config={"stream": False}  # Desabilita streaming
+)
+
+# Resposta completa sem streaming token-por-token
+response = await agent.chat("mensagem")
+print(response)
+```
+
+## 14. Quais comandos estão disponíveis na CLI?
+
+- `/help` - Ajuda
+- `/metrics` - Métricas de performance
+- `/configs` - Configurações do agente
+- `/tools` - Listar ferramentas
+- `/clear` - Limpar histórico
+- `exit` ou `quit` - Sair
+
+## 15. Como contribuir com o projeto?
+
+Veja o [guia de contribuição](../dev-guide/contribute.md).

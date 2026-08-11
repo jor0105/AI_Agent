@@ -14,7 +14,7 @@
 
 </div>
 
----
+______________________________________________________________________
 
 ## 🎯 Sobre
 
@@ -30,7 +30,7 @@
 - ✅ **Type Safety**: Suporte completo a type hints
 - ✅ **CI/CD Profissional**: Quality checks automáticos com GitHub Actions
 
----
+______________________________________________________________________
 
 ## ✨ Features
 
@@ -43,10 +43,10 @@
 
 ### 🔧 Ferramentas Built-in
 
-| Ferramenta            | Descrição                                    | Instalação                     |
-| --------------------- | -------------------------------------------- | ------------------------------ |
-| **CurrentDateTool**   | Data/hora em qualquer timezone               | Padrão                         |
-| **ReadLocalFileTool** | Lê PDF, Excel, CSV, Parquet, JSON, YAML, TXT | `poetry install -E file-tools` |
+| Ferramenta            | Descrição                                    | Instalação                   |
+| --------------------- | -------------------------------------------- | ---------------------------- |
+| **CurrentDateTool**   | Data/hora em qualquer timezone               | Padrão                       |
+| **ReadLocalFileTool** | Lê PDF, Excel, CSV, Parquet, JSON, YAML, TXT | `uv sync --extra file-tools` |
 
 ### 📊 Recursos Avançados
 
@@ -71,7 +71,7 @@ LoggingConfig.configure_for_development(level=logging.INFO)
 
 📖 [Guia completo de Logging](docs/dev-guide/logging_guide.md)
 
----
+______________________________________________________________________
 
 ## 🚀 Instalação Rápida
 
@@ -109,11 +109,11 @@ Se você deseja contribuir com o projeto:
 git clone https://github.com/jor0105/Create-Agents-AI.git
 cd Create-Agents-AI
 
-# Instale com Poetry
-poetry install
+# Instale com uv
+uv sync
 
 # OU com suporte a file-tools
-poetry install -E file-tools
+uv sync --extra file-tools
 
 # Configure o ambiente
 cp .env.example .env
@@ -122,42 +122,50 @@ cp .env.example .env
 
 📖 [Guia completo para contribuidores →](https://jor0105.github.io/Create-Agents-AI/dev-guide/contribute/)
 
----
+______________________________________________________________________
 
 ## 💡 Quick Start
 
 ### Exemplo Básico
 
 ```python
+import asyncio
 from createagents import CreateAgent
 
-# Criar agente
-agent = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    instructions="Você é um assistente técnico especializado em Python"
-)
+async def main():
+    # Criar agente
+    agent = CreateAgent(
+        provider="openai",
+        model="gpt-4",
+        instructions="Você é um assistente técnico especializado em Python"
+    )
 
-# Conversar
-response = agent.chat("Como criar uma função recursiva?")
-print(response)
+    # Conversar
+    response = await agent.chat("Como criar uma função recursiva?")
+    print(response)
+
+asyncio.run(main())
 ```
 
 ### Com Ferramentas
 
 ```python
+import asyncio
 from createagents import CreateAgent
 
-# Agente com ferramentas
-agent = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    tools=["currentdate", "readlocalfile"]
-)
+async def main():
+    # Agente com ferramentas
+    agent = CreateAgent(
+        provider="openai",
+        model="gpt-4",
+        tools=["currentdate"]
+    )
 
-# O agente usa ferramentas automaticamente
-agent.chat("Que dia é hoje?")  # Usa CurrentDateTool
-agent.chat("Leia o arquivo report.pdf")  # Usa ReadLocalFileTool
+    # O agente usa ferramentas automaticamente
+    response = await agent.chat("Que dia é hoje?")  # Usa CurrentDateTool
+    print(response)
+
+asyncio.run(main())
 ```
 
 ### Ollama (Local)
@@ -171,73 +179,91 @@ ollama pull llama3.2:latest
 ollama serve
 ```
 
-```python
-# Usar modelo local
-agent = CreateAgent(
-    provider="ollama",
-    model="llama3.2",
-    instructions="Você é um assistente local"
-)
+### Agente Local com Ollama
 
-response = agent.chat("Explique Clean Architecture")
-print(response)
+```python
+import asyncio
+from createagents import CreateAgent
+
+async def main():
+    agent = CreateAgent(
+        provider="ollama",
+        model="llama3.2",
+        instructions="Você é um assistente local"
+    )
+
+    response = await agent.chat("Explique Clean Architecture")
+    print(response)
+
+asyncio.run(main())
 ```
 
----
+______________________________________________________________________
 
 ## 📋 Exemplos de Uso
 
 ### Exemplo 1: Assistente de Programação
 
 ```python
+import asyncio
 from createagents import CreateAgent
 
-assistant = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    name="Code Assistant",
-    instructions="Você é um especialista em programação Python. Sempre forneça exemplos de código.",
-    config={"temperature": 0.3}  # Menos criatividade para código
-)
+async def main():
+    assistant = CreateAgent(
+        provider="openai",
+        model="gpt-4",
+        name="Code Assistant",
+        instructions="Você é um especialista em programação Python. Sempre forneça exemplos de código.",
+        config={"temperature": 0.3}  # Menos criatividade para código
+    )
 
-# Conversar
-response = assistant.chat("Como ordenar uma lista de dicionários por chave?")
-print(response)
+    # Conversar
+    resposta = await assistant.chat("Como ordenar uma lista de dicionários por chave?")
+    print(resposta)
 
-# Ver histórico
-config = assistant.get_configs()
-print(f"Histórico: {len(config['history'])} mensagens")
+    # Ver histórico
+    config = assistant.get_configs()
+    print(f"Histórico: {len(config['history'])} mensagens")
 
-# Limpar e começar novo diálogo
-assistant.clear_history()
+    # Limpar e começar novo diálogo
+    assistant.clear_history()
+
+asyncio.run(main())
 ```
 
 ### Exemplo 2: Múltiplos Agentes
 
 ```python
-# Um para análise
-analyzer = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    instructions="Você analisa código e fornece feedback crítico",
-    config={"temperature": 0.5}
-)
+import asyncio
+from createagents import CreateAgent
 
-# Outro para documentação
-documentor = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    instructions="Você escreve documentação clara e profissional",
-    config={"temperature": 0.3}
-)
+async def main():
+    # Um para análise
+    analyzer = CreateAgent(
+        provider="openai",
+        model="gpt-4",
+        instructions="Você analisa código e fornece feedback crítico",
+        config={"temperature": 0.5}
+    )
 
-# Usar ambos
-code = "def sum(a,b): return a+b"
-feedback = analyzer.chat(f"Revise este código:\n{code}")
-docs = documentor.chat(f"Documente este código:\n{code}")
+    # Outro para documentação
+    documentor = CreateAgent(
+        provider="openai",
+        model="gpt-4",
+        instructions="Você escreve documentação clara e profissional",
+        config={"temperature": 0.3}
+    )
 
-print("Feedback:", feedback)
-print("Documentação:", docs)
+    # Usar ambos
+    code = "def sum(a,b): return a+b"
+
+    analise = await analyzer.chat(f"Analise este código: {code}")
+    print("Análise:", analise)
+
+    docs = await documentor.chat(f"Documente esta função: {code}")
+    print("\nDocumentação:", docs)
+
+asyncio.run(main())
 ```
 
 ### Exemplo 3: Ferramenta Customizada
@@ -276,6 +302,8 @@ for name, description in all_tools.items():
 ### Exemplo 4: Métricas e Performance
 
 ```python
+agent = CreateAgent(provider="openai", model="gpt-4")
+
 # Ver métricas de chamadas
 metrics = agent.get_metrics()
 
@@ -290,7 +318,7 @@ agent.export_metrics_json("metrics.json")
 agent.export_metrics_prometheus("metrics.prom")
 ```
 
----
+______________________________________________________________________
 
 ## 🏗️ Arquitetura
 
@@ -334,7 +362,7 @@ src/
 
 📖 [Documentação completa da arquitetura](https://jor0105.github.io/Create-Agents-AI/dev-guide/architecture-developer/)
 
----
+______________________________________________________________________
 
 ## 📚 Documentação
 
@@ -360,11 +388,11 @@ src/
 ### Build Local da Documentação
 
 ```bash
-poetry run mkdocs serve
+uv run mkdocs serve
 # Acesse: http://localhost:8000
 ```
 
----
+______________________________________________________________________
 
 ## 🔧 Configuração
 
@@ -397,7 +425,7 @@ agent = CreateAgent(
 )
 ```
 
----
+______________________________________________________________________
 
 ## 📊 API Reference
 
@@ -430,7 +458,7 @@ CreateAgent(
 
 📖 [Documentação completa da API](https://jor0105.github.io/Create-Agents-AI/reference/api/)
 
----
+______________________________________________________________________
 
 ## 🤝 Contribuindo
 
@@ -438,46 +466,59 @@ Contribuições são bem-vindas! Siga os passos:
 
 1. **Fork** o repositório
 
-1. **Crie uma branch**: `git checkout -b feature/nova-feature`
+2. **Crie uma branch**: `git checkout -b feature/nova-feature`
 
-1. **Implemente** seguindo os padrões existentes
+3. **Implemente** seguindo os padrões existentes
 
-1. **Adicione testes**: Garanta cobertura mínima de 70%
+4. **Adicione testes**: Garanta cobertura mínima de 85%
 
-1. **Execute os checks**:
+5. **Execute os checks**:
 
    ```bash
    # Instalar pre-commit hooks
-   poetry run pre-commit install
+   uv run pre-commit install --install-hooks
 
    # Executar todos os checks
-   poetry run pre-commit run --all-files
+   uv run pre-commit run --all-files
 
    # Executar testes com cobertura
-   poetry run pytest --cov=src --cov-fail-under=70
+   uv run pytest --cov=src --cov-fail-under=85
    ```
 
-1. **Envie um Pull Request**
+6. **Envie um Pull Request**
 
 ### Adicionando um Novo Provedor
 
 1. Crie um novo adapter em `src/infra/adapters/NomeProvedor/`
-1. Implemente a interface `ChatRepository`
-1. Registre em `ChatAdapterFactory`
-1. Adicione testes em `tests/infra/adapters/`
+2. Implemente a interface `ChatRepository`
+3. Registre em `ChatAdapterFactory`
+4. Adicione testes em `tests/infra/adapters/`
 
 Exemplo:
 
 ```python
+from collections.abc import AsyncGenerator
+from typing import Any
+from createagents.application.interfaces import ChatRepository
+from createagents.domain import BaseTool
+
 class MeuAdapter(ChatRepository):
-    async def chat(self, message: str) -> str:
+    async def chat(
+        self,
+        model: str,
+        instructions: str | None,
+        config: dict[str, Any] | None,
+        tools: list[BaseTool] | None,
+        history: list[dict[str, str]],
+        user_ask: str,
+    ) -> str | AsyncGenerator[str, None]:
         # Sua implementação
         pass
 ```
 
 📖 [Guia completo de contribuição](https://jor0105.github.io/Create-Agents-AI/dev-guide/contribute/)
 
----
+______________________________________________________________________
 
 ## 🧪 CI/CD & Workflows
 
@@ -488,10 +529,10 @@ Este projeto tem automação profissional com GitHub Actions:
 - **Executa em**: Push/PR para `develop` ou `main`
 - **Matrix**: Python 3.12, 3.13, 3.14
 - **Checks**:
-  - ✅ Lint (Black, Ruff, isort)
+  - ✅ Lint & Format (Ruff)
   - ✅ Type checking (mypy)
-  - ✅ Security (Bandit, detect-secrets)
-  - ✅ Tests com cobertura mínima de 70%
+  - ✅ Security (Bandit, gitleaks, pip-audit, zizmor)
+  - ✅ Tests com cobertura mínima de 85%
   - ✅ Docstring validation (pydocstyle)
 
 ### Documentation Build
@@ -505,19 +546,19 @@ Este projeto tem automação profissional com GitHub Actions:
 
 ```bash
 # Instalar
-poetry run pre-commit install
+uv run pre-commit install --install-hooks
 
 # Executar manualmente
-poetry run pre-commit run --all-files
+uv run pre-commit run --all-files
 ```
 
----
+______________________________________________________________________
 
 ## 📄 Licença
 
 Este projeto está licenciado sob a **MIT License** - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
----
+______________________________________________________________________
 
 ## 📞 Suporte
 
@@ -526,7 +567,7 @@ Este projeto está licenciado sob a **MIT License** - veja o arquivo [LICENSE](L
 - 💬 [Discussões](https://github.com/jor0105/Create-Agents-AI/discussions)
 - 📧 Email: estraliotojordan@gmail.com
 
----
+______________________________________________________________________
 
 ## 👨‍💻 Autor
 
@@ -535,7 +576,7 @@ Este projeto está licenciado sob a **MIT License** - veja o arquivo [LICENSE](L
 - GitHub: [@jor0105](https://github.com/jor0105)
 - Email: estraliotojordan@gmail.com
 
----
+______________________________________________________________________
 
 ## 📚 Referências
 
@@ -544,12 +585,12 @@ Este projeto está licenciado sob a **MIT License** - veja o arquivo [LICENSE](L
 - [Ollama Documentation](https://github.com/ollama/ollama)
 - [SOLID Principles](https://en.wikipedia.org/wiki/SOLID)
 
----
+______________________________________________________________________
 
 <div align="center">
 
-**Versão:** 0.1.2\
-**Última atualização:** 25/11/2025\
+**Versão:** 0.2.0
+**Última atualização:** 07/08/2026
 **Status:** 🚀 Projeto publicado! Aberto para contribuições e sugestões.
 
 ⭐ Se este projeto foi útil, considere dar uma estrela no GitHub!

@@ -1,17 +1,18 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from ....domain import BaseTool
 from ...config import LoggingConfig
 
 
 class ToolSchemaFormatter:
-    """Formats tool schemas for OpenAI API.
+    """Formats tool schemas for the OpenAI Responses API.
 
-    This class converts domain-level tool schemas into the specific
-    format required by OpenAI's function calling API and Responses API.
+    This class converts domain-level tool schemas into the specific format
+    required by the Responses API, which is the only OpenAI surface this
+    adapter calls.
 
     Responsibilities:
-    - Transform generic tool schemas to OpenAI format
+    - Transform generic tool schemas to the Responses API format
     - Ensure compliance with OpenAI's schema requirements
     - Keep provider-specific logic out of the domain layer
     """
@@ -19,32 +20,7 @@ class ToolSchemaFormatter:
     _logger = LoggingConfig.get_logger(__name__)
 
     @staticmethod
-    def format_tool_for_openai(tool: BaseTool) -> Dict[str, Any]:
-        """Convert a tool to OpenAI function calling format (Completions API).
-
-        Args:
-            tool: A BaseTool instance from the domain layer.
-
-        Returns:
-            A dictionary formatted for OpenAI's tools parameter.
-        """
-        schema = tool.get_schema()
-
-        ToolSchemaFormatter._logger.debug(
-            "Formatting tool '%s' for OpenAI Completions API", schema['name']
-        )
-
-        return {
-            'type': 'function',
-            'function': {
-                'name': schema['name'],
-                'description': schema['description'],
-                'parameters': schema['parameters'],
-            },
-        }
-
-    @staticmethod
-    def format_tool_for_responses_api(tool: BaseTool) -> Dict[str, Any]:
+    def format_tool_for_responses_api(tool: BaseTool) -> dict[str, Any]:
         """Convert a tool to OpenAI Responses API format.
 
         Args:
@@ -67,33 +43,9 @@ class ToolSchemaFormatter:
         }
 
     @staticmethod
-    def format_tools_for_openai(tools: List[BaseTool]) -> List[Dict[str, Any]]:
-        """Convert multiple tools to OpenAI Completions API format.
-
-        Args:
-            tools: List of BaseTool instances.
-
-        Returns:
-            List of dictionaries formatted for OpenAI's tools parameter.
-        """
-        ToolSchemaFormatter._logger.info(
-            'Formatting %s tool(s) for OpenAI Completions API', len(tools)
-        )
-
-        formatted = [
-            ToolSchemaFormatter.format_tool_for_openai(tool) for tool in tools
-        ]
-
-        ToolSchemaFormatter._logger.debug(
-            'Formatted tools: %s', [t['function']['name'] for t in formatted]
-        )
-
-        return formatted
-
-    @staticmethod
     def format_tools_for_responses_api(
-        tools: List[BaseTool],
-    ) -> List[Dict[str, Any]]:
+        tools: list[BaseTool],
+    ) -> list[dict[str, Any]]:
         """Convert multiple tools to OpenAI Responses API format.
 
         Args:

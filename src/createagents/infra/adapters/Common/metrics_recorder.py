@@ -1,32 +1,48 @@
 import time
-from typing import Any, List, Optional
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any
 
-from ...config import ChatMetrics, LoggingConfig
+from ....domain import ChatMetrics
+from ...config import LoggingConfig
+from .durations import nanoseconds_to_milliseconds
 
 
-class MetricsRecorder:
-    """Base class for recording metrics in handlers.
+@dataclass(frozen=True)
+class ProviderUsage:
+    """What a provider reported about one completed (non-streamed) call."""
 
-    This class provides common functionality for recording success and error metrics
-    across different handler implementations (OpenAI, Ollama, etc.), eliminating
-    code duplication and ensuring consistent metric collection.
+    tokens_used: int | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    load_duration_ms: float | None = None
+    prompt_eval_duration_ms: float | None = None
+    eval_duration_ms: float | None = None
+
+
+class MetricsRecorder(ABC):
+    """Turns a provider response into `ChatMetrics` and stores it.
+
+    Reading usage out of a response is the only provider-specific part, so
+    subclasses implement just that; everything else is shared.
     """
 
-    def __init__(self, metrics_list: Optional[List[ChatMetrics]] = None):
+    def __init__(self, metrics_list: list[ChatMetrics] | None = None) -> None:
         """Initialize the metrics recorder.
 
         Args:
-            metrics_list: Optional list to store metrics. If None, creates a new list.
+            metrics_list: Optional shared list to append metrics to. A new
+                list is created when omitted.
         """
         self._metrics = metrics_list if metrics_list is not None else []
         self._logger = LoggingConfig.get_logger(__name__)
 
+    @abstractmethod
+    def _extract_usage(self, response_api: Any) -> ProviderUsage:
+        """Read token counts and durations out of a provider response."""
+
     def record_success_metrics(
-        self,
-        model: str,
-        start_time: float,
-        response_api: Any,
-        provider_type: str = 'generic',
+        self, model: str, start_time: float, response_api: Any
     ) -> None:
         """Record metrics for a successful operation.
 
@@ -34,40 +50,18 @@ class MetricsRecorder:
             model: The model name used for the operation.
             start_time: The timestamp when the operation started.
             response_api: The response object from the API.
-            provider_type: Type of provider ('openai' or 'ollama') for specific handling.
         """
-        latency = (time.time() - start_time) * 1000
-
-        # Extract tokens based on provider type
-        if provider_type == 'openai':
-            tokens_used, prompt_tokens, completion_tokens = (
-                self._extract_openai_tokens(response_api)
-            )
-            load_duration_ms = None
-            prompt_eval_duration_ms = None
-            eval_duration_ms = None
-        elif provider_type == 'ollama':
-            tokens_used, prompt_tokens, completion_tokens = (
-                self._extract_ollama_tokens(response_api)
-            )
-            load_duration_ms, prompt_eval_duration_ms, eval_duration_ms = (
-                self._extract_ollama_durations(response_api)
-            )
-        else:
-            tokens_used = prompt_tokens = completion_tokens = None
-            load_duration_ms = prompt_eval_duration_ms = eval_duration_ms = (
-                None
-            )
+        usage = self._extract_usage(response_api)
 
         metrics = ChatMetrics(
             model=model,
-            latency_ms=latency,
-            tokens_used=tokens_used,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
-            load_duration_ms=load_duration_ms,
-            prompt_eval_duration_ms=prompt_eval_duration_ms,
-            eval_duration_ms=eval_duration_ms,
+            latency_ms=(time.time() - start_time) * 1000,
+            tokens_used=usage.tokens_used,
+            prompt_tokens=usage.prompt_tokens,
+            completion_tokens=usage.completion_tokens,
+            load_duration_ms=usage.load_duration_ms,
+            prompt_eval_duration_ms=usage.prompt_eval_duration_ms,
+            eval_duration_ms=usage.eval_duration_ms,
             success=True,
         )
         self._metrics.append(metrics)
@@ -81,20 +75,17 @@ class MetricsRecorder:
         Args:
             model: The model name used for the operation.
             start_time: The timestamp when the operation started.
-            error: The error that occurred (can be string or Exception).
+            error: The error that occurred (string or Exception).
         """
-        latency = (time.time() - start_time) * 1000
-        error_message = str(error) if error else 'Unknown error'
-
         metrics = ChatMetrics(
             model=model,
-            latency_ms=latency,
+            latency_ms=(time.time() - start_time) * 1000,
             success=False,
-            error_message=error_message,
+            error_message=str(error) if error else 'Unknown error',
         )
         self._metrics.append(metrics)
 
-    def get_metrics(self) -> List[ChatMetrics]:
+    def get_metrics(self) -> list[ChatMetrics]:
         """Return a copy of collected metrics.
 
         Returns:
@@ -102,69 +93,42 @@ class MetricsRecorder:
         """
         return self._metrics.copy()
 
-    @staticmethod
-    def _extract_openai_tokens(response_api: Any) -> tuple:
-        """Extract token information from OpenAI response.
 
-        Args:
-            response_api: OpenAI response object.
+class OpenAIMetricsRecorder(MetricsRecorder):
+    """Reads usage from an OpenAI Responses API object."""
 
-        Returns:
-            Tuple of (tokens_used, prompt_tokens, completion_tokens).
-        """
+    def _extract_usage(self, response_api: Any) -> ProviderUsage:
+        """Read the `usage` attribute; OpenAI reports no durations."""
         usage = getattr(response_api, 'usage', None)
-        if usage:
-            tokens_used = getattr(usage, 'total_tokens', None)
-            prompt_tokens = getattr(usage, 'prompt_tokens', None)
-            completion_tokens = getattr(usage, 'completion_tokens', None)
-        else:
-            tokens_used = None
-            prompt_tokens = None
-            completion_tokens = None
+        if usage is None:
+            return ProviderUsage()
 
-        return tokens_used, prompt_tokens, completion_tokens
-
-    @staticmethod
-    def _extract_ollama_tokens(response_api: Any) -> tuple:
-        """Extract token information from Ollama response.
-
-        Args:
-            response_api: Ollama response object.
-
-        Returns:
-            Tuple of (tokens_used, prompt_tokens, completion_tokens).
-        """
-        prompt_eval_count = response_api.get('prompt_eval_count', 0)
-        eval_count = response_api.get('eval_count', 0)
-        total_tokens = prompt_eval_count + eval_count
-
-        return total_tokens, prompt_eval_count, eval_count
-
-    @staticmethod
-    def _extract_ollama_durations(response_api: Any) -> tuple:
-        """Extract duration information from Ollama response.
-
-        Args:
-            response_api: Ollama response object.
-
-        Returns:
-            Tuple of (load_duration_ms, prompt_eval_duration_ms, eval_duration_ms).
-        """
-        load_duration = response_api.get('load_duration')
-        load_duration_ms = (
-            load_duration / 1_000_000 if load_duration is not None else None
+        return ProviderUsage(
+            tokens_used=getattr(usage, 'total_tokens', None),
+            prompt_tokens=getattr(usage, 'prompt_tokens', None),
+            completion_tokens=getattr(usage, 'completion_tokens', None),
         )
 
-        prompt_eval_duration = response_api.get('prompt_eval_duration')
-        prompt_eval_duration_ms = (
-            prompt_eval_duration / 1_000_000
-            if prompt_eval_duration is not None
-            else None
-        )
 
-        eval_duration = response_api.get('eval_duration')
-        eval_duration_ms = (
-            eval_duration / 1_000_000 if eval_duration is not None else None
-        )
+class OllamaMetricsRecorder(MetricsRecorder):
+    """Reads usage from an Ollama chat response."""
 
-        return load_duration_ms, prompt_eval_duration_ms, eval_duration_ms
+    def _extract_usage(self, response_api: Any) -> ProviderUsage:
+        """Read Ollama's counts and convert its nanosecond durations."""
+        prompt_tokens = response_api.get('prompt_eval_count', 0)
+        completion_tokens = response_api.get('eval_count', 0)
+
+        return ProviderUsage(
+            tokens_used=prompt_tokens + completion_tokens,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            load_duration_ms=nanoseconds_to_milliseconds(
+                response_api.get('load_duration')
+            ),
+            prompt_eval_duration_ms=nanoseconds_to_milliseconds(
+                response_api.get('prompt_eval_duration')
+            ),
+            eval_duration_ms=nanoseconds_to_milliseconds(
+                response_api.get('eval_duration')
+            ),
+        )

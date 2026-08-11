@@ -12,7 +12,7 @@ try:
     module = importlib.import_module(
         'createagents.infra.adapters.Tools.readlocalfile_Tool.readlocalfile_tool'
     )
-    ReadLocalFileTool = getattr(module, 'ReadLocalFileTool')
+    ReadLocalFileTool = module.ReadLocalFileTool
     try:
         _test_instance = ReadLocalFileTool()
         del _test_instance
@@ -206,7 +206,7 @@ class TestReadLocalFileTool:
             try:
                 Path(filepath).chmod(0o644)
                 Path(filepath).unlink()
-            except Exception:
+            except OSError:
                 pass
 
     def test_execute_with_python_file(self):

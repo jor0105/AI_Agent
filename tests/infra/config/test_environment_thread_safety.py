@@ -81,7 +81,8 @@ class TestEnvironmentConfigThreadSafety:
                 key = EnvironmentConfig.get_api_key('API_KEY_TEST')
                 with lock:
                     results.append(key)
-            except Exception as e:
+            # Capture worker failures for the assertion after all futures finish.
+            except Exception as e:  # noqa: BLE001
                 with lock:
                     results.append(str(e))
 
@@ -152,7 +153,8 @@ class TestEnvironmentConfigNewFeatures:
                 EnvironmentConfig.reload()
                 with lock:
                     results.append('success')
-            except Exception as e:
+            # Capture worker failures for the assertion after all futures finish.
+            except Exception as e:  # noqa: BLE001
                 with lock:
                     errors.append(str(e))
 
@@ -176,7 +178,8 @@ class TestEnvironmentConfigNewFeatures:
                 EnvironmentConfig.reload()
                 with lock:
                     results.append('reload')
-            except Exception as e:
+            # Capture worker failures for the assertion after all futures finish.
+            except Exception as e:  # noqa: BLE001
                 with lock:
                     errors.append(str(e))
 
@@ -185,7 +188,8 @@ class TestEnvironmentConfigNewFeatures:
                 value = EnvironmentConfig.get_env('CONCURRENT_VAR')
                 with lock:
                     results.append(f'get:{value}')
-            except Exception as e:
+            # Capture worker failures for the assertion after all futures finish.
+            except Exception as e:  # noqa: BLE001
                 with lock:
                     errors.append(str(e))
 
@@ -212,12 +216,13 @@ class TestEnvironmentConfigNewFeatures:
                 key = EnvironmentConfig.get_api_key('EMPTY_API_KEY')
                 with lock:
                     results.append(key)
-            except EnvironmentError:
+            except OSError:
                 with lock:
                     errors.append('expected_error')
-            except Exception as e:
+            # Keep unexpected worker failures distinct from the expected OSError.
+            except Exception as e:  # noqa: BLE001
                 with lock:
-                    errors.append(f'unexpected:{str(e)}')
+                    errors.append(f'unexpected:{e!s}')
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             futures = [executor.submit(get_empty_key) for _ in range(20)]
@@ -310,7 +315,8 @@ class TestEnvironmentConfigNewFeatures:
                 value = EnvironmentConfig.get_env('STRESS_VAR')
                 with lock:
                     results.append(value)
-            except Exception as e:
+            # Capture worker failures for the assertion after all futures finish.
+            except Exception as e:  # noqa: BLE001
                 with lock:
                     errors.append(str(e))
 

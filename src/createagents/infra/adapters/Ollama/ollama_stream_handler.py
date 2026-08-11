@@ -1,269 +1,193 @@
 import time
-from typing import Any, Dict, AsyncGenerator, List, Optional
+from collections.abc import AsyncGenerator
+from typing import Any
 
-from ....domain import ChatException, BaseTool, ToolExecutor
-from ...config import (
-    ChatMetrics,
-    EnvironmentConfig,
-    LoggingConfig,
-    create_logger,
+from ....domain import BaseTool, ChatException, ChatMetrics
+from ...config import LoggingConfig
+from ..Common import (
+    BaseStreamHandler,
+    StreamUsageTotals,
+    ToolSession,
+    nanoseconds_to_milliseconds,
 )
-from .ollama_client import OllamaClient
+from .ollama_client import OllamaClient, OllamaMessage
+from .ollama_tool_invoker import run_tool_calls
 from .ollama_tool_schema_formatter import OllamaToolSchemaFormatter
 
+#: Ollama duration fields, paired with the `StreamUsageTotals` field each one
+#: feeds once converted from nanoseconds.
+_DURATION_FIELDS: tuple[tuple[str, str], ...] = (
+    ('load_duration', 'load_duration_ms'),
+    ('prompt_eval_duration', 'prompt_eval_duration_ms'),
+    ('eval_duration', 'eval_duration_ms'),
+)
 
-class OllamaStreamHandler:
+
+class OllamaStreamHandler(BaseStreamHandler):
     """Handles streaming responses from Ollama with tool calling support."""
 
     def __init__(
         self,
         client: OllamaClient,
-        metrics_list: Optional[List[ChatMetrics]] = None,
-    ):
-        self.__client = client
-        self.__logger = LoggingConfig.get_logger(__name__)
-        self.__metrics = metrics_list if metrics_list is not None else []
-        self.__max_tool_iterations = int(
-            EnvironmentConfig.get_env('OLLAMA_MAX_TOOL_ITERATIONS', '100')
-            or '100'
+        metrics_list: list[ChatMetrics] | None = None,
+    ) -> None:
+        """Initialize the streaming handler.
+
+        Args:
+            client: Transport used to reach the Ollama chat API.
+            metrics_list: Optional shared list to append metrics to.
+        """
+        super().__init__(
+            logger=LoggingConfig.get_logger(__name__),
+            max_iterations_env_var='OLLAMA_MAX_TOOL_ITERATIONS',
+            metrics_list=metrics_list,
         )
+        self.__client = client
 
     async def handle_stream(
         self,
         model: str,
-        messages: List[Dict[str, str]],
-        config: Optional[Dict[str, Any]],
-        tools: Optional[List[BaseTool]],
+        messages: list[OllamaMessage],
+        config: dict[str, Any] | None,
+        tools: list[BaseTool] | None,
     ) -> AsyncGenerator[str, None]:
         """Yields tokens from the Ollama API as they arrive.
 
         Supports tool calling with interrupted streaming: when tools are
         called during streaming, token yield is paused, tools are executed,
         and streaming resumes with the tool results.
+
+        Args:
+            model: The name of the model.
+            messages: The conversation to send, extended in place with any
+                tool calls and their results.
+            config: Internal AI configuration.
+            tools: Tools the agent may call, or None.
+
+        Yields:
+            Each token as the provider emits it.
+
+        Raises:
+            ChatException: If the streaming call fails.
         """
         start_time = time.time()
+        session = ToolSession.prepare(
+            tools,
+            OllamaToolSchemaFormatter.format_tools_for_ollama,
+            self._logger,
+            f'{__name__}.ToolExecutor',
+        )
 
-        # Prepare tool schemas and executor if tools are provided
-        tool_schemas = None
-        tool_executor = None
-        if tools:
-            tool_schemas = OllamaToolSchemaFormatter.format_tools_for_ollama(
-                tools
-            )
-            tool_executor = ToolExecutor(
-                tools, create_logger(f'{__name__}.ToolExecutor')
-            )
-            self.__logger.debug(
-                'Streaming with tools enabled: %s',
-                [tool.name for tool in tools],
-            )
-
-        # Accumulate metrics across all iterations (for tool calls)
-        total_prompt_tokens = 0
-        total_completion_tokens = 0
-        last_load_duration_ms: Optional[float] = None
-        last_prompt_eval_duration_ms: Optional[float] = None
-        last_eval_duration_ms: Optional[float] = None
+        # Token counts accumulate across every iteration of a tool-calling
+        # turn, so the metric covers the whole turn rather than the last call.
+        totals = StreamUsageTotals()
 
         iteration = 0
         try:
-            while iteration < self.__max_tool_iterations:
+            while iteration < self.max_tool_iterations:
                 iteration += 1
-                self.__logger.info(
+                self._logger.info(
                     'Ollama streaming iteration %s/%s',
                     iteration,
-                    self.__max_tool_iterations,
+                    self.max_tool_iterations,
                 )
 
-                stream_response = await self.__client.call_api(
-                    model, messages, config, tool_schemas
+                stream_response = await self.__client.stream_api(
+                    model, messages, config, session.schemas
                 )
 
                 has_yielded_content = False
                 last_chunk = None
                 tool_call_detected = False
 
-                # OPTIMIZATION: Check for tool calls in EACH chunk as it arrives
                 async for chunk in stream_response:
                     last_chunk = chunk
+                    chunk_message = getattr(chunk, 'message', None)
 
-                    # EARLY DETECTION: Check if THIS chunk has tool calls
-                    if (
-                        tool_executor
-                        and hasattr(chunk, 'message')
-                        and hasattr(chunk.message, 'tool_calls')
-                        and chunk.message.tool_calls
+                    # Stop reading as soon as a chunk carries tool calls;
+                    # the rest of the stream cannot add anything useful.
+                    if session.executor and getattr(
+                        chunk_message, 'tool_calls', None
                     ):
                         tool_call_detected = True
-                        self.__logger.debug(
+                        self._logger.debug(
                             'Tool calls detected early in stream, will break'
                         )
-                        # Break immediately - don't wait for rest of stream
                         break
 
-                    # Yield content tokens as they arrive
-                    if hasattr(chunk, 'message') and hasattr(
-                        chunk.message, 'content'
-                    ):
-                        token = chunk.message.content
-                        if token:
-                            yield token
-                            has_yielded_content = True
+                    token = getattr(chunk_message, 'content', None)
+                    if token:
+                        yield token
+                        has_yielded_content = True
 
-                # Extract metrics from the last chunk (Ollama sends metrics in final chunk)
-                if last_chunk:
-                    # Token counts
-                    prompt_eval_count = getattr(
-                        last_chunk, 'prompt_eval_count', None
+                # Ollama reports usage only on the final chunk of a stream.
+                if last_chunk is not None:
+                    self.__accumulate_usage(totals, last_chunk, iteration)
+
+                assistant_turn = (
+                    last_chunk.message if last_chunk is not None else None
+                )
+                if (
+                    tool_call_detected
+                    and session.executor
+                    and getattr(assistant_turn, 'tool_calls', None)
+                ):
+                    self._logger.info('Tool calls detected, executing tools')
+                    await run_tool_calls(
+                        assistant_turn,
+                        messages,
+                        session.executor,
+                        self._logger,
                     )
-                    eval_count = getattr(last_chunk, 'eval_count', None)
-                    if prompt_eval_count:
-                        total_prompt_tokens += prompt_eval_count
-                    if eval_count:
-                        total_completion_tokens += eval_count
-
-                    # Duration metrics (use last values, not accumulated)
-                    load_duration = getattr(last_chunk, 'load_duration', None)
-                    if load_duration is not None:
-                        last_load_duration_ms = load_duration / 1_000_000
-
-                    prompt_eval_duration = getattr(
-                        last_chunk, 'prompt_eval_duration', None
-                    )
-                    if prompt_eval_duration is not None:
-                        last_prompt_eval_duration_ms = (
-                            prompt_eval_duration / 1_000_000
-                        )
-
-                    eval_duration = getattr(last_chunk, 'eval_duration', None)
-                    if eval_duration is not None:
-                        last_eval_duration_ms = eval_duration / 1_000_000
-
-                    self.__logger.debug(
-                        'Iteration %s tokens - prompt: %s, completion: %s',
-                        iteration,
-                        prompt_eval_count,
-                        eval_count,
-                    )
-
-                # Process tool calls if detected
-                if tool_call_detected and last_chunk and tool_executor:
-                    self.__logger.info('Tool calls detected, executing tools')
-
-                    # Add assistant message with tool calls to history
-                    messages.append(last_chunk.message)
-
-                    # Execute tool calls
-                    tool_calls = last_chunk.message.tool_calls
-                    self.__logger.debug(
-                        'Executing %s tool(s)', len(tool_calls)
-                    )
-
-                    for tool_call in tool_calls:
-                        tool_name = tool_call.function.name
-                        tool_args = tool_call.function.arguments
-
-                        self.__logger.debug(
-                            "Executing tool '%s' with args: %s",
-                            tool_name,
-                            tool_args,
-                        )
-
-                        execution_result = await tool_executor.execute_tool(
-                            tool_name, **tool_args
-                        )
-
-                        result_text = (
-                            str(execution_result.result)
-                            if execution_result.success
-                            else f'Error: {execution_result.error}'
-                        )
-
-                        messages.append(
-                            {
-                                'role': 'tool',
-                                'tool_name': tool_name,
-                                'content': result_text,
-                            }
-                        )
-
-                    # Continue to next iteration to get final response
-                    # Reset for next iteration
-                    has_yielded_content = False
-                    tool_call_detected = False
                     continue
 
-                # If we yielded content and no tool calls, we're done
                 if has_yielded_content:
                     break
 
-                # If this was a tool-only iteration (no content), continue to next iteration
-                if tool_call_detected and not has_yielded_content:
-                    self.__logger.debug(
+                if tool_call_detected:
+                    self._logger.debug(
                         'Tool-only iteration, continuing to next'
                     )
                     continue
 
-                # If we didn't yield anything and no tool calls, something's wrong
-                if not has_yielded_content and not tool_call_detected:
-                    self.__logger.warning(
-                        'No content yielded in streaming response'
-                    )
-                    break
-
-            if iteration >= self.__max_tool_iterations:
-                self.__logger.warning(
-                    'Max tool iterations (%s) reached during streaming',
-                    self.__max_tool_iterations,
+                self._logger.warning(
+                    'No content yielded in streaming response'
                 )
+                break
 
-            # Record metrics after streaming completes with accumulated tokens
-            latency = (time.time() - start_time) * 1000
-            total_tokens = (
-                total_prompt_tokens + total_completion_tokens
-                if total_prompt_tokens or total_completion_tokens
-                else None
-            )
-            metrics = ChatMetrics(
-                model=model,
-                latency_ms=latency,
-                tokens_used=total_tokens,
-                prompt_tokens=(
-                    total_prompt_tokens if total_prompt_tokens else None
-                ),
-                completion_tokens=(
-                    total_completion_tokens
-                    if total_completion_tokens
-                    else None
-                ),
-                load_duration_ms=last_load_duration_ms,
-                prompt_eval_duration_ms=last_prompt_eval_duration_ms,
-                eval_duration_ms=last_eval_duration_ms,
-                success=True,
-            )
-            self.__metrics.append(metrics)
-            self.__logger.info(
-                'Streaming chat completed: %s (accumulated over %s iteration(s))',
-                metrics,
-                iteration,
-            )
+            self.warn_if_iterations_exhausted(iteration)
+            self.record_stream_success(model, start_time, totals, iteration)
 
         except Exception as e:
-            latency = (time.time() - start_time) * 1000
-            metrics = ChatMetrics(
-                model=model,
-                latency_ms=latency,
-                success=False,
-                error_message=str(e),
-            )
-            self.__metrics.append(metrics)
-            self.__logger.error('Error during streaming: %s', e)
+            self.record_stream_error(model, start_time, e)
             raise ChatException(
-                f'Error during Ollama streaming: {str(e)}', original_error=e
+                f'Error during Ollama streaming: {e!s}', original_error=e
             ) from e
-        finally:
-            self.__client.stop_model(model)
 
-    def get_metrics(self) -> List[ChatMetrics]:
-        """Returns the list of collected metrics."""
-        return self.__metrics.copy()
+    def __accumulate_usage(
+        self, totals: StreamUsageTotals, chunk: Any, iteration: int
+    ) -> None:
+        """Add the final chunk's token counts and durations to the totals.
+
+        Args:
+            totals: The turn's accumulated usage, updated in place.
+            chunk: The last chunk seen in this iteration's stream.
+            iteration: The iteration number, for the debug trace.
+        """
+        prompt_eval_count = getattr(chunk, 'prompt_eval_count', None)
+        eval_count = getattr(chunk, 'eval_count', None)
+        totals.add_tokens(prompt_eval_count, eval_count)
+
+        for attribute, field_name in _DURATION_FIELDS:
+            milliseconds = nanoseconds_to_milliseconds(
+                getattr(chunk, attribute, None)
+            )
+            if milliseconds is not None:
+                setattr(totals, field_name, milliseconds)
+
+        self._logger.debug(
+            'Iteration %s tokens - prompt: %s, completion: %s',
+            iteration,
+            prompt_eval_count,
+            eval_count,
+        )

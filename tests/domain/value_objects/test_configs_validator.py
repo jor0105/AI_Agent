@@ -274,6 +274,20 @@ class TestTopKValidation:
 
 
 @pytest.mark.unit
+class TestStreamValidation:
+    def test_validate_stream_scenarios_accepts_boolean(self):
+        SupportedConfigs.validate_stream(True)
+        SupportedConfigs.validate_stream(False)
+        SupportedConfigs.validate_stream(None)
+
+    def test_validate_stream_scenarios_rejects_invalid_types(self):
+        with pytest.raises(InvalidAgentConfigException, match='stream'):
+            SupportedConfigs.validate_stream('yes')
+        with pytest.raises(InvalidAgentConfigException, match='stream'):
+            SupportedConfigs.validate_stream(1)
+
+
+@pytest.mark.unit
 class TestValidateConfigExtended:
     def test_validate_config_think_with_boolean(self):
         SupportedConfigs.validate_config('think', True)
@@ -323,3 +337,9 @@ class TestValidateConfigExtended:
         }
 
         assert configs == expected
+
+    def test_validate_config_stream_scenarios(self):
+        SupportedConfigs.validate_config('stream', True)
+        SupportedConfigs.validate_config('stream', False)
+        with pytest.raises(InvalidAgentConfigException):
+            SupportedConfigs.validate_config('stream', 'enabled')

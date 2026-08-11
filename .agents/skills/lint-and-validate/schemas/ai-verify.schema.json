@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Verify Result",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "status",
+    "profile",
+    "effectiveProfile",
+    "profileReason",
+    "changedFiles",
+    "gates",
+    "escalations",
+    "sessionDir",
+    "summary"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["passed", "failed", "skipped", "external_failure"]
+    },
+    "profile": {
+      "type": "string",
+      "enum": ["auto", "quick", "standard", "high-risk", "ui-flow", "security-touch"]
+    },
+    "effectiveProfile": {
+      "type": "string",
+      "enum": ["quick", "standard", "high-risk", "ui-flow", "security-touch"]
+    },
+    "profileReason": {
+      "type": "string"
+    },
+    "changedFiles": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "command",
+          "blocking",
+          "status",
+          "classification",
+          "durationMs",
+          "exitCode",
+          "logPath"
+        ],
+        "properties": {
+          "name": { "type": "string" },
+          "label": { "type": "string" },
+          "command": { "type": "string" },
+          "blocking": { "type": "boolean" },
+          "status": {
+            "type": "string",
+            "enum": ["passed", "failed", "skipped", "external_failure"]
+          },
+          "classification": {
+            "type": "string",
+            "enum": ["code", "environment", "not_configured", "not_applicable"]
+          },
+          "durationMs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "exitCode": {
+            "type": ["integer", "null"]
+          },
+          "logPath": {
+            "type": ["string", "null"]
+          },
+          "details": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "escalations": {
+      "type": "object",
+      "required": [
+        "reviewRequired",
+        "securityRequired",
+        "testerRecommended",
+        "reasons"
+      ],
+      "properties": {
+        "reviewRequired": { "type": "boolean" },
+        "securityRequired": { "type": "boolean" },
+        "testerRecommended": { "type": "boolean" },
+        "reasons": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "sessionDir": {
+      "type": ["string", "null"]
+    },
+    "summary": {
+      "type": "string"
+    }
+  }
+}

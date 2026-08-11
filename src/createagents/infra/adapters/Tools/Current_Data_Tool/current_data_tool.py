@@ -1,11 +1,21 @@
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, Dict
+from typing import Any, ClassVar, Final
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .....domain import BaseTool
 from .....utils import TextSanitizer
 from ....config import LoggingConfig
+
+#: The actions the tool accepts. Declared once so the JSON schema advertised
+#: to the model and the runtime check can never disagree.
+_ACTIONS: Final[tuple[str, ...]] = (
+    'date',
+    'time',
+    'datetime',
+    'timestamp',
+    'date_with_weekday',
+)
 
 
 @lru_cache(maxsize=32)
@@ -46,18 +56,12 @@ class CurrentDateTool(BaseTool):
         'Get the current date and/or time in a specific timezone. '
         "Essential for answering 'What time is it?' or 'What day is it?' questions."
     )
-    parameters: Dict[str, Any] = {
+    parameters: ClassVar[dict[str, Any]] = {
         'type': 'object',
         'properties': {
             'action': {
                 'type': 'string',
-                'enum': [
-                    'date',
-                    'time',
-                    'datetime',
-                    'timestamp',
-                    'date_with_weekday',
-                ],
+                'enum': list(_ACTIONS),
                 'description': (
                     "What information to return: 'date' (just the date), "
                     "'time' (just the time), 'datetime' (both), "
@@ -121,17 +125,9 @@ class CurrentDateTool(BaseTool):
             tz,
         )
 
-        # Validate action
-        allowed = {
-            'date',
-            'time',
-            'datetime',
-            'timestamp',
-            'date_with_weekday',
-        }
-        if action not in allowed:
+        if action not in _ACTIONS:
             return self.__error(
-                f"Invalid action '{action}'. Allowed: {sorted(allowed)}"
+                f"Invalid action '{action}'. Allowed: {sorted(_ACTIONS)}"
             )
 
         try:
@@ -167,15 +163,11 @@ class CurrentDateTool(BaseTool):
             return sanitized_response
 
         except (ValueError, TypeError) as e:
-            self.__logger.error(
-                'Value/Type error in CurrentDateTool: %s', e, exc_info=True
-            )
+            self.__logger.exception('Value/Type error in CurrentDateTool')
             return self.__error(f'Processing error: {type(e).__name__}: {e}')
 
         except Exception as e:
-            self.__logger.error(
-                'Unexpected error in CurrentDateTool: %s', e, exc_info=True
-            )
+            self.__logger.exception('Unexpected error in CurrentDateTool')
             return self.__error(f'Unexpected error: {type(e).__name__}: {e}')
 
     def __error(self, details: str) -> str:

@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Clean Architecture](https://img.shields.io/badge/Architecture-Clean-brightgreen.svg)](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
 
----
+______________________________________________________________________
 
 ## 🎯 O que este sistema oferece?
 
@@ -18,7 +18,7 @@
 ✅ **Métricas integradas**: Monitore performance em JSON ou Prometheus
 ✅ **Arquitetura limpa**: Código testável, manutenível e escalável seguindo SOLID
 
----
+______________________________________________________________________
 
 ## 🚀 Quick Start
 
@@ -45,19 +45,23 @@ echo "OPENAI_API_KEY=sk-proj-sua-chave" > .env
 ### Primeiro Agente em 3 Linhas
 
 ```python
+import asyncio
 from createagents import CreateAgent
 
-agent = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    instructions="Você é um assistente útil"
-)
+async def main():
+    agent = CreateAgent(
+        provider="openai",
+        model="gpt-4",
+        instructions="Você é um assistente útil"
+    )
 
-response = agent.chat("Olá!")
-print(response)
+    response = await agent.chat("Olá!")
+    print(response)
+
+asyncio.run(main())
 ```
 
----
+______________________________________________________________________
 
 ## ✨ Funcionalidades Principais
 
@@ -76,24 +80,32 @@ agent_local = CreateAgent(provider="ollama", model="llama2")
 Adicione capacidades aos seus agentes com ferramentas prontas:
 
 ```python
-agent = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    tools=["currentdate", "readlocalfile"]  # Ferramentas disponíveis
-)
+import asyncio
 
-# O agente usa automaticamente as ferramentas quando necessário
-agent.chat("Que dia é hoje?")  # Usa CurrentDateTool
-agent.chat("Leia o arquivo report.pdf")  # Usa ReadLocalFileTool
+async def main():
+    agent = CreateAgent(
+        provider="openai",
+        model="gpt-4",
+        tools=["currentdate", "readlocalfile"]  # Ferramentas disponíveis
+    )
 
-# Verificar ferramentas disponíveis
-all_tools = agent.get_all_available_tools()
-print(f"Total de ferramentas: {len(all_tools)}")
+    # O agente usa automaticamente as ferramentas quando necessário
+    response1 = await agent.chat("Que dia é hoje?")  # Usa CurrentDateTool
+    print(response1)
 
-# Ver apenas ferramentas do sistema
-system_tools = agent.get_system_available_tools()
-for name in system_tools.keys():
-    print(f"  • {name}")
+    response2 = await agent.chat("Leia o arquivo report.pdf")  # Usa ReadLocalFileTool
+    print(response2)
+
+    # Verificar ferramentas disponíveis
+    all_tools = agent.get_all_available_tools()
+    print(f"Total de ferramentas: {len(all_tools)}")
+
+    # Ver apenas ferramentas do sistema
+    system_tools = agent.get_system_available_tools()
+    for name in system_tools.keys():
+        print(f"  • {name}")
+
+asyncio.run(main())
 ```
 
 **Ferramentas Disponíveis:**
@@ -134,27 +146,36 @@ agent = CreateAgent(
 
 # Ver todas (sistema + customizadas)
 print(agent.get_all_available_tools().keys())
-# Saída: dict_keys(['currentdate', 'readlocalfile', 'my_tool'])
+# Saída: dict_keys(['currentdate', 'readlocalfile', 'calculator'])
 ```
 
 ### 💬 Histórico Contextual
 
 ```python
-agent.chat("Olá!")
-agent.chat("Qual é a capital do Brasil?") # Mantém contexto
-agent.chat("E a população?")              # Usa contexto anterior
+import asyncio
 
-# Ver histórico
-config = agent.get_configs()
-print(f"Histórico: {len(config['history'])} mensagens")
+async def main():
+    agent = CreateAgent(provider="openai", model="gpt-4")
 
-# Limpar quando necessário
-agent.clear_history()
+    await agent.chat("Olá!")
+    await agent.chat("Qual é a capital do Brasil?")  # Mantém contexto
+    await agent.chat("E a população?")              # Usa contexto anterior
+
+    # Ver histórico
+    config = agent.get_configs()
+    print(f"Histórico: {len(config['history'])} mensagens")
+
+    # Limpar quando necessário
+    agent.clear_history()
+
+asyncio.run(main())
 ```
 
 ### 📊 Métricas e Monitoramento
 
 ```python
+agent = CreateAgent(provider="openai", model="gpt-4")
+
 # Coletar métricas
 metrics = agent.get_metrics()
 
@@ -178,7 +199,7 @@ agent = CreateAgent(
 )
 ```
 
----
+______________________________________________________________________
 
 ## 📚 Documentação
 
@@ -201,7 +222,7 @@ agent = CreateAgent(
 - **[Ferramentas](reference/tools.md)** - Guia completo das tools disponíveis
 - **[Comandos](reference/commands.md)** - Referência de comandos
 
----
+______________________________________________________________________
 
 ## 🏗️ Por Que Usar Este Framework?
 
@@ -219,7 +240,7 @@ agent = CreateAgent(
 - ✅ **Type hints**: Suporte completo para IDEs
 - ✅ **CI/CD**: Quality checks automáticos com GitHub Actions
 
----
+______________________________________________________________________
 
 ## 📊 Arquitetura
 
@@ -227,7 +248,7 @@ O projeto segue **Clean Architecture** e **SOLID principles**:
 
 ```
 ┌─────────────────────────────────────┐
-│        application                 │  ← CreateAgent (interface simples)
+│        PRESENTATION                 │  ← CreateAgent (interface simples)
 │     (Controllers/UI)                │
 └──────────────┬──────────────────────┘
                │
@@ -251,21 +272,21 @@ O projeto segue **Clean Architecture** e **SOLID principles**:
 
 [Saiba mais sobre a arquitetura →](dev-guide/architecture-developer.md)
 
----
+______________________________________________________________________
 
 ## 🤝 Contribuindo
 
 Quer adicionar um novo provedor ou criar uma ferramenta?
 
 1. Fork o repositório
-1. Crie uma branch: `git checkout -b feature/nova-feature`
-1. Implemente seguindo os padrões existentes
-1. Teste: `poetry run pytest --cov=src`
-1. Envie um Pull Request
+2. Crie uma branch: `git checkout -b feature/nova-feature`
+3. Implemente seguindo os padrões existentes
+4. Teste: `uv run pytest --cov=src`
+5. Envie um Pull Request
 
 [Guia completo de contribuição →](dev-guide/contribute.md)
 
----
+______________________________________________________________________
 
 ## 📞 Suporte
 
@@ -273,13 +294,13 @@ Quer adicionar um novo provedor ou criar uma ferramenta?
 - 🐛 **Bugs**: [GitHub Issues](https://github.com/jor0105/Create-Agents-AI/issues)
 - 💬 **Discussões**: [GitHub Discussions](https://github.com/jor0105/Create-Agents-AI/discussions)
 
----
+______________________________________________________________________
 
 ## 📄 Licença
 
 MIT - Use livremente em seus projetos.
 
----
+______________________________________________________________________
 
 ## 👨‍💻 Autor
 
@@ -288,8 +309,8 @@ MIT - Use livremente em seus projetos.
 - GitHub: [@jor0105](https://github.com/jor0105)
 - Email: estraliotojordan@gmail.com
 
----
+______________________________________________________________________
 
-**Versão:** 0.1.2\
-**Última atualização:** 25/11/2025\
+**Versão:** 0.2.0
+**Última atualização:** 07/08/2026
 **Status:** 🚀 Projeto publicado! Aberto para contribuições e sugestões.

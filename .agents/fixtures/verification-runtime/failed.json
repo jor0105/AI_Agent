@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "failed",
+  "profile": "high-risk",
+  "effectiveProfile": "high-risk",
+  "profileReason": "Perfil 'high-risk' solicitado explicitamente.",
+  "changedFiles": ["src/app/store/index.ts"],
+  "gates": [
+    {
+      "name": "typecheck",
+      "label": "Typecheck",
+      "command": "npm run typecheck",
+      "blocking": true,
+      "status": "failed",
+      "classification": "code",
+      "durationMs": 2400,
+      "exitCode": 2,
+      "logPath": null,
+      "details": "Type error"
+    }
+  ],
+  "escalations": {
+    "reviewRequired": true,
+    "securityRequired": false,
+    "testerRecommended": false,
+    "reasons": [
+      "Perfil high-risk exige review obrigatorio.",
+      "Store global e contrato sensivel."
+    ]
+  },
+  "sessionDir": null,
+  "summary": "1 failed"
+}

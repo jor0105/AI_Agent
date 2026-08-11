@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "2.0.0",
+  "mode": "precommit",
+  "comment": "Profiles definem apenas scope de arquivos e escalation. Os stages pre-commit e pre-push sao definidos pelo .pre-commit-config.yaml do projeto.",
+  "profiles": {
+    "quick": {
+      "scope": "files",
+      "description": "Validacao rapida para mudancas simples de docs/config."
+    },
+    "standard": {
+      "scope": "files",
+      "description": "Caminho padrao do developer para codigo de baixo/medio risco."
+    },
+    "high-risk": {
+      "scope": "all-files",
+      "description": "Validacao reforcada para contrato publico, store global e refactor amplo."
+    },
+    "ui-flow": {
+      "scope": "all-files",
+      "description": "Validacao para fluxos UI com browser real quando configurado."
+    },
+    "security-touch": {
+      "scope": "all-files",
+      "description": "Validacao reforcada com escalacao obrigatoria para seguranca."
+    }
+  }
+}

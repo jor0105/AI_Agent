@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 from createagents.application import ChatInputDTO, ChatWithAgentUseCase
 from createagents.domain import Agent, ChatException
@@ -10,6 +11,7 @@ def mock_async_chat_repository():
     """Fixture that creates an async mock chat repository."""
     mock = Mock()
     mock.chat = AsyncMock(return_value='AI response')
+    mock.get_metrics.return_value = []
     return mock
 
 
@@ -324,7 +326,7 @@ class TestChatWithAgentUseCase:
         assert metrics[0]['model'] == 'gpt-4'
         mock_repository.get_metrics.assert_called_once()
 
-    def test_get_metrics_when_repository_does_not_support_it(
+    def test_get_metrics_returns_empty_list_when_no_metrics(
         self, mock_async_chat_repository
     ):
         use_case = ChatWithAgentUseCase(
@@ -432,7 +434,7 @@ class TestChatWithAgentUseCase:
     async def test_execute_respects_history_max_size(
         self, mock_async_chat_repository
     ):
-        from createagents.domain.value_objects import History
+        from createagents.domain.entities import History
 
         mock_async_chat_repository.chat.return_value = 'Response'
         use_case = ChatWithAgentUseCase(
@@ -453,3 +455,125 @@ class TestChatWithAgentUseCase:
         assert len(agent.history) == 4
         messages = agent.history.get_messages()
         assert messages[0].content == 'Message 1'
+
+
+def _agent():
+    return Agent(
+        provider='openai',
+        model='gpt-5-nano',
+        name='Test',
+        instructions='Be helpful',
+    )
+
+
+async def _stream(*tokens):
+    for token in tokens:
+        yield token
+
+
+@pytest.mark.unit
+class TestChatWithAgentStreaming:
+    """The streaming branch: tokens pass through, history lands at the end."""
+
+    @pytest.mark.asyncio
+    async def test_yields_every_token_in_order(
+        self, mock_async_chat_repository
+    ):
+        mock_async_chat_repository.chat.return_value = _stream(
+            'Hello', ', ', 'world'
+        )
+        use_case = ChatWithAgentUseCase(
+            chat_repository=mock_async_chat_repository
+        )
+
+        result = await use_case.execute(_agent(), ChatInputDTO(message='Hi'))
+
+        assert [token async for token in result] == ['Hello', ', ', 'world']
+
+    @pytest.mark.asyncio
+    async def test_history_is_updated_only_after_the_stream_ends(
+        self, mock_async_chat_repository
+    ):
+        mock_async_chat_repository.chat.return_value = _stream('a', 'b')
+        use_case = ChatWithAgentUseCase(
+            chat_repository=mock_async_chat_repository
+        )
+        agent = _agent()
+
+        result = await use_case.execute(agent, ChatInputDTO(message='Hi'))
+
+        collected = []
+        async for token in result:
+            collected.append(token)
+            # Mid-stream the history must still be untouched.
+            assert len(agent.history) == 0
+
+        assert collected == ['a', 'b']
+        messages = agent.history.get_messages()
+        assert len(messages) == 2
+        assert messages[0].content == 'Hi'
+        assert messages[1].content == 'ab'
+
+    @pytest.mark.asyncio
+    async def test_empty_stream_raises_chat_exception(
+        self, mock_async_chat_repository
+    ):
+        mock_async_chat_repository.chat.return_value = _stream()
+        use_case = ChatWithAgentUseCase(
+            chat_repository=mock_async_chat_repository
+        )
+        agent = _agent()
+
+        result = await use_case.execute(agent, ChatInputDTO(message='Hi'))
+
+        with pytest.raises(
+            ChatException, match='Empty response received from stream'
+        ):
+            [token async for token in result]
+
+        assert len(agent.history) == 0
+
+    @pytest.mark.asyncio
+    async def test_error_mid_stream_is_wrapped_in_chat_exception(
+        self, mock_async_chat_repository
+    ):
+        async def failing_stream():
+            yield 'partial'
+            raise RuntimeError('connection dropped')
+
+        mock_async_chat_repository.chat.return_value = failing_stream()
+        use_case = ChatWithAgentUseCase(
+            chat_repository=mock_async_chat_repository
+        )
+        agent = _agent()
+
+        result = await use_case.execute(agent, ChatInputDTO(message='Hi'))
+
+        with pytest.raises(ChatException) as exc_info:
+            [token async for token in result]
+
+        assert 'connection dropped' in str(exc_info.value)
+        assert isinstance(exc_info.value.original_error, RuntimeError)
+        assert len(agent.history) == 0
+
+    @pytest.mark.asyncio
+    async def test_chat_exception_mid_stream_propagates_unwrapped(
+        self, mock_async_chat_repository
+    ):
+        async def failing_stream():
+            yield 'partial'
+            raise ChatException('provider refused')
+
+        mock_async_chat_repository.chat.return_value = failing_stream()
+        use_case = ChatWithAgentUseCase(
+            chat_repository=mock_async_chat_repository
+        )
+
+        result = await use_case.execute(_agent(), ChatInputDTO(message='Hi'))
+
+        with pytest.raises(
+            ChatException, match='provider refused'
+        ) as exc_info:
+            [token async for token in result]
+
+        assert exc_info.value.original_error is None

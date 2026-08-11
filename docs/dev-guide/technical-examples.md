@@ -26,9 +26,21 @@ class MyTool(BaseTool):
 ## Novo Adapter de Provedor
 
 ```python
+from collections.abc import AsyncGenerator
+from typing import Any
 from createagents.application.interfaces import ChatRepository
+from createagents.domain import BaseTool
+
 class ClaudeAdapter(ChatRepository):
-    def chat(self, ...):
+    async def chat(
+        self,
+        model: str,
+        instructions: str | None,
+        config: dict[str, Any] | None,
+        tools: list[BaseTool] | None,
+        history: list[dict[str, str]],
+        user_ask: str,
+    ) -> str | AsyncGenerator[str, None]:
         # Implementação para Claude
         pass
 ```
@@ -36,19 +48,20 @@ class ClaudeAdapter(ChatRepository):
 ## Testes Unitários
 
 ```python
+import asyncio
 import pytest
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 from createagents import CreateAgent
 
-@pytest.mark.unitest
+@pytest.mark.unit
 class TestAgentChat(TestCase):
-    @patch("createagents.application.facade.client.OpenAIChatAdapter")
+    @patch("createagents.main.facade.client.OpenAIChatAdapter")
     def test_chat(self, mock_adapter):
         # Configura o mock para simular resposta da API
-        mock_adapter.return_value.chat.return_value = "Olá, mundo!"
+        mock_adapter.return_value.chat = AsyncMock(return_value="Olá, mundo!")
         agent = CreateAgent(provider="openai", model="gpt-4")
-        response = agent.chat("Teste")
+        response = asyncio.run(agent.chat("Teste"))
         self.assertEqual(response, "Olá, mundo!")
 ```
 

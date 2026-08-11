@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write # IMPORTANT: required for trusted publishing
 
 jobs:
   # --------------------------------------------------------------------------
@@ -19,31 +18,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+        with:
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
         with:
           python-version: "3.12"
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
         with:
-          version: 2.2.1
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+          # A poisoned cache must not be able to reach a published wheel.
+          enable-cache: false
 
       - name: Install dependencies
-        run: poetry install --no-interaction --no-ansi --with dev
+        run: uv sync
 
       - name: Security analysis with Bandit
         run: |
-          poetry run bandit -c pyproject.toml -r src -ll
+          uv run bandit -c pyproject.toml -r src -ll
           echo "✅ Security analysis passed"
 
       - name: Check for vulnerable dependencies
         run: |
-          poetry run pip-audit
+          uv run pip-audit
           echo "✅ No vulnerable dependencies in release"
 
   # --------------------------------------------------------------------------
@@ -52,45 +52,49 @@ jobs:
   publish:
     name: Build and publish to PyPI
     runs-on: ubuntu-latest
-    needs: security-scan # Only publish if security checks pass
+    needs: security-scan  # Only publish if security checks pass
+    permissions:
+      contents: read
+      id-token: write  # Trusted publishing; scoped to this job only
     environment:
       name: release
       url: https://pypi.org/project/createagents/
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+        with:
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
         with:
           python-version: "3.12"
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
         with:
-          version: 2.2.1
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+          # A poisoned cache must not be able to reach a published wheel.
+          enable-cache: false
 
       - name: Install dependencies
-        run: poetry install --no-interaction --no-ansi --only main
+        run: uv sync --no-dev
 
       - name: Build package
-        run: poetry build
+        run: uv build
 
       - name: Check package distribution
         run: |
-          poetry run pip install twine
-          poetry run twine check dist/*
+          uv run --with twine twine check dist/*
 
       - name: Publish to PyPI using Trusted Publishers
-        uses: pypa/gh-action-pypi-publish@release/v1
+        # pypa/gh-action-pypi-publish, pinned from branch release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33
         with:
           print-hash: true
           verbose: true
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: dist-packages
           path: dist/

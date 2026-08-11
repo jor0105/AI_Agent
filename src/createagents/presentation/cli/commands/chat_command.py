@@ -1,10 +1,15 @@
-from typing import List, TYPE_CHECKING
+import asyncio
+from typing import TYPE_CHECKING
 
-from ....utils.text_sanitizer import TextSanitizer
+from ....application import StreamingResponseDTO
+from ....infra.config import create_logger
+from ..ui import MarkdownTerminalFormatter
 from .base_command import CommandHandler
 
 if TYPE_CHECKING:
-    from ....application.facade import CreateAgent
+    from ..protocols import AgentFacade
+
+_logger = create_logger(__name__)
 
 
 class ChatCommandHandler(CommandHandler):
@@ -15,56 +20,54 @@ class ChatCommandHandler(CommandHandler):
     """
 
     def can_handle(self, user_input: str) -> bool:
-        """This handler accepts all non-empty inputs.
+        """Accept every non-empty input.
 
-        Should be registered last in the command registry as it's the default.
+        This is the fallback handler rather than an alias-matched command, so
+        it replaces the base class's alias check. It must be registered last.
         """
         return bool(user_input.strip())
 
-    def execute(self, agent: 'CreateAgent', user_input: str) -> None:
+    def execute(self, agent: 'AgentFacade', user_input: str) -> None:
         """Execute the chat command.
 
         Args:
-            agent: The CreateAgent instance.
+            agent: The agent facade.
             user_input: The user's input string.
         """
-        import asyncio  # pylint: disable=import-outside-toplevel
-        from ....application import StreamingResponseDTO  # pylint: disable=import-outside-toplevel
+        asyncio.run(self.__run_chat(agent, user_input))
 
-        async def run_chat():
-            # 1. Show User Message (Right aligned, Blue)
-            self._renderer.render_user_message(user_input)
-            self._renderer.render_spacer()
-            # 2. Show AI Thinking
-            self._renderer.render_thinking_indicator()
-            # Get Response
-            try:
-                response = await agent.chat(user_input)
+    async def __run_chat(self, agent: 'AgentFacade', user_input: str) -> None:
+        """Send one turn to the agent and render the reply.
 
-                # Check if streaming (StreamingResponseDTO can be iterated)
-                if isinstance(response, StreamingResponseDTO):
-                    # Streaming mode - render tokens in real-time inside purple box
-                    # The renderer will clear the thinking indicator when first token arrives
-                    await self._renderer.render_ai_message_streaming(response)
-                else:
-                    # Non-streaming mode - clear thinking and format response
-                    self._renderer.clear_thinking_indicator()
-                    response = TextSanitizer.format_markdown_for_terminal(
-                        response
-                    )
-                    self._renderer.render_ai_message(response)
+        Args:
+            agent: The agent facade.
+            user_input: The user's input string.
+        """
+        self._renderer.render_user_message(user_input)
+        self._renderer.render_spacer()
+        self._renderer.render_thinking_indicator()
 
-            except Exception as e:
-                # Clear thinking line if there was an error
+        try:
+            response = await agent.chat(user_input)
+
+            if isinstance(response, StreamingResponseDTO):
+                # The renderer clears the thinking indicator itself once the
+                # first token arrives, so the wait stays visible until then.
+                await self._renderer.render_ai_message_streaming(response)
+            else:
                 self._renderer.clear_thinking_indicator()
-                response = f'Error: {str(e)}'
-                self._renderer.render_ai_message(response)
+                self._renderer.render_ai_message(
+                    MarkdownTerminalFormatter.format(response)
+                )
 
-            self._renderer.render_spacer()
+        except Exception as e:
+            _logger.exception('Chat turn failed')
+            self._renderer.clear_thinking_indicator()
+            self._renderer.render_ai_message(f'Error: {e!s}')
 
-        asyncio.run(run_chat())
+        self._renderer.render_spacer()
 
-    def get_aliases(self) -> List[str]:
+    def get_aliases(self) -> list[str]:
         """Get chat command aliases.
 
         Returns empty list as this is the default handler.

@@ -3,9 +3,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from createagents.application.interfaces.chat_repository import ChatRepository
+from createagents.application.interfaces import ChatRepository
+from createagents.domain.entities import History
 from createagents.domain.entities.agent_domain import Agent
-from createagents.domain.value_objects import History
 
 DEFAULT_PROVIDER = 'openai'
 DEFAULT_MODEL = 'gpt-5-nano'

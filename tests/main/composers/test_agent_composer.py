@@ -121,16 +121,12 @@ class TestAgentComposer:
             mock_client = MagicMock()
             mock_get_client.return_value = mock_client
 
-            use_case = AgentComposer.create_chat_use_case(
-                provider='openai', model='gpt-5-nano'
-            )
+            use_case = AgentComposer.create_chat_use_case(provider='openai')
 
             assert isinstance(use_case, ChatWithAgentUseCase)
 
     def test_create_chat_use_case_with_ollama_provider(self):
-        use_case = AgentComposer.create_chat_use_case(
-            provider='ollama', model='phi4-mini:latest'
-        )
+        use_case = AgentComposer.create_chat_use_case(provider='ollama')
 
         assert isinstance(use_case, ChatWithAgentUseCase)
 
@@ -144,9 +140,7 @@ class TestAgentComposer:
             mock_client = MagicMock()
             mock_get_client.return_value = mock_client
 
-            use_case = AgentComposer.create_chat_use_case(
-                provider='openai', model='gpt-5-nano'
-            )
+            use_case = AgentComposer.create_chat_use_case(provider='openai')
 
             assert hasattr(use_case, '_ChatWithAgentUseCase__chat_repository')
 
@@ -184,12 +178,8 @@ class TestAgentComposer:
             mock_client = MagicMock()
             mock_get_client.return_value = mock_client
 
-            use_case1 = AgentComposer.create_chat_use_case(
-                provider='openai', model='gpt-5-nano'
-            )
-            use_case2 = AgentComposer.create_chat_use_case(
-                provider='openai', model='gpt-5-nano'
-            )
+            use_case1 = AgentComposer.create_chat_use_case(provider='openai')
+            use_case2 = AgentComposer.create_chat_use_case(provider='openai')
 
             assert use_case1 is not use_case2
 
@@ -360,13 +350,11 @@ class TestAgentComposer:
 
     def test_create_chat_use_case_with_invalid_provider_raises_error(self):
         with pytest.raises(ValueError):
-            AgentComposer.create_chat_use_case(
-                provider='invalid_provider', model='some-model'
-            )
+            AgentComposer.create_chat_use_case(provider='invalid_provider')
 
     def test_create_chat_use_case_with_empty_provider_raises_error(self):
         with pytest.raises(ValueError):
-            AgentComposer.create_chat_use_case(provider='', model='some-model')
+            AgentComposer.create_chat_use_case(provider='')
 
     def test_create_chat_use_case_openai_injects_correct_adapter_type(self):
         with (
@@ -378,16 +366,12 @@ class TestAgentComposer:
             mock_client = MagicMock()
             mock_get_client.return_value = mock_client
 
-            use_case = AgentComposer.create_chat_use_case(
-                provider='openai', model='gpt-5-nano'
-            )
+            use_case = AgentComposer.create_chat_use_case(provider='openai')
 
             assert use_case._ChatWithAgentUseCase__chat_repository is not None
 
     def test_create_chat_use_case_ollama_injects_correct_adapter_type(self):
-        use_case = AgentComposer.create_chat_use_case(
-            provider='ollama', model='phi4-mini:latest'
-        )
+        use_case = AgentComposer.create_chat_use_case(provider='ollama')
 
         assert use_case._ChatWithAgentUseCase__chat_repository is not None
 
@@ -523,12 +507,8 @@ class TestAgentComposer:
             mock_client = MagicMock()
             mock_get_client.return_value = mock_client
 
-            use_case1 = AgentComposer.create_chat_use_case(
-                provider='openai', model='gpt-4'
-            )
-            use_case2 = AgentComposer.create_chat_use_case(
-                provider='openai', model='gpt-3.5-turbo'
-            )
+            use_case1 = AgentComposer.create_chat_use_case(provider='openai')
+            use_case2 = AgentComposer.create_chat_use_case(provider='openai')
 
             assert use_case1 is not use_case2
 
@@ -745,7 +725,7 @@ class TestAgentComposer:
     def test_create_agent_with_string_tool_name(self):
         from createagents.infra import AvailableTools
 
-        available = AvailableTools.get_all_available_tools()
+        available = AvailableTools.get_system_tools()
         if available:
             tool_name = list(available.keys())[0]
             agent = AgentComposer.create_agent(
@@ -772,7 +752,7 @@ class TestAgentComposer:
                 return 'result'
 
         tool = TestTool()
-        available = AvailableTools.get_all_available_tools()
+        available = AvailableTools.get_system_tools()
         if available:
             tool_name = list(available.keys())[0]
             agent = AgentComposer.create_agent(
@@ -954,7 +934,7 @@ class TestAgentComposer:
     def test_create_agent_with_valid_builtin_tool_names(self):
         from createagents.infra import AvailableTools
 
-        available = AvailableTools.get_all_available_tools()
+        available = AvailableTools.get_system_tools()
         if available:
             tool_name = list(available.keys())[0]
             agent = AgentComposer.create_agent(

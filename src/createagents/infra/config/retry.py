@@ -1,21 +1,31 @@
+import asyncio
+import inspect
 import random
 import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, Optional, Tuple, Type
+from typing import Any, TypeVar, cast
 
 from .logging_config import LoggingConfig
+
+F = TypeVar('F', bound=Callable[..., Any])
+
+# max_attempts >= 1 is enforced up front, so the retry loop always either
+# returns a value or re-raises on the last attempt.
+_UNREACHABLE_LOOP_EXIT = 'retry loop exited without returning or raising'
 
 
 def retry_with_backoff(
     max_attempts: int = 3,
     initial_delay: float = 1.0,
     backoff_factor: float = 2.0,
-    exceptions: Tuple[Type[Exception], ...] = (Exception,),
+    exceptions: tuple[type[Exception], ...] = (Exception,),
     jitter: bool = True,
-    on_retry: Optional[Callable[[int, Exception], None]] = None,
-):
-    """
-    A decorator for retrying with exponential backoff and jitter.
+    on_retry: Callable[[int, Exception], None] | None = None,
+) -> Callable[[F], F]:
+    """A decorator for retrying with exponential backoff and jitter.
+
+    Supports both synchronous and asynchronous functions.
 
     Args:
         max_attempts: The maximum number of attempts.
@@ -30,58 +40,93 @@ def retry_with_backoff(
     Returns:
         A decorator function.
 
+    Raises:
+        ValueError: If `max_attempts` is lower than 1. A non-positive value
+            would skip the call entirely and return None, which silently
+            breaks callers that expect the wrapped function's result.
+
     Example:
         >>> @retry_with_backoff(max_attempts=3, initial_delay=1.0, jitter=True)
         ... def api_call():
         ...     return requests.get("https://api.example.com")
     """
+    if max_attempts < 1:
+        raise ValueError(
+            f'max_attempts must be >= 1, got {max_attempts}',
+        )
+
     logger = LoggingConfig.get_logger(__name__)
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: F) -> F:
+        def _process_retry(attempt: int, e: Exception, delay: float) -> float:
+            if on_retry:
+                try:
+                    on_retry(attempt, e)
+                # User callbacks must never abort the retry loop.
+                except Exception as callback_error:  # noqa: BLE001
+                    logger.warning(
+                        'Error in retry callback: %s', callback_error
+                    )
+
+            actual_delay = delay
+            if jitter:
+                # Jitter prevents synchronized retries; it is not cryptographic.
+                jitter_factor = 1 + random.uniform(-0.1, 0.1)  # nosec B311
+                actual_delay = delay * jitter_factor
+
+            logger.warning(
+                'Attempt %s/%s failed: %s. Waiting %.2fs before retrying...',
+                attempt,
+                max_attempts,
+                e,
+                actual_delay,
+            )
+            return actual_delay
+
+        if inspect.iscoroutinefunction(func):
+
+            @wraps(func)
+            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+                delay = initial_delay
+
+                for attempt in range(1, max_attempts + 1):
+                    try:
+                        return await func(*args, **kwargs)
+                    except exceptions as e:
+                        if attempt == max_attempts:
+                            logger.exception(
+                                'Failure after %s attempts', max_attempts
+                            )
+                            raise
+
+                        actual_delay = _process_retry(attempt, e, delay)
+                        await asyncio.sleep(actual_delay)
+                        delay *= backoff_factor
+
+                raise AssertionError(_UNREACHABLE_LOOP_EXIT)
+
+            return cast('F', async_wrapper)
+
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
             delay = initial_delay
-            last_exception = None
 
             for attempt in range(1, max_attempts + 1):
                 try:
                     return func(*args, **kwargs)
                 except exceptions as e:
-                    last_exception = e
-
                     if attempt == max_attempts:
-                        logger.error(
-                            'Failure after %s attempts: %s', max_attempts, e
+                        logger.exception(
+                            'Failure after %s attempts', max_attempts
                         )
                         raise
 
-                    if on_retry:
-                        try:
-                            on_retry(attempt, e)
-                        except Exception as callback_error:
-                            logger.warning(
-                                'Error in retry callback: %s', callback_error
-                            )
-
-                    actual_delay = delay
-                    if jitter:
-                        jitter_factor = 1 + random.uniform(-0.1, 0.1)  # nosec
-                        actual_delay = delay * jitter_factor
-
-                    logger.warning(
-                        'Attempt %s/%s failed: %s. Waiting %.2fs before retrying...',
-                        attempt,
-                        max_attempts,
-                        e,
-                        actual_delay,
-                    )
-
+                    actual_delay = _process_retry(attempt, e, delay)
                     time.sleep(actual_delay)
                     delay *= backoff_factor
 
-            if last_exception:
-                raise last_exception
+            raise AssertionError(_UNREACHABLE_LOOP_EXIT)
 
-        return wrapper
+        return cast('F', sync_wrapper)
 
     return decorator

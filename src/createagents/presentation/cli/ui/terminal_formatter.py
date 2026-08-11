@@ -2,7 +2,6 @@ import re
 import shutil
 import textwrap
 import unicodedata
-from typing import List
 
 from .color_scheme import ColorScheme
 
@@ -47,13 +46,13 @@ class TerminalFormatter:
         """
         try:
             return shutil.get_terminal_size().columns
-        except Exception:
+        except (OSError, ValueError):
             return 100
 
     @staticmethod
     def wrap_text(
         text: str, max_width: int, subsequent_indent: str = ''
-    ) -> List[str]:
+    ) -> list[str]:
         """Wrap text to fit within specified width.
 
         Args:
@@ -115,7 +114,7 @@ class TerminalFormatter:
                 continue
             # Detect list indentation for nicer wrapping
             subsequent_indent = ''
-            # Check for bullet points (TextSanitizer uses "  • ", "  → ", "  ▪ ")
+            # Check for bullet points (MarkdownTerminalFormatter uses "  • ", "  → ", "  ▪ ")
             match = re.match(r'^(\s*[•→▪]\s+)', line)
             if match:
                 prefix_len = len(match.group(1))
@@ -174,18 +173,3 @@ class TerminalFormatter:
             f'{indent}{color}{BL}{H * box_width}{BR}{ColorScheme.RESET}'
         )
         return '\n'.join(lines)
-
-    @staticmethod
-    def create_list_indent(line: str) -> str:
-        """Create appropriate indent for list items.
-
-        Args:
-            line: The line to analyze.
-
-        Returns:
-            Indent string for subsequent lines.
-        """
-        match = re.match(r'^(\s*[•→▪]\s+)', line)
-        if match:
-            return ' ' * len(match.group(1))
-        return ''

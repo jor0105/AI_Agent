@@ -1,8 +1,9 @@
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
 from createagents.infra.adapters.OpenAI.openai_client import OpenAIClient
+from createagents.infra.config import DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT
 
 IA_OPENAI_TEST_1: str = 'gpt-5-nano'
 IA_OPENAI_TEST_2: str = 'gpt-5-mini'
@@ -25,7 +26,11 @@ class TestOpenAIClient:
 
         assert client is not None
         mock_get_api_key.assert_called_once_with('OPENAI_API_KEY')
-        mock_get_client.assert_called_once_with('test-api-key')
+        mock_get_client.assert_called_once_with(
+            'test-api-key',
+            timeout=DEFAULT_TIMEOUT,
+            max_retries=DEFAULT_MAX_RETRIES,
+        )
 
     @patch(
         'createagents.infra.adapters.OpenAI.openai_client.EnvironmentConfig.get_api_key'
@@ -33,11 +38,14 @@ class TestOpenAIClient:
     @patch(
         'createagents.infra.adapters.OpenAI.openai_client.ClientOpenAI.get_client'
     )
-    def test_call_api_constructs_messages_correctly(
+    @pytest.mark.asyncio
+    async def test_call_api_constructs_messages_correctly(
         self, mock_get_client, mock_get_api_key
     ):
         mock_get_api_key.return_value = 'test-api-key'
         mock_client = Mock()
+        mock_client.responses = Mock()
+        mock_client.responses.create = AsyncMock()
         mock_get_client.return_value = mock_client
 
         client = OpenAIClient()
@@ -48,7 +56,12 @@ class TestOpenAIClient:
             {'role': 'user', 'content': 'User question'},
         ]
 
-        client.call_api(model=IA_OPENAI_TEST_2, messages=messages, config={})
+        await client.call_api(
+            model=IA_OPENAI_TEST_2,
+            instructions='System instruction',
+            messages=messages,
+            config={},
+        )
 
         call_args = mock_client.responses.create.call_args
         assert call_args.kwargs['input'] == messages
@@ -60,11 +73,14 @@ class TestOpenAIClient:
     @patch(
         'createagents.infra.adapters.OpenAI.openai_client.ClientOpenAI.get_client'
     )
-    def test_call_api_handles_config_mapping(
+    @pytest.mark.asyncio
+    async def test_call_api_handles_config_mapping(
         self, mock_get_client, mock_get_api_key
     ):
         mock_get_api_key.return_value = 'test-api-key'
         mock_client = Mock()
+        mock_client.responses = Mock()
+        mock_client.responses.create = AsyncMock()
         mock_get_client.return_value = mock_client
 
         client = OpenAIClient()
@@ -76,7 +92,12 @@ class TestOpenAIClient:
             'stream': True,
         }
 
-        client.call_api(model=IA_OPENAI_TEST_1, messages=[], config=config)
+        await client.call_api(
+            model=IA_OPENAI_TEST_1,
+            instructions='Instr',
+            messages=[],
+            config=config,
+        )
 
         call_args = mock_client.responses.create.call_args
         kwargs = call_args.kwargs
@@ -95,17 +116,26 @@ class TestOpenAIClient:
     @patch(
         'createagents.infra.adapters.OpenAI.openai_client.ClientOpenAI.get_client'
     )
-    def test_call_api_passes_tools(self, mock_get_client, mock_get_api_key):
+    @pytest.mark.asyncio
+    async def test_call_api_passes_tools(
+        self, mock_get_client, mock_get_api_key
+    ):
         mock_get_api_key.return_value = 'test-api-key'
         mock_client = Mock()
+        mock_client.responses = Mock()
+        mock_client.responses.create = AsyncMock()
         mock_get_client.return_value = mock_client
 
         client = OpenAIClient()
 
         tools = [{'type': 'function', 'function': {'name': 'test_tool'}}]
 
-        client.call_api(
-            model=IA_OPENAI_TEST_1, messages=[], config={}, tools=tools
+        await client.call_api(
+            model=IA_OPENAI_TEST_1,
+            instructions='Instr',
+            messages=[],
+            config={},
+            tools=tools,
         )
 
         call_args = mock_client.responses.create.call_args

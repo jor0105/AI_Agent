@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -27,8 +27,8 @@ class TestOpenAIChatAdapter:
 
         assert adapter is not None
         mock_client_cls.assert_called_once()
-        mock_stream_cls.assert_called_once()
-        mock_handler_cls.assert_called_once()
+        mock_stream_cls.assert_not_called()
+        mock_handler_cls.assert_not_called()
 
     @patch(
         'createagents.infra.adapters.OpenAI.openai_chat_adapter.OpenAIHandler'
@@ -39,16 +39,17 @@ class TestOpenAIChatAdapter:
     @patch(
         'createagents.infra.adapters.OpenAI.openai_chat_adapter.OpenAIClient'
     )
-    def test_chat_delegates_to_handler(
+    @pytest.mark.asyncio
+    async def test_chat_delegates_to_handler(
         self, mock_client_cls, mock_stream_cls, mock_handler_cls
     ):
-        mock_handler = Mock()
+        mock_handler = AsyncMock()
         mock_handler_cls.return_value = mock_handler
         mock_handler.execute_tool_loop.return_value = 'Response'
 
         adapter = OpenAIChatAdapter()
 
-        response = adapter.chat(
+        response = await adapter.chat(
             model=IA_OPENAI_TEST_1,
             instructions='Instr',
             config={},
@@ -59,6 +60,7 @@ class TestOpenAIChatAdapter:
 
         assert response == 'Response'
         mock_handler.execute_tool_loop.assert_called_once()
+        mock_stream_cls.assert_not_called()
 
     @patch(
         'createagents.infra.adapters.OpenAI.openai_chat_adapter.OpenAIHandler'
@@ -69,7 +71,8 @@ class TestOpenAIChatAdapter:
     @patch(
         'createagents.infra.adapters.OpenAI.openai_chat_adapter.OpenAIClient'
     )
-    def test_chat_delegates_to_stream_handler(
+    @pytest.mark.asyncio
+    async def test_chat_delegates_to_stream_handler(
         self, mock_client_cls, mock_stream_cls, mock_handler_cls
     ):
         mock_stream_handler = Mock()
@@ -78,7 +81,7 @@ class TestOpenAIChatAdapter:
 
         adapter = OpenAIChatAdapter()
 
-        response = adapter.chat(
+        response = await adapter.chat(
             model=IA_OPENAI_TEST_1,
             instructions='Instr',
             config={'stream': True},
@@ -89,6 +92,7 @@ class TestOpenAIChatAdapter:
 
         assert list(response) == ['Hello']
         mock_stream_handler.handle_stream.assert_called_once()
+        mock_handler_cls.assert_not_called()
 
     @patch(
         'createagents.infra.adapters.OpenAI.openai_chat_adapter.OpenAIHandler'

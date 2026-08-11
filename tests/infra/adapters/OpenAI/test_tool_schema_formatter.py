@@ -56,31 +56,6 @@ class MockNoParamsTool(BaseTool):
 
 @pytest.mark.unit
 class TestToolSchemaFormatter:
-    def test_format_tool_for_openai_completions(self):
-        tool = MockWeatherTool()
-
-        result = ToolSchemaFormatter.format_tool_for_openai(tool)
-
-        assert result['type'] == 'function'
-        assert 'function' in result
-        assert result['function']['name'] == 'get_weather'
-        assert (
-            result['function']['description']
-            == 'Get the current weather for a location'
-        )
-        assert 'parameters' in result['function']
-
-    def test_format_tool_for_openai_includes_parameters(self):
-        tool = MockWeatherTool()
-
-        result = ToolSchemaFormatter.format_tool_for_openai(tool)
-
-        params = result['function']['parameters']
-        assert params['type'] == 'object'
-        assert 'location' in params['properties']
-        assert 'unit' in params['properties']
-        assert params['required'] == ['location']
-
     def test_format_tool_for_responses_api(self):
         tool = MockSearchTool()
 
@@ -100,26 +75,6 @@ class TestToolSchemaFormatter:
         assert params['type'] == 'object'
         assert 'query' in params['properties']
         assert params['required'] == ['query']
-
-    def test_format_tools_for_openai_single_tool(self):
-        tools = [MockWeatherTool()]
-
-        result = ToolSchemaFormatter.format_tools_for_openai(tools)
-
-        assert len(result) == 1
-        assert result[0]['type'] == 'function'
-        assert result[0]['function']['name'] == 'get_weather'
-
-    def test_format_tools_for_openai_multiple_tools(self):
-        tools = [MockWeatherTool(), MockSearchTool(), MockNoParamsTool()]
-
-        result = ToolSchemaFormatter.format_tools_for_openai(tools)
-
-        assert len(result) == 3
-        names = [tool['function']['name'] for tool in result]
-        assert 'get_weather' in names
-        assert 'web_search' in names
-        assert 'get_time' in names
 
     def test_format_tools_for_responses_api_single_tool(self):
         tools = [MockSearchTool()]
@@ -143,20 +98,9 @@ class TestToolSchemaFormatter:
     def test_format_tool_with_no_parameters(self):
         tool = MockNoParamsTool()
 
-        result_completions = ToolSchemaFormatter.format_tool_for_openai(tool)
-        result_responses = ToolSchemaFormatter.format_tool_for_responses_api(
-            tool
-        )
+        result = ToolSchemaFormatter.format_tool_for_responses_api(tool)
 
-        assert result_completions['function']['parameters']['properties'] == {}
-        assert result_responses['parameters']['properties'] == {}
-
-    def test_format_tools_for_openai_empty_list(self):
-        tools = []
-
-        result = ToolSchemaFormatter.format_tools_for_openai(tools)
-
-        assert result == []
+        assert result['parameters']['properties'] == {}
 
     def test_format_tools_for_responses_api_empty_list(self):
         tools = []
@@ -168,12 +112,10 @@ class TestToolSchemaFormatter:
     def test_format_preserves_parameter_types(self):
         tool = MockWeatherTool()
 
-        result = ToolSchemaFormatter.format_tool_for_openai(tool)
+        result = ToolSchemaFormatter.format_tool_for_responses_api(tool)
 
-        location_prop = result['function']['parameters']['properties'][
-            'location'
-        ]
-        unit_prop = result['function']['parameters']['properties']['unit']
+        location_prop = result['parameters']['properties']['location']
+        unit_prop = result['parameters']['properties']['unit']
 
         assert location_prop['type'] == 'string'
         assert unit_prop['type'] == 'string'
@@ -195,30 +137,9 @@ class TestToolSchemaFormatter:
     def test_format_preserves_required_fields(self):
         tool = MockWeatherTool()
 
-        result_completions = ToolSchemaFormatter.format_tool_for_openai(tool)
-        result_responses = ToolSchemaFormatter.format_tool_for_responses_api(
-            tool
-        )
+        result = ToolSchemaFormatter.format_tool_for_responses_api(tool)
 
-        assert result_completions['function']['parameters']['required'] == [
-            'location'
-        ]
-        assert result_responses['parameters']['required'] == ['location']
-
-    def test_completions_and_responses_have_different_structure(self):
-        tool = MockWeatherTool()
-
-        completions_format = ToolSchemaFormatter.format_tool_for_openai(tool)
-        responses_format = ToolSchemaFormatter.format_tool_for_responses_api(
-            tool
-        )
-
-        assert 'function' in completions_format
-        assert completions_format['function']['name'] == 'get_weather'
-
-        assert 'name' in responses_format
-        assert responses_format['name'] == 'get_weather'
-        assert 'function' not in responses_format
+        assert result['parameters']['required'] == ['location']
 
     def test_format_tools_maintains_order(self):
         tools = [
@@ -227,11 +148,11 @@ class TestToolSchemaFormatter:
             MockNoParamsTool(),
         ]
 
-        result = ToolSchemaFormatter.format_tools_for_openai(tools)
+        result = ToolSchemaFormatter.format_tools_for_responses_api(tools)
 
-        assert result[0]['function']['name'] == 'get_weather'
-        assert result[1]['function']['name'] == 'web_search'
-        assert result[2]['function']['name'] == 'get_time'
+        assert result[0]['name'] == 'get_weather'
+        assert result[1]['name'] == 'web_search'
+        assert result[2]['name'] == 'get_time'
 
     def test_format_tool_with_complex_parameters(self):
         class ComplexTool(BaseTool):
@@ -274,11 +195,9 @@ class TestToolSchemaFormatter:
     def test_format_tool_preserves_enum_values(self):
         tool = MockWeatherTool()
 
-        result = ToolSchemaFormatter.format_tool_for_openai(tool)
+        result = ToolSchemaFormatter.format_tool_for_responses_api(tool)
 
-        unit_enum = result['function']['parameters']['properties']['unit'][
-            'enum'
-        ]
+        unit_enum = result['parameters']['properties']['unit']['enum']
         assert unit_enum == ['celsius', 'fahrenheit']
 
     def test_format_tool_with_special_characters_in_description(self):
@@ -298,15 +217,6 @@ class TestToolSchemaFormatter:
 
         assert '你好' in result['description']
         assert '@#$%^&*()' in result['description']
-
-    def test_format_tools_for_openai_logs_count(self, caplog):
-        import logging
-
-        caplog.set_level(logging.INFO)
-
-        tools = [MockWeatherTool(), MockSearchTool()]
-
-        ToolSchemaFormatter.format_tools_for_openai(tools)
 
     def test_format_tools_for_responses_api_logs_count(self, caplog):
         import logging
@@ -338,11 +248,9 @@ class TestToolSchemaFormatter:
 
         tool = ArrayTool()
 
-        result = ToolSchemaFormatter.format_tool_for_openai(tool)
+        result = ToolSchemaFormatter.format_tool_for_responses_api(tool)
 
-        queries_prop = result['function']['parameters']['properties'][
-            'queries'
-        ]
+        queries_prop = result['parameters']['properties']['queries']
         assert queries_prop['type'] == 'array'
         assert queries_prop['items']['type'] == 'string'
 
@@ -390,11 +298,9 @@ class TestToolSchemaFormatter:
 
         tool = FlagTool()
 
-        result = ToolSchemaFormatter.format_tool_for_openai(tool)
+        result = ToolSchemaFormatter.format_tool_for_responses_api(tool)
 
-        exact_match_prop = result['function']['parameters']['properties'][
-            'exact_match'
-        ]
+        exact_match_prop = result['parameters']['properties']['exact_match']
         assert exact_match_prop['type'] == 'boolean'
 
     def test_format_multiple_tools_with_same_parameter_names(self):
@@ -431,17 +337,6 @@ class TestToolSchemaFormatter:
         assert (
             result[1]['parameters']['properties']['param']['type'] == 'integer'
         )
-
-    def test_completions_format_has_nested_function_key(self):
-        tool = MockWeatherTool()
-
-        result = ToolSchemaFormatter.format_tool_for_openai(tool)
-
-        assert 'type' in result
-        assert 'function' in result
-        assert 'name' in result['function']
-        assert 'description' in result['function']
-        assert 'parameters' in result['function']
 
     def test_responses_format_has_flat_structure(self):
         tool = MockWeatherTool()
@@ -486,9 +381,9 @@ class TestToolSchemaFormatter:
 
         tool = ValidationTool()
 
-        result = ToolSchemaFormatter.format_tool_for_openai(tool)
+        result = ToolSchemaFormatter.format_tool_for_responses_api(tool)
 
-        text_prop = result['function']['parameters']['properties']['text']
+        text_prop = result['parameters']['properties']['text']
         assert text_prop['minLength'] == 5
         assert text_prop['maxLength'] == 100
         assert text_prop['pattern'] == '^[a-zA-Z]+$'

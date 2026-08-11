@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0.0",
+  "reviewRequired": [
+    {
+      "profile": "high-risk",
+      "reason": "Perfil high-risk exige review obrigatorio."
+    },
+    {
+      "profile": "security-touch",
+      "reason": "Fluxo com toque de seguranca pede review final."
+    },
+    {
+      "pattern": "src/createagents/__init__.py",
+      "reason": "Superficie publica do pacote e contrato para consumidores."
+    },
+    {
+      "pattern": "src/createagents/main/facade/**",
+      "reason": "Facade publica CreateAgent e contrato publico."
+    },
+    {
+      "pattern": "src/createagents/domain/interfaces/**",
+      "reason": "Contratos de dominio sao API publica."
+    },
+    {
+      "pattern": "src/createagents/main/composers/**",
+      "reason": "Composition root define o wiring de todas as camadas."
+    },
+    {
+      "pattern": "pyproject.toml",
+      "reason": "Dependencias, versao e tooling do pacote publicado."
+    },
+    {
+      "pattern": ".github/workflows/**",
+      "reason": "Pipeline de CI, docs ou publicacao alterado."
+    },
+    {
+      "pattern": ".agents/**",
+      "reason": "Harness de agents alterado."
+    }
+  ],
+  "securityRequired": [
+    {
+      "profile": "security-touch",
+      "reason": "Perfil security-touch exige security-engineer."
+    },
+    {
+      "pattern": "src/createagents/infra/adapters/**",
+      "reason": "Adapters manipulam credenciais e chamadas a provedores externos."
+    },
+    {
+      "pattern": "src/createagents/infra/config/**",
+      "reason": "Logging, sanitizacao de dados sensiveis e leitura de ambiente."
+    },
+    {
+      "pattern": ".env.example",
+      "reason": "Superficie de variaveis de ambiente alterada."
+    },
+    {
+      "pattern": "uv.lock",
+      "reason": "Cadeia de dependencias alterada; exige avaliacao de supply chain."
+    }
+  ],
+  "testerRecommended": [
+    {
+      "pattern": "src/createagents/presentation/cli/**",
+      "reason": "Fluxo interativo de terminal alterado."
+    },
+    {
+      "pattern": "src/createagents/infra/adapters/**/*stream*.py",
+      "reason": "Streaming e tool calling iterativo pedem teste dedicado."
+    }
+  ]
+}

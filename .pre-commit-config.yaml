@@ -1,6 +1,39 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
+#
+# Hook stages
+# -----------
+# pre-commit: fast, deterministic checks over the staged change
+# commit-msg: Conventional Commits validation
+# pre-push: unit tests and dependency audit before publishing local history
+---
+minimum_pre_commit_version: "3.2.0"
+
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+default_stages: [pre-commit]
+default_language_version:
+  python: python3.12
+
+exclude: |
+  (?x)^(
+    site/|
+    dist/|
+    \.benchmarks/|
+    \.venv/
+  )
+
 repos:
+  # --------------------------------------------------------------------------
+  # 0. Commit Message Validation
+  # --------------------------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: validate-commit-msg
+        name: validate-commit-msg
+        entry: .github/hooks/validate-commit-msg.sh
+        language: script
+        stages: [commit-msg]
+
   # --------------------------------------------------------------------------
   # 1. Basic File Checks
   # --------------------------------------------------------------------------
@@ -9,73 +42,191 @@ repos:
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
+      - id: mixed-line-ending
       - id: check-yaml
       - id: check-toml
+      - id: check-json
       - id: check-merge-conflict
-      - id: check-added-large-files
       - id: debug-statements
       - id: check-ast
+      - id: check-added-large-files
+        args: ["--maxkb=1500"]
+        exclude: ^uv\.lock$
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: check-symlinks
+      - id: destroyed-symlinks
+      - id: forbid-submodules
+      - id: name-tests-test
+        args: ["--pytest-test-first"]
 
   # --------------------------------------------------------------------------
-  # 2. Project Integrity (Poetry)
+  # 2. Project Integrity
   # --------------------------------------------------------------------------
-  - repo: https://github.com/python-poetry/poetry
-    rev: 2.2.1
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.9.11
     hooks:
-      - id: poetry-check
-      - id: poetry-lock
+      - id: uv-lock
 
-  # --------------------------------------------------------------------------
-  # 3. Security Checks
-  # --------------------------------------------------------------------------
-  # Static Analysis for Security (Bandit)
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.9.2
-    hooks:
-      - id: bandit
-        args: ["-c", "pyproject.toml"]
-        additional_dependencies: ["bandit[toml]"]
-        exclude: ^tests/
-
-  # Dependency Vulnerabilities (pip-audit)
-  # Runs locally using the project's environment
+  # These checks are cheap enough for every commit and must remain visible to
+  # ai:verify. The max-lines script deliberately scans all tracked src files.
   - repo: local
     hooks:
-      - id: pip-audit
-        name: pip-audit
-        entry: poetry run pip-audit --ignore-vuln GHSA-f83h-ghpp-7wcc
+      - id: max-lines-per-file
+        name: max-lines-per-file
+        entry: bash .github/hooks/check-max-lines.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # .agents is the source of truth for the generated harness mirrors.
+      - id: check-harness-sync
+        name: check-harness-sync
+        entry: bash .github/hooks/check-harness-sync.sh
         language: system
         pass_filenames: false
         always_run: true
 
   # --------------------------------------------------------------------------
-  # 4. Formatting & Linting (Ruff replaces isort/flake8)
+  # 3. Security and Supply Chain Checks
+  # --------------------------------------------------------------------------
+  # Bandit scans every Python file. The wrapper applies the only test-specific
+  # exception (B101, normal pytest assertions) without hiding other findings.
+  - repo: local
+    hooks:
+      - id: bandit
+        name: bandit
+        entry: bash .github/hooks/run-bandit.sh
+        language: system
+        types: [python]
+
+  # gitleaks is the single secret scanner. detect-secrets was dropped: it
+  # needed a 9-file baseline of test fixtures that gitleaks does not flag,
+  # and that baseline was itself detected as a secret. Allowlist entries,
+  # when needed, go in .gitleaksignore.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+        # Never echo a detected secret into local or CI logs.
+        args: ["--redact"]
+
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.29.0
+    hooks:
+      - id: zizmor
+
+  # --------------------------------------------------------------------------
+  # 4. Formatting, Linting and Documentation
   # --------------------------------------------------------------------------
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.6
+    rev: v0.16.2
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
 
-  # --------------------------------------------------------------------------
-  # 5. Type Checking
-  # --------------------------------------------------------------------------
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.18.2
+  - repo: https://github.com/hukkin/mdformat
+    rev: 1.0.0
     hooks:
-      - id: mypy
-        args: [--ignore-missing-imports, --pretty]
-        additional_dependencies: [types-requests, types-toml]
+      - id: mdformat
+        args: ["--number"]
+        additional_dependencies: ["mdformat-gfm==1.0.0"]
+        # .agents/ is the source of truth; .claude/, .codex/, .opencode/ and
+        # .github/prompts/ are generated from it. Formatting a mirror makes
+        # check-harness-sync report drift forever, so all of them stay out.
+        exclude: |
+          (?x)^(
+            \.agents/|
+            \.claude/|
+            \.codex/|
+            \.opencode/|
+            \.github/prompts/|
+            openspec/
+          )
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: ["--strict"]
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.3
+    hooks:
+      - id: codespell
+        # Source/test code and comments are English; user documentation is
+        # Portuguese and is intentionally outside this spelling gate.
+        files: ^(src|tests)/.*\.py$
+        args: ["--ignore-words=.codespellignore"]
 
   # --------------------------------------------------------------------------
-  # 6. Documentation
+  # 4.1. Import Graph
   # --------------------------------------------------------------------------
-  - repo: https://github.com/PyCQA/pydocstyle
-    rev: 6.3.0
+  # Until these two existed, the layering rules in AGENTS.md were prose that
+  # only code review enforced. They are complementary: import-linter checks
+  # the *direction* between layers, the cycle detector checks that no module
+  # graph closes back on itself. Neither one implies the other.
+  - repo: local
     hooks:
+      # Layer contracts live in [tool.importlinter] in pyproject.toml.
+      - id: import-linter
+        name: import-linter
+        entry: uv run lint-imports
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: import-cycles
+        name: import-cycles
+        entry: uv run python .github/hooks/check-import-cycles.py
+        language: system
+        types: [python]
+        pass_filenames: false
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run mypy src
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+
       - id: pydocstyle
-        args:
-          - --convention=google
-          - --match-dir=^src
-          - --add-ignore=D104,D100,D101,D102,D103,D105,D107,D205,D212,D417,D415
+        name: pydocstyle
+        entry: uv run pydocstyle src --convention=google --add-ignore=D100,D104,D107
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+
+  # --------------------------------------------------------------------------
+  # 5. Slow or Network-Bound Checks
+  # --------------------------------------------------------------------------
+  - repo: local
+    hooks:
+      # Same selection and coverage gate as `npm run test:coverage` and CI.
+      - id: pytest-unit
+        name: pytest-unit
+        entry: >-
+          uv run pytest -q -m "not integration and not slow"
+          --cov=src --cov-fail-under=85
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
+      - id: pip-audit
+        name: pip-audit
+        entry: uv run pip-audit --timeout 60
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

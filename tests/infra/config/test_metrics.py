@@ -4,7 +4,8 @@ from datetime import datetime
 
 import pytest
 
-from createagents.infra import ChatMetrics, MetricsCollector
+from createagents.domain import ChatMetrics
+from createagents.infra import MetricsCollector
 
 
 @pytest.mark.unit
@@ -299,7 +300,8 @@ class TestMetricsCollector:
                 collector.add(
                     ChatMetrics(model=f'model-{i}', latency_ms=100.0)
                 )
-            except Exception as e:
+            # Capture worker failures for the assertion after all futures finish.
+            except Exception as e:  # noqa: BLE001
                 errors.append(str(e))
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
@@ -324,7 +326,8 @@ class TestMetricsCollector:
                 metrics = collector.get_all()
                 with lock:
                     results.append(len(metrics))
-            except Exception as e:
+            # Capture worker failures for the assertion after all futures finish.
+            except Exception as e:  # noqa: BLE001
                 with lock:
                     errors.append(str(e))
 
@@ -352,7 +355,8 @@ class TestMetricsCollector:
                 summary = collector.get_summary()
                 with lock:
                     results.append(summary['total_requests'])
-            except Exception as e:
+            # Capture worker failures for the assertion after all futures finish.
+            except Exception as e:  # noqa: BLE001
                 with lock:
                     errors.append(str(e))
 
@@ -374,7 +378,8 @@ class TestMetricsCollector:
         def clear_metrics():
             try:
                 collector.clear()
-            except Exception as e:
+            # Capture worker failures for the assertion after all futures finish.
+            except Exception as e:  # noqa: BLE001
                 errors.append(str(e))
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
@@ -395,7 +400,8 @@ class TestMetricsCollector:
                 collector.add(
                     ChatMetrics(model=f'model-{i}', latency_ms=100.0)
                 )
-            except Exception as e:
+            # Capture worker failures for the assertion after all futures finish.
+            except Exception as e:  # noqa: BLE001
                 with lock:
                     errors.append(('add', str(e)))
 
@@ -404,7 +410,8 @@ class TestMetricsCollector:
                 metrics = collector.get_all()
                 with lock:
                     read_results.append(len(metrics))
-            except Exception as e:
+            # Capture worker failures for the assertion after all futures finish.
+            except Exception as e:  # noqa: BLE001
                 with lock:
                     errors.append(('read', str(e)))
 
@@ -427,7 +434,8 @@ class TestMetricsCollector:
                 collector.add(
                     ChatMetrics(model=f'model-{i}', latency_ms=100.0)
                 )
-            except Exception as e:
+            # Capture worker failures for the assertion after all futures finish.
+            except Exception as e:  # noqa: BLE001
                 errors.append(str(e))
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
@@ -501,7 +509,8 @@ class TestMetricsCollector:
                     collector.get_all()
                 else:
                     collector.get_summary()
-            except Exception as e:
+            # Capture worker failures for the assertion after all futures finish.
+            except Exception as e:  # noqa: BLE001
                 errors.append(str(e))
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:

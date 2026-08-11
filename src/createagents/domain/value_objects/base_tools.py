@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, ClassVar
 
 
 class BaseTool(ABC):
@@ -38,19 +38,21 @@ class BaseTool(ABC):
             }
 
             def execute(self, expression: str) -> str:
-                return str(eval(expression))
+                import ast
+                return str(ast.literal_eval(expression))
         ```
     """
 
     name: str = 'base_tool'
     description: str = 'Base tool description (should be overridden)'
-    parameters: Dict[str, Any] = {
+
+    parameters: ClassVar[dict[str, Any]] = {
         'type': 'object',
         'properties': {},
     }
 
     @abstractmethod
-    def execute(self, *args, **kwargs) -> Any:
+    def execute(self, *args: Any, **kwargs: Any) -> Any:
         """Execute the tool's main functionality.
 
         This method must be implemented by all subclasses.
@@ -63,7 +65,7 @@ class BaseTool(ABC):
             The result of the tool execution (typically a string).
         """
 
-    def get_schema(self) -> Dict[str, Any]:
+    def get_schema(self) -> dict[str, Any]:
         """Return a generic schema describing the tool.
 
         This method returns a provider-agnostic schema that contains

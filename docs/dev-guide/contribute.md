@@ -6,7 +6,7 @@ ______________________________________________________________________
 
 ## 🚦 Requisitos para Contribuição
 
-- Python 3.12+ e Poetry instalados
+- Python 3.12+ e uv instalados
 - Conhecimento básico de Clean Architecture e SOLID
 - Familiaridade com Git e GitHub
 - Seguir o padrão de código, testes e documentação do projeto
@@ -15,27 +15,28 @@ ______________________________________________________________________
 
 ## 🛠️ Passo a Passo para Contribuir
 
-1. **Fork** o repositório no GitHub
-1. **Clone** seu fork localmente:
-   ```bash
-   git clone https://github.com/seu-usuario/Create-Agents-AI.git
-   cd Create-Agents-AI
-   ```
-1. **Crie uma branch** descritiva:
-   ```bash
-   git checkout -b feature/nome-da-sua-feature
-   ```
-1. **Implemente** sua melhoria ou correção seguindo os padrões do projeto
-1. **Adicione ou atualize testes** (unitários, integração, etc.)
-1. **Garanta que todos os checks passem:**
-   ```bash
-   poetry run pre-commit run --all-files
-   poetry run pytest --cov=src
-   ```
-1. **Atualize a documentação** se necessário (ex: novos parâmetros, exemplos, etc.)
-1. **Faça commit seguindo o padrão Conventional Commits** (ex: `feat:`, `fix:`, `docs:`)
-1. **Envie seu Pull Request (PR)** para o branch `develop` com uma descrição clara
-1. Aguarde revisão e responda a eventuais comentários dos mantenedores
+01. **Fork** o repositório no GitHub
+02. **Clone** seu fork localmente:
+    ```bash
+    git clone https://github.com/seu-usuario/Create-Agents-AI.git
+    cd Create-Agents-AI
+    ```
+03. **Crie uma branch** descritiva:
+    ```bash
+    git checkout -b feature/nome-da-sua-feature
+    ```
+04. **Implemente** sua melhoria ou correção seguindo os padrões do projeto
+05. **Adicione ou atualize testes** (unitários, integração, etc.)
+06. **Garanta que todos os checks passem:**
+    ```bash
+    uv run pre-commit install --install-hooks
+    uv run pre-commit run --all-files
+    uv run pytest --cov=src
+    ```
+07. **Atualize a documentação** se necessário (ex: novos parâmetros, exemplos, etc.)
+08. **Faça commit seguindo o padrão Conventional Commits** (ex: `feat:`, `fix:`, `docs:`)
+09. **Envie seu Pull Request (PR)** para o branch `develop` com uma descrição clara
+10. Aguarde revisão e responda a eventuais comentários dos mantenedores
 
 ______________________________________________________________________
 
@@ -44,7 +45,7 @@ ______________________________________________________________________
 - [ ] Código segue Clean Architecture e SOLID
 - [ ] Testes automatizados cobrindo a nova funcionalidade/correção
 - [ ] Documentação atualizada (código e Markdown)
-- [ ] Sem warnings/lints (Black, Ruff, isort, yamllint, mdformat)
+- [ ] Sem warnings/lints (Ruff, yamllint, mdformat)
 - [ ] Commits claros e atômicos
 - [ ] PR descreve claramente o que foi feito e por quê
 
@@ -82,8 +83,8 @@ ______________________________________________________________________
 ## 🐞 Reportar Bugs e Sugerir Melhorias
 
 1. [Abra uma issue](https://github.com/jor0105/Create-Agents-AI/issues)
-1. Descreva o problema/sugestão com detalhes, passos para reproduzir e contexto
-1. Inclua logs, prints ou exemplos de código se possível
+2. Descreva o problema/sugestão com detalhes, passos para reproduzir e contexto
+3. Inclua logs, prints ou exemplos de código se possível
 
 ______________________________________________________________________
 

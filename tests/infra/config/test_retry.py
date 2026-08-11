@@ -1,9 +1,23 @@
-import time
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
 from createagents.infra import retry_with_backoff
+
+
+class RetryableTestError(Exception):
+    """Failure used to exercise the retry policy."""
+
+
+@pytest.fixture(autouse=True)
+def no_real_sleep():
+    """Never block on the backoff delay; record it instead.
+
+    Nothing in this module asserts on elapsed wall-clock time, so sleeping
+    for real only made the suite slow and load-sensitive.
+    """
+    with patch('createagents.infra.config.retry.time.sleep') as sleep:
+        yield sleep
 
 
 @pytest.mark.unit
@@ -45,34 +59,6 @@ class TestRetryWithBackoff:
             test_func()
 
         assert mock_func.call_count == 3
-
-    def test_backoff_delay_increases(self):
-        call_times = []
-
-        def failing_func():
-            call_times.append(time.time())
-            if len(call_times) < 3:
-                raise Exception('Error')
-            return 'success'
-
-        @retry_with_backoff(
-            max_attempts=3, initial_delay=0.1, backoff_factor=2.0
-        )
-        def test_func():
-            return failing_func()
-
-        result = test_func()
-
-        assert result == 'success'
-        assert len(call_times) == 3
-
-        if len(call_times) >= 2:
-            delay1 = call_times[1] - call_times[0]
-            assert delay1 >= 0.09
-
-        if len(call_times) >= 3:
-            delay2 = call_times[2] - call_times[1]
-            assert delay2 >= 0.18
 
     def test_only_specified_exceptions_trigger_retry(self):
         mock_func = Mock(side_effect=ValueError('Wrong exception'))
@@ -117,7 +103,7 @@ class TestRetryWithBackoff:
         def test_func():
             call_count[0] += 1
             if call_count[0] < 2:
-                raise Exception('Error')
+                raise RetryableTestError('Error')
             return 'success'
 
         result = test_func()
@@ -141,7 +127,6 @@ class TestRetryWithBackoff:
         @retry_with_backoff()
         def test_func():
             """Test docstring"""
-            pass
 
         assert test_func.__name__ == 'test_func'
         assert test_func.__doc__ == 'Test docstring'
@@ -177,47 +162,10 @@ class TestRetryWithBackoff:
             def test_func():
                 return mock_func()
 
-            with pytest.raises(Exception):
+            with pytest.raises(Exception, match='Persistent error'):
                 test_func()
 
-            assert mock_log_instance.error.call_count == 1
-
-    def test_zero_initial_delay(self):
-        mock_func = Mock(side_effect=[Exception('Error'), 'success'])
-
-        @retry_with_backoff(max_attempts=3, initial_delay=0.0)
-        def test_func():
-            return mock_func()
-
-        start_time = time.time()
-        result = test_func()
-        elapsed = time.time() - start_time
-
-        assert result == 'success'
-        assert elapsed < 0.1
-
-    def test_custom_backoff_factor(self):
-        call_times = []
-
-        def failing_func():
-            call_times.append(time.time())
-            if len(call_times) < 3:
-                raise Exception('Error')
-            return 'success'
-
-        @retry_with_backoff(
-            max_attempts=3, initial_delay=0.1, backoff_factor=3.0
-        )
-        def test_func():
-            return failing_func()
-
-        result = test_func()
-
-        assert result == 'success'
-
-        if len(call_times) >= 3:
-            delay2 = call_times[2] - call_times[1]
-            assert 0.27 <= delay2 <= 0.35
+            assert mock_log_instance.exception.call_count == 1
 
     def test_single_attempt(self):
         mock_func = Mock(side_effect=Exception('Error'))
@@ -238,7 +186,7 @@ class TestRetryWithBackoff:
         def test_func():
             call_count[0] += 1
             if call_count[0] < 10:
-                raise Exception('Error')
+                raise RetryableTestError('Error')
             return 'success'
 
         result = test_func()
@@ -286,7 +234,7 @@ class TestRetryWithBackoff:
         def test_func():
             call_count[0] += 1
             if call_count[0] < 2:
-                raise Exception('Error')
+                raise RetryableTestError('Error')
             return 'success'
 
         result = test_func()
@@ -308,63 +256,11 @@ class TestRetryWithBackoff:
             mock_func = Mock(return_value=expected_value)
 
             @retry_with_backoff(max_attempts=2, initial_delay=0.01)
-            def test_func():
-                return mock_func()
+            def test_func(func=mock_func):
+                return func()
 
             result = test_func()
             assert result == expected_value
-
-    def test_jitter_disabled(self):
-        call_times = []
-
-        def failing_func():
-            call_times.append(time.time())
-            if len(call_times) < 2:
-                raise Exception('Error')
-            return 'success'
-
-        @retry_with_backoff(
-            max_attempts=2, initial_delay=0.1, backoff_factor=1.0, jitter=False
-        )
-        def test_func():
-            return failing_func()
-
-        result = test_func()
-
-        assert result == 'success'
-        if len(call_times) >= 2:
-            delay = call_times[1] - call_times[0]
-            assert 0.09 <= delay <= 0.11
-
-    def test_jitter_enabled_adds_variation(self):
-        delays = []
-
-        def failing_func():
-            if len(delays) > 0:
-                return 'success'
-            raise Exception('Error')
-
-        for _ in range(5):
-            call_times = []
-
-            @retry_with_backoff(
-                max_attempts=2,
-                initial_delay=0.1,
-                backoff_factor=1.0,
-                jitter=True,
-            )
-            def test_func():
-                call_times.append(time.time())
-                if len(call_times) < 2:
-                    raise Exception('Error')
-                return 'success'
-
-            test_func()
-
-            if len(call_times) >= 2:
-                delays.append(call_times[1] - call_times[0])
-
-        assert len(set([round(d, 3) for d in delays])) > 1
 
     def test_callback_is_called_on_retry(self):
         callback_calls = []
@@ -422,7 +318,7 @@ class TestRetryWithBackoff:
         def test_func():
             call_count[0] += 1
             if call_count[0] < 4:
-                raise Exception('Error')
+                raise RetryableTestError('Error')
             return 'success'
 
         test_func()
@@ -463,27 +359,6 @@ class TestRetryWithBackoff:
 
         assert result == 'success'
 
-    def test_jitter_with_different_delays(self):
-        for initial_delay in [0.05, 0.1, 0.2]:
-            call_times = []
-
-            @retry_with_backoff(
-                max_attempts=2, initial_delay=initial_delay, jitter=True
-            )
-            def test_func():
-                call_times.append(time.time())
-                if len(call_times) < 2:
-                    raise Exception('Error')
-                return 'success'
-
-            test_func()
-
-            if len(call_times) >= 2:
-                actual_delay = call_times[1] - call_times[0]
-                min_delay = initial_delay * 0.9
-                max_delay = initial_delay * 1.1
-                assert min_delay <= actual_delay <= max_delay * 1.1
-
     def test_callback_receives_exception_object(self):
         received_exceptions = []
 
@@ -516,7 +391,7 @@ class TestRetryWithBackoff:
         def on_retry_callback(attempt, exception):
             callback_calls.append(attempt)
 
-        call_times = []
+        attempts = []
 
         @retry_with_backoff(
             max_attempts=3,
@@ -525,17 +400,16 @@ class TestRetryWithBackoff:
             on_retry=on_retry_callback,
         )
         def test_func():
-            call_times.append(time.time())
-            if len(call_times) < 3:
-                raise Exception(f'Error {len(call_times)}')
+            attempts.append(len(attempts) + 1)
+            if len(attempts) < 3:
+                raise RetryableTestError(f'Error {len(attempts)}')
             return 'success'
 
         result = test_func()
 
         assert result == 'success'
-        assert len(callback_calls) == 2
         assert callback_calls == [1, 2]
-        assert len(call_times) == 3
+        assert len(attempts) == 3
 
     def test_callback_can_access_exception_message(self):
         messages = []
@@ -548,36 +422,15 @@ class TestRetryWithBackoff:
         )
         def test_func():
             if len(messages) == 0:
-                raise Exception('First error')
+                raise RetryableTestError('First error')
             elif len(messages) == 1:
-                raise Exception('Second error')
+                raise RetryableTestError('Second error')
             return 'success'
 
         result = test_func()
 
         assert result == 'success'
         assert messages == ['First error', 'Second error']
-
-    def test_jitter_default_is_true(self):
-        delays = []
-
-        for _ in range(3):
-            call_times = []
-
-            @retry_with_backoff(max_attempts=2, initial_delay=0.05)
-            def test_func():
-                call_times.append(time.time())
-                if len(call_times) < 2:
-                    raise Exception('Error')
-                return 'success'
-
-            test_func()
-
-            if len(call_times) >= 2:
-                delays.append(round(call_times[1] - call_times[0], 3))
-
-        assert min(delays) >= 0.045
-        assert max(delays) <= 0.055
 
     def test_last_exception_raised_when_all_attempts_fail(self):
         attempt_count = [0]
@@ -608,35 +461,6 @@ class TestRetryWithBackoff:
 
         result = func_with_args(1, 2, c=3)
         assert result == 6
-
-    def test_backoff_calculation_precision(self):
-        delays_recorded = []
-
-        def failing_func():
-            if len(delays_recorded) < 3:
-                raise Exception('Error')
-            return 'success'
-
-        @retry_with_backoff(
-            max_attempts=4, initial_delay=0.1, backoff_factor=2.0, jitter=False
-        )
-        def test_func():
-            delays_recorded.append(time.time())
-            return failing_func()
-
-        test_func()
-
-        if len(delays_recorded) >= 2:
-            delay1 = delays_recorded[1] - delays_recorded[0]
-            assert 0.09 <= delay1 <= 0.11
-
-        if len(delays_recorded) >= 3:
-            delay2 = delays_recorded[2] - delays_recorded[1]
-            assert 0.19 <= delay2 <= 0.21
-
-        if len(delays_recorded) >= 4:
-            delay3 = delays_recorded[3] - delays_recorded[2]
-            assert 0.39 <= delay3 <= 0.41
 
     def test_callback_with_multiple_exception_types(self):
         callback_data = []
@@ -689,13 +513,284 @@ class TestRetryWithBackoff:
 
         assert mock_func.call_count == 1
 
-    def test_zero_max_attempts_edge_case(self):
-        mock_func = Mock(return_value='success')
+    @pytest.mark.parametrize('max_attempts', [0, -1])
+    def test_non_positive_max_attempts_is_rejected(self, max_attempts):
+        """A non-positive budget must fail loudly at decoration time.
 
-        @retry_with_backoff(max_attempts=0, initial_delay=0.01)
+        It used to skip the call and return None, so a bad
+        `OLLAMA_MAX_RETRIES`/`OPENAI_MAX_RETRIES` value turned a typed
+        response into None without ever touching the network.
+        """
+        with pytest.raises(ValueError, match='max_attempts must be >= 1'):
+            retry_with_backoff(max_attempts=max_attempts, initial_delay=0.01)
+
+
+@pytest.fixture
+def recorded_sleeps(no_real_sleep):
+    """Expose the recorded backoff delays to a test.
+
+    Wall-clock assertions were flaky under load and could not distinguish
+    a jittered delay from a plain one. Recording the requested delay proves
+    the actual behaviour and runs instantly.
+    """
+    return no_real_sleep
+
+
+def _delays(sleep_mock):
+    return [call.args[0] for call in sleep_mock.call_args_list]
+
+
+@pytest.mark.unit
+class TestBackoffSchedule:
+    """The delay sequence itself, measured deterministically."""
+
+    @staticmethod
+    def _always_failing(**decorator_kwargs):
+        attempts = []
+
+        @retry_with_backoff(**decorator_kwargs)
         def test_func():
-            return mock_func()
+            attempts.append(1)
+            raise ConnectionError('boom')
 
-        test_func()
+        return test_func, attempts
 
-        assert mock_func.call_count == 0
+    def test_delay_multiplies_by_the_backoff_factor(self, recorded_sleeps):
+        func, _ = self._always_failing(
+            max_attempts=4,
+            initial_delay=1.0,
+            backoff_factor=2.0,
+            jitter=False,
+            exceptions=(ConnectionError,),
+        )
+
+        with pytest.raises(ConnectionError):
+            func()
+
+        assert _delays(recorded_sleeps) == [1.0, 2.0, 4.0]
+
+    def test_custom_backoff_factor_is_honoured(self, recorded_sleeps):
+        func, _ = self._always_failing(
+            max_attempts=3,
+            initial_delay=0.1,
+            backoff_factor=3.0,
+            jitter=False,
+            exceptions=(ConnectionError,),
+        )
+
+        with pytest.raises(ConnectionError):
+            func()
+
+        assert _delays(recorded_sleeps) == pytest.approx([0.1, 0.3])
+
+    def test_no_sleep_happens_on_the_final_attempt(self, recorded_sleeps):
+        func, attempts = self._always_failing(
+            max_attempts=3,
+            initial_delay=1.0,
+            jitter=False,
+            exceptions=(ConnectionError,),
+        )
+
+        with pytest.raises(ConnectionError):
+            func()
+
+        assert len(attempts) == 3
+        assert len(_delays(recorded_sleeps)) == 2
+
+    def test_zero_initial_delay_never_waits(self, recorded_sleeps):
+        func, _ = self._always_failing(
+            max_attempts=3,
+            initial_delay=0.0,
+            jitter=False,
+            exceptions=(ConnectionError,),
+        )
+
+        with pytest.raises(ConnectionError):
+            func()
+
+        assert _delays(recorded_sleeps) == [0.0, 0.0]
+
+
+@pytest.mark.unit
+class TestJitter:
+    """Jitter must be observable, not merely plausible."""
+
+    @staticmethod
+    def _run_once(recorded_sleeps, **decorator_kwargs):
+        calls = []
+
+        @retry_with_backoff(
+            max_attempts=2,
+            initial_delay=1.0,
+            exceptions=(ConnectionError,),
+            **decorator_kwargs,
+        )
+        def test_func():
+            calls.append(1)
+            if len(calls) < 2:
+                raise ConnectionError('boom')
+            return 'ok'
+
+        assert test_func() == 'ok'
+        return _delays(recorded_sleeps)
+
+    def test_jitter_disabled_uses_the_exact_delay(self, recorded_sleeps):
+        assert self._run_once(recorded_sleeps, jitter=False) == [1.0]
+
+    def test_jitter_perturbs_the_delay(self, recorded_sleeps):
+        with patch(
+            'createagents.infra.config.retry.random.uniform', return_value=0.1
+        ):
+            delays = self._run_once(recorded_sleeps, jitter=True)
+
+        # 1.0 * (1 + 0.1); without jitter this would be exactly 1.0.
+        assert delays == pytest.approx([1.1])
+
+    def test_jitter_is_on_by_default(self, recorded_sleeps):
+        with patch(
+            'createagents.infra.config.retry.random.uniform', return_value=-0.1
+        ) as uniform:
+            delays = self._run_once(recorded_sleeps)
+
+        uniform.assert_called_once_with(-0.1, 0.1)
+        assert delays == pytest.approx([0.9])
+
+    def test_jitter_stays_within_ten_percent(self, recorded_sleeps):
+        for factor in (-0.1, -0.05, 0.0, 0.05, 0.1):
+            recorded_sleeps.reset_mock()
+            with patch(
+                'createagents.infra.config.retry.random.uniform',
+                return_value=factor,
+            ):
+                delay = self._run_once(recorded_sleeps, jitter=True)[0]
+
+            assert 0.9 <= delay <= 1.1
+
+
+@pytest.fixture
+def no_real_async_sleep():
+    """Never block on the backoff delay in the async wrapper."""
+    with patch(
+        'createagents.infra.config.retry.asyncio.sleep',
+        new_callable=AsyncMock,
+    ) as sleep:
+        yield sleep
+
+
+@pytest.mark.unit
+class TestAsyncRetryWithBackoff:
+    """The decorator detects coroutine functions and awaits the retries."""
+
+    @pytest.mark.asyncio
+    async def test_successful_execution_no_retry(self, no_real_async_sleep):
+        calls = []
+
+        @retry_with_backoff(max_attempts=3)
+        async def test_func():
+            calls.append(1)
+            return 'success'
+
+        assert await test_func() == 'success'
+        assert len(calls) == 1
+        no_real_async_sleep.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_retries_until_it_succeeds(self, no_real_async_sleep):
+        attempts = []
+
+        @retry_with_backoff(max_attempts=3, initial_delay=0.5, jitter=False)
+        async def test_func():
+            attempts.append(len(attempts) + 1)
+            if len(attempts) < 3:
+                raise ValueError('boom')
+            return 'success'
+
+        assert await test_func() == 'success'
+        assert len(attempts) == 3
+        assert _delays(no_real_async_sleep) == [0.5, 1.0]
+
+    @pytest.mark.asyncio
+    async def test_raises_the_last_exception_when_attempts_run_out(
+        self, no_real_async_sleep
+    ):
+        @retry_with_backoff(max_attempts=2, jitter=False)
+        async def test_func():
+            raise ValueError('always fails')
+
+        with pytest.raises(ValueError, match='always fails'):
+            await test_func()
+
+        assert no_real_async_sleep.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_does_not_retry_unlisted_exception(
+        self, no_real_async_sleep
+    ):
+        attempts = []
+
+        @retry_with_backoff(max_attempts=3, exceptions=(ValueError,))
+        async def test_func():
+            attempts.append(1)
+            raise TypeError('not retried')
+
+        with pytest.raises(TypeError, match='not retried'):
+            await test_func()
+
+        assert len(attempts) == 1
+        no_real_async_sleep.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_on_retry_callback_receives_attempt_and_error(
+        self, no_real_async_sleep
+    ):
+        seen = []
+
+        @retry_with_backoff(
+            max_attempts=3,
+            jitter=False,
+            on_retry=lambda attempt, exc: seen.append((attempt, str(exc))),
+        )
+        async def test_func():
+            raise ValueError('boom')
+
+        with pytest.raises(ValueError):
+            await test_func()
+
+        assert seen == [(1, 'boom'), (2, 'boom')]
+
+    @pytest.mark.asyncio
+    async def test_failing_callback_does_not_break_the_retry_loop(
+        self, no_real_async_sleep
+    ):
+        def broken_callback(attempt, exc):
+            raise RuntimeError('callback exploded')
+
+        @retry_with_backoff(
+            max_attempts=2, jitter=False, on_retry=broken_callback
+        )
+        async def test_func():
+            raise ValueError('boom')
+
+        with pytest.raises(ValueError, match='boom'):
+            await test_func()
+
+    @pytest.mark.asyncio
+    async def test_jitter_keeps_the_delay_within_ten_percent(
+        self, no_real_async_sleep
+    ):
+        @retry_with_backoff(max_attempts=2, initial_delay=1.0, jitter=True)
+        async def test_func():
+            raise ValueError('boom')
+
+        with patch(
+            'createagents.infra.config.retry.random.uniform', return_value=0.1
+        ):
+            with pytest.raises(ValueError):
+                await test_func()
+
+        assert _delays(no_real_async_sleep) == [pytest.approx(1.1)]
+
+    @pytest.mark.asyncio
+    async def test_zero_max_attempts_is_rejected(self, no_real_async_sleep):
+        with pytest.raises(ValueError, match='max_attempts must be >= 1'):
+            retry_with_backoff(max_attempts=0)

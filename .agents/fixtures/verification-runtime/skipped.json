@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "skipped",
+  "profile": "auto",
+  "effectiveProfile": "quick",
+  "profileReason": "Mudanca documental.",
+  "changedFiles": ["docs/agents.md"],
+  "gates": [
+    {
+      "name": "lint",
+      "label": "Lint",
+      "command": "npm run lint",
+      "blocking": true,
+      "status": "skipped",
+      "classification": "not_applicable",
+      "durationMs": 0,
+      "exitCode": 0,
+      "logPath": null,
+      "details": "Dry run; gate nao foi executado."
+    }
+  ],
+  "escalations": {
+    "reviewRequired": false,
+    "securityRequired": false,
+    "testerRecommended": false,
+    "reasons": []
+  },
+  "sessionDir": null,
+  "summary": "Dry run: 1 gates selecionados para o perfil quick."
+}

@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 from unittest.mock import patch
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import pytest
 
@@ -226,22 +226,14 @@ class TestCurrentDateTool:
     def test_execute_date_returns_iso_format(self):
         tool = CurrentDateTool()
         result = tool.execute(action='date', tz='UTC')
-
-        try:
-            datetime.fromisoformat(result)
-            assert True
-        except ValueError:
-            pytest.fail('Date is not in ISO format')
+        parsed = datetime.fromisoformat(result)
+        assert parsed is not None
 
     def test_execute_datetime_returns_iso_format(self):
         tool = CurrentDateTool()
         result = tool.execute(action='datetime', tz='UTC')
-
-        try:
-            datetime.fromisoformat(result.replace('+00:00', ''))
-            assert True
-        except ValueError:
-            pytest.fail('Datetime is not in ISO format')
+        parsed = datetime.fromisoformat(result.replace('+00:00', ''))
+        assert parsed is not None
 
     def test_execute_timestamp_is_numeric(self):
         tool = CurrentDateTool()
@@ -342,16 +334,18 @@ class TestCurrentDateTool:
     def test_tool_is_safe_no_io_operations(self):
         tool = CurrentDateTool()
 
-        with patch(
-            'builtins.open',
-            side_effect=AssertionError('Should not open files'),
-        ):
-            with patch(
+        with (
+            patch(
+                'builtins.open',
+                side_effect=AssertionError('Should not open files'),
+            ),
+            patch(
                 'urllib.request.urlopen',
                 side_effect=AssertionError('Should not access network'),
-            ):
-                result = tool.execute(action='date', tz='UTC')
-                assert not result.startswith('[CurrentDateTool Error]')
+            ),
+        ):
+            result = tool.execute(action='date', tz='UTC')
+            assert not result.startswith('[CurrentDateTool Error]')
 
     def test_error_includes_allowed_actions(self):
         tool = CurrentDateTool()
@@ -368,7 +362,7 @@ class TestCurrentDateTool:
         for i in range(40):
             try:
                 _get_zoneinfo(f'Etc/GMT+{i % 12}')
-            except Exception:
+            except ZoneInfoNotFoundError:
                 pass
 
         cache_info = _get_zoneinfo.cache_info()

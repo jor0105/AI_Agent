@@ -1,252 +1,201 @@
 import time
-from typing import Any, Dict, AsyncGenerator, List, Optional
+from collections.abc import AsyncGenerator, Iterator
+from typing import Any
 
-from ....domain import BaseTool, ChatException, ToolExecutor
-from ...config import (
-    ChatMetrics,
-    EnvironmentConfig,
-    LoggingConfig,
-    create_logger,
-)
+from ....domain import BaseTool, ChatException, ChatMetrics
+from ...config import LoggingConfig
+from ..Common import BaseStreamHandler, StreamUsageTotals, ToolSession
 from .openai_client import OpenAIClient
+from .openai_tool_invoker import run_tool_calls
 from .tool_call_parser import ToolCallParser
 from .tool_schema_formatter import ToolSchemaFormatter
 
 
-class OpenAIStreamHandler:
+class OpenAIStreamHandler(BaseStreamHandler):
     """Handles streaming responses from OpenAI with tool calling support."""
 
     def __init__(
         self,
         client: OpenAIClient,
-        metrics_list: Optional[List[ChatMetrics]] = None,
-    ):
-        self.__client = client
-        self.__logger = LoggingConfig.get_logger(__name__)
-        self.__metrics = metrics_list if metrics_list is not None else []
-        self.__max_tool_iterations = int(
-            EnvironmentConfig.get_env('OPENAI_MAX_TOOL_ITERATIONS', '100')
-            or '100'
+        metrics_list: list[ChatMetrics] | None = None,
+    ) -> None:
+        """Initialize the streaming handler.
+
+        Args:
+            client: Transport used to reach the OpenAI Responses API.
+            metrics_list: Optional shared list to append metrics to.
+        """
+        super().__init__(
+            logger=LoggingConfig.get_logger(__name__),
+            max_iterations_env_var='OPENAI_MAX_TOOL_ITERATIONS',
+            metrics_list=metrics_list,
         )
+        self.__client = client
 
     async def handle_stream(
         self,
         model: str,
-        instructions: Optional[str],
-        messages: List[Dict[str, str]],
-        config: Optional[Dict[str, Any]],
-        tools: Optional[List[BaseTool]],
+        instructions: str | None,
+        messages: list[dict[str, str]],
+        config: dict[str, Any] | None,
+        tools: list[BaseTool] | None,
     ) -> AsyncGenerator[str, None]:
         """Yields tokens from the OpenAI API as they arrive.
 
         Supports tool calling with interrupted streaming: when tools are
         called during streaming, token yield is paused, tools are executed,
         and streaming resumes with the tool results.
+
+        Args:
+            model: The name of the model.
+            instructions: System instructions, or None.
+            messages: The conversation to send, extended in place with any
+                tool calls and their results.
+            config: Internal AI configuration.
+            tools: Tools the agent may call, or None.
+
+        Yields:
+            Each token as the provider emits it.
+
+        Raises:
+            ChatException: If the streaming call fails.
         """
         start_time = time.time()
+        session = ToolSession.prepare(
+            tools,
+            ToolSchemaFormatter.format_tools_for_responses_api,
+            self._logger,
+            f'{__name__}.ToolExecutor',
+        )
 
-        # Prepare tool schemas and executor if tools are provided
-        tool_schemas = None
-        tool_executor = None
-        if tools:
-            tool_schemas = ToolSchemaFormatter.format_tools_for_responses_api(
-                tools
-            )
-            tool_executor = ToolExecutor(
-                tools, create_logger(f'{__name__}.ToolExecutor')
-            )
-            self.__logger.debug(
-                'Streaming with tools enabled: %s',
-                [tool.name for tool in tools],
-            )
+        self._logger.debug('Streaming mode enabled for OpenAI')
 
-        self.__logger.debug('Streaming mode enabled for OpenAI')
-
-        # Accumulate token counts across all iterations (for tool calls)
-        total_prompt_tokens = 0
-        total_completion_tokens = 0
+        # Token counts accumulate across every iteration of a tool-calling
+        # turn, so the metric covers the whole turn rather than the last call.
+        totals = StreamUsageTotals()
 
         iteration = 0
         try:
-            while iteration < self.__max_tool_iterations:
+            while iteration < self.max_tool_iterations:
                 iteration += 1
-                self.__logger.info(
+                self._logger.info(
                     'OpenAI streaming iteration %s/%s',
                     iteration,
-                    self.__max_tool_iterations,
+                    self.max_tool_iterations,
                 )
 
-                # Call OpenAI API with streaming enabled
                 stream_response = await self.__client.call_api(
-                    model, instructions, messages, config, tool_schemas
+                    model, instructions, messages, config, session.schemas
                 )
 
-                self.__logger.debug(
+                self._logger.debug(
                     'Streaming response received, iterating events'
                 )
 
-                # Track response state
                 full_response = None
                 has_yielded_content = False
 
-                # Process streaming events from OpenAI Responses API
                 async for event in stream_response:
                     event_type = getattr(event, 'type', None)
 
-                    # Yield text tokens as they arrive
                     if event_type == 'response.output_text.delta':
-                        if hasattr(event, 'delta'):
-                            token = event.delta
-                            if token:
-                                yield token
-                                has_yielded_content = True
+                        token = getattr(event, 'delta', None)
+                        if token:
+                            yield token
+                            has_yielded_content = True
 
                     elif event_type == 'response.content_part.added':
-                        if hasattr(event, 'content_part'):
-                            content_part = event.content_part
-                            if hasattr(content_part, 'text'):
-                                token = content_part.text
-                                if token:
-                                    yield token
-                                    has_yielded_content = True
+                        content_part = getattr(event, 'content_part', None)
+                        token = getattr(content_part, 'text', None)
+                        if token:
+                            yield token
+                            has_yielded_content = True
 
-                    # Capture the completed event with full response
                     elif event_type == 'response.completed':
                         full_response = getattr(event, 'response', None)
 
-                # Check if we have a valid response
                 if not full_response:
-                    self.__logger.warning(
+                    self._logger.warning(
                         'No response object received from stream'
                     )
                     break
 
-                # Extract text from full response if no deltas were streamed
+                # Fall back to the completed response when no text delta
+                # arrived, so a provider that skips deltas still produces
+                # output instead of an empty stream.
                 if not has_yielded_content:
-                    if (
-                        hasattr(full_response, 'output')
-                        and full_response.output
-                    ):
-                        for item in full_response.output:
-                            item_type = getattr(item, 'type', None)
-                            if item_type == 'text':
-                                text_content = getattr(item, 'text', None)
-                                if text_content:
-                                    yield text_content
-                                    has_yielded_content = True
+                    for text in self.__texts_in(full_response):
+                        yield text
 
-                # Extract and accumulate token usage from this iteration
-                usage = getattr(full_response, 'usage', None)
-                if usage:
-                    prompt_tokens = getattr(usage, 'input_tokens', None)
-                    completion_tokens = getattr(usage, 'output_tokens', None)
-                    if prompt_tokens:
-                        total_prompt_tokens += prompt_tokens
-                    if completion_tokens:
-                        total_completion_tokens += completion_tokens
-                    self.__logger.debug(
-                        'Iteration %s tokens - prompt: %s, completion: %s',
-                        iteration,
-                        prompt_tokens,
-                        completion_tokens,
-                    )
+                self.__accumulate_usage(totals, full_response, iteration)
 
-                # Execute tool calls if present
-                if tool_executor and ToolCallParser.has_tool_calls(
+                if session.executor and ToolCallParser.has_tool_calls(
                     full_response
                 ):
-                    # Add output items to messages for context
-                    output_items = (
-                        ToolCallParser.get_assistant_message_with_tool_calls(
-                            full_response
-                        )
+                    await run_tool_calls(
+                        full_response,
+                        messages,
+                        session.executor,
+                        self._logger,
                     )
-                    if output_items:
-                        messages.extend(output_items)
-
-                    # Extract and execute tool calls
-                    tool_calls = ToolCallParser.extract_tool_calls(
-                        full_response
-                    )
-                    self.__logger.info('Executing %s tool(s)', len(tool_calls))
-
-                    for tool_call in tool_calls:
-                        tool_name = tool_call['name']
-                        tool_args = tool_call['arguments']
-                        tool_id = tool_call['id']
-
-                        self.__logger.debug("Executing tool '%s'", tool_name)
-
-                        execution_result = await tool_executor.execute_tool(
-                            tool_name, **tool_args
-                        )
-
-                        tool_result_msg = (
-                            ToolCallParser.format_tool_results_for_llm(
-                                tool_call_id=tool_id,
-                                tool_name=tool_name,
-                                result=(
-                                    str(execution_result.result)
-                                    if execution_result.success
-                                    else str(execution_result.error)
-                                ),
-                            )
-                        )
-                        messages.append(tool_result_msg)
-
-                    # Continue to next iteration for final response
                     continue
 
                 # Response complete, no tool calls - end stream
                 break
 
-            if iteration >= self.__max_tool_iterations:
-                self.__logger.warning(
-                    'Max tool iterations (%s) reached during streaming',
-                    self.__max_tool_iterations,
-                )
-
-            # Record metrics after streaming completes with accumulated tokens
-            latency = (time.time() - start_time) * 1000
-            total_tokens = (
-                total_prompt_tokens + total_completion_tokens
-                if total_prompt_tokens or total_completion_tokens
-                else None
-            )
-            metrics = ChatMetrics(
-                model=model,
-                latency_ms=latency,
-                tokens_used=total_tokens,
-                prompt_tokens=total_prompt_tokens
-                if total_prompt_tokens
-                else None,
-                completion_tokens=total_completion_tokens
-                if total_completion_tokens
-                else None,
-                success=True,
-            )
-            self.__metrics.append(metrics)
-            self.__logger.info(
-                'Streaming chat completed: %s (accumulated over %s iteration(s))',
-                metrics,
-                iteration,
-            )
+            self.warn_if_iterations_exhausted(iteration)
+            self.record_stream_success(model, start_time, totals, iteration)
 
         except Exception as e:
-            latency = (time.time() - start_time) * 1000
-            metrics = ChatMetrics(
-                model=model,
-                latency_ms=latency,
-                success=False,
-                error_message=str(e),
-            )
-            self.__metrics.append(metrics)
-            self.__logger.error('Error during streaming: %s', e)
+            self.record_stream_error(model, start_time, e)
             raise ChatException(
-                f'Error during OpenAI streaming: {str(e)}',
+                f'Error during OpenAI streaming: {e!s}',
                 original_error=e,
             ) from e
 
-    def get_metrics(self) -> List[ChatMetrics]:
-        """Returns the list of collected metrics."""
-        return self.__metrics.copy()
+    def __accumulate_usage(
+        self, totals: StreamUsageTotals, response: Any, iteration: int
+    ) -> None:
+        """Add this iteration's token counts to the turn's running totals.
+
+        Args:
+            totals: The turn's accumulated usage, updated in place.
+            response: The object from the `response.completed` event.
+            iteration: The iteration number, for the debug trace.
+        """
+        usage = getattr(response, 'usage', None)
+        if not usage:
+            return
+
+        prompt_tokens = getattr(usage, 'input_tokens', None)
+        completion_tokens = getattr(usage, 'output_tokens', None)
+        totals.add_tokens(prompt_tokens, completion_tokens)
+        self._logger.debug(
+            'Iteration %s tokens - prompt: %s, completion: %s',
+            iteration,
+            prompt_tokens,
+            completion_tokens,
+        )
+
+    @staticmethod
+    def __texts_in(response: Any) -> Iterator[str]:
+        """Yield the assistant text carried by a completed response.
+
+        The Responses API nests it as
+        `output[] -> type 'message' -> content[] -> type 'output_text'`.
+
+        Args:
+            response: The object from the `response.completed` event.
+
+        Yields:
+            Each non-empty text part, in order.
+        """
+        for item in getattr(response, 'output', None) or ():
+            if getattr(item, 'type', None) != 'message':
+                continue
+            for part in getattr(item, 'content', None) or ():
+                if getattr(part, 'type', None) != 'output_text':
+                    continue
+                text = getattr(part, 'text', None)
+                if text:
+                    yield text

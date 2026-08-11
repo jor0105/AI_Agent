@@ -34,8 +34,8 @@ class TestEnvironmentConfig:
         with pytest.raises(EnvironmentError, match='was not found'):
             EnvironmentConfig.get_api_key('NONEXISTENT_KEY')
 
-    def test_get_api_key_uses_cache(self):
-        with patch.dict(os.environ, {'CACHED_KEY': 'cached_value'}):
+    def test_get_api_key_fetches_fresh_from_env(self):
+        with patch.dict(os.environ, {'CACHED_KEY': 'first_value'}):
             EnvironmentConfig.reset()
 
             key1 = EnvironmentConfig.get_api_key('CACHED_KEY')
@@ -45,17 +45,18 @@ class TestEnvironmentConfig:
             ):
                 key2 = EnvironmentConfig.get_api_key('CACHED_KEY')
 
-            assert key1 == key2 == 'cached_value'
+            assert key1 == 'first_value'
+            assert key2 == 'new_value'
 
     def test_clear_cache(self):
         with patch.dict(os.environ, {'CACHE_TEST': 'value1'}):
             EnvironmentConfig.reset()
-            key1 = EnvironmentConfig.get_api_key('CACHE_TEST')
+            key1 = EnvironmentConfig.get_env('CACHE_TEST')
 
             EnvironmentConfig.clear_cache()
 
             with patch.dict(os.environ, {'CACHE_TEST': 'value2'}):
-                key2 = EnvironmentConfig.get_api_key('CACHE_TEST')
+                key2 = EnvironmentConfig.get_env('CACHE_TEST')
 
             assert key1 == 'value1'
             assert key2 == 'value2'
@@ -70,7 +71,7 @@ class TestEnvironmentConfig:
     def test_reset_clears_cache(self):
         with patch.dict(os.environ, {'RESET_TEST': 'original'}):
             EnvironmentConfig.reset()
-            EnvironmentConfig.get_api_key('RESET_TEST')
+            EnvironmentConfig.get_env('RESET_TEST')
 
             assert 'RESET_TEST' in EnvironmentConfig._cache
 
@@ -82,8 +83,8 @@ class TestEnvironmentConfig:
         with patch.dict(os.environ, {'KEY1': 'value1', 'KEY2': 'value2'}):
             EnvironmentConfig.reset()
 
-            val1 = EnvironmentConfig.get_api_key('KEY1')
-            val2 = EnvironmentConfig.get_api_key('KEY2')
+            val1 = EnvironmentConfig.get_env('KEY1')
+            val2 = EnvironmentConfig.get_env('KEY2')
 
             assert val1 == 'value1'
             assert val2 == 'value2'
@@ -166,7 +167,8 @@ class TestEnvironmentConfig:
                 try:
                     value = EnvironmentConfig.get_api_key('THREAD_KEY')
                     results.append(value)
-                except Exception as e:
+                # Capture worker failures for the assertion after join.
+                except Exception as e:  # noqa: BLE001
                     errors.append(e)
 
             threads = [Thread(target=get_key) for _ in range(20)]
@@ -218,7 +220,6 @@ class TestEnvironmentConfig:
             value = EnvironmentConfig.get_api_key('WHITESPACE_KEY')
 
             assert value == 'value_with_spaces'
-            assert value == EnvironmentConfig._cache['WHITESPACE_KEY']
 
     def test_get_api_key_with_only_whitespace_raises_error(self):
         with patch.dict(os.environ, {'WHITESPACE_ONLY': '   '}):
@@ -233,6 +234,7 @@ class TestEnvironmentConfig:
             value = EnvironmentConfig.get_env('WHITESPACE_ENV')
 
             assert value == 'env_value'
+            assert value == EnvironmentConfig._cache['WHITESPACE_ENV']
 
     def test_get_env_with_empty_string_returns_default(self):
         with patch.dict(os.environ, {'EMPTY_ENV': ''}):
@@ -274,7 +276,7 @@ class TestEnvironmentConfig:
     def test_reload_clears_cache(self):
         with patch.dict(os.environ, {'RELOAD_KEY': 'original'}):
             EnvironmentConfig.reset()
-            _ = EnvironmentConfig.get_api_key('RELOAD_KEY')
+            _ = EnvironmentConfig.get_env('RELOAD_KEY')
 
             assert 'RELOAD_KEY' in EnvironmentConfig._cache
 
@@ -305,7 +307,8 @@ class TestEnvironmentConfig:
             def reload_env():
                 try:
                     EnvironmentConfig.reload()
-                except Exception as e:
+                # Capture worker failures for the assertion after join.
+                except Exception as e:  # noqa: BLE001
                     errors.append(e)
 
             threads = [Thread(target=reload_env) for _ in range(10)]
@@ -371,7 +374,8 @@ class TestEnvironmentConfig:
                     barrier.wait()
                     key = EnvironmentConfig.get_api_key('CONCURRENT_API_KEY')
                     results.append(key)
-                except Exception as e:
+                # Capture worker failures for the assertion after join.
+                except Exception as e:  # noqa: BLE001
                     errors.append(str(e))
 
             threads = [Thread(target=get_key_synchronized) for _ in range(5)]
@@ -393,3 +397,63 @@ class TestEnvironmentConfig:
 
             assert value == 'value_to_strip'
             assert value == EnvironmentConfig._cache['STRIP_TEST']
+
+
+@pytest.mark.unit
+class TestGetEnvDefaultsAreNotCached:
+    """A fallback must never be stored as if it were a real env value."""
+
+    def setup_method(self):
+        EnvironmentConfig.reset()
+        os.environ.pop('CA_TEST_UNSET_VAR', None)
+
+    def teardown_method(self):
+        os.environ.pop('CA_TEST_UNSET_VAR', None)
+        EnvironmentConfig.reset()
+
+    def test_a_later_caller_gets_its_own_default(self):
+        assert EnvironmentConfig.get_env('CA_TEST_UNSET_VAR', 'A') == 'A'
+
+        assert EnvironmentConfig.get_env('CA_TEST_UNSET_VAR', 'B') == 'B'
+
+    def test_a_variable_defined_after_the_first_read_is_seen(self):
+        EnvironmentConfig.get_env('CA_TEST_UNSET_VAR', 'fallback')
+
+        os.environ['CA_TEST_UNSET_VAR'] = 'real-value'
+
+        assert (
+            EnvironmentConfig.get_env('CA_TEST_UNSET_VAR', 'fallback')
+            == 'real-value'
+        )
+
+    def test_real_values_are_still_cached(self):
+        os.environ['CA_TEST_UNSET_VAR'] = 'cached-value'
+        assert EnvironmentConfig.get_env('CA_TEST_UNSET_VAR') == 'cached-value'
+
+        os.environ['CA_TEST_UNSET_VAR'] = 'changed'
+
+        assert EnvironmentConfig.get_env('CA_TEST_UNSET_VAR') == 'cached-value'
+
+
+@pytest.mark.unit
+class TestGetIntEnv:
+    def setup_method(self):
+        EnvironmentConfig.reset()
+        os.environ.pop('CA_TEST_INT_VAR', None)
+
+    def teardown_method(self):
+        os.environ.pop('CA_TEST_INT_VAR', None)
+        EnvironmentConfig.reset()
+
+    def test_returns_the_default_when_unset(self):
+        assert EnvironmentConfig.get_int_env('CA_TEST_INT_VAR', 42) == 42
+
+    def test_parses_a_configured_value(self):
+        os.environ['CA_TEST_INT_VAR'] = '7'
+
+        assert EnvironmentConfig.get_int_env('CA_TEST_INT_VAR', 42) == 7
+
+    def test_falls_back_when_the_value_is_not_an_integer(self):
+        os.environ['CA_TEST_INT_VAR'] = 'not-a-number'
+
+        assert EnvironmentConfig.get_int_env('CA_TEST_INT_VAR', 42) == 42

@@ -1,9 +1,8 @@
 from dataclasses import dataclass
-from enum import Enum
-from typing import Dict
+from enum import StrEnum
 
 
-class MessageRole(str, Enum):
+class MessageRole(StrEnum):
     """Enum to define possible roles in a message."""
 
     SYSTEM = 'system'
@@ -18,8 +17,8 @@ class MessageRole(str, Enum):
 
 @dataclass(frozen=True)
 class Message:
-    """
-    Represents a message in the chat as a Value Object.
+    """Represents a message in the chat as a Value Object.
+
     It is immutable to ensure data integrity.
     """
 
@@ -29,14 +28,18 @@ class Message:
     def __post_init__(self) -> None:
         """Validates the message data."""
         if not isinstance(self.role, MessageRole):
-            raise ValueError("The 'role' must be an instance of MessageRole.")
+            # TypeError would be more precise, but `Message` is exported from
+            # `createagents.domain` and callers already catch ValueError.
+            # Changing it is a breaking change, not a lint fix.
+            raise ValueError(  # noqa: TRY004
+                "The 'role' must be an instance of MessageRole."
+            )
 
         if not self.content or not self.content.strip():
             raise ValueError('The message content cannot be empty.')
 
-    def to_dict(self) -> Dict[str, str]:
-        """
-        Converts the message to a dictionary.
+    def to_dict(self) -> dict[str, str]:
+        """Converts the message to a dictionary.
 
         Returns:
             A dictionary with the role and content.
@@ -44,9 +47,8 @@ class Message:
         return {'role': self.role.value, 'content': self.content}
 
     @classmethod
-    def from_dict(cls, data: Dict[str, str]) -> 'Message':
-        """
-        Creates a Message instance from a dictionary.
+    def from_dict(cls, data: dict[str, str]) -> 'Message':
+        """Creates a Message instance from a dictionary.
 
         Args:
             data: A dictionary containing 'role' and 'content'.

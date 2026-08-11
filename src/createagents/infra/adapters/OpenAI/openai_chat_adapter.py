@@ -1,8 +1,9 @@
-from typing import Any, Dict, AsyncGenerator, List, Optional, Union
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from ....application.interfaces import ChatRepository
-from ....domain import BaseTool, ChatException
-from ...config import ChatMetrics, LoggingConfig
+from ....domain import BaseTool, ChatException, ChatMetrics
+from ...config import LoggingConfig
 from .openai_client import OpenAIClient
 from .openai_handler import OpenAIHandler
 from .openai_stream_handler import OpenAIStreamHandler
@@ -11,28 +12,27 @@ from .openai_stream_handler import OpenAIStreamHandler
 class OpenAIChatAdapter(ChatRepository):
     """Initialize the OpenAI adapter."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the OpenAI adapter.
 
         Raises:
             ChatException: If the API key is missing or invalid.
         """
         self.__logger = LoggingConfig.get_logger(__name__)
-        self.__metrics: List[ChatMetrics] = []
+        self.__metrics: list[ChatMetrics] = []
 
         self.__client = OpenAIClient()
 
     async def chat(
         self,
         model: str,
-        instructions: Optional[str],
-        config: Optional[Dict[str, Any]],
-        tools: Optional[List[BaseTool]],
-        history: List[Dict[str, str]],
+        instructions: str | None,
+        config: dict[str, Any] | None,
+        tools: list[BaseTool] | None,
+        history: list[dict[str, str]],
         user_ask: str,
-    ) -> Union[str, AsyncGenerator[str, None]]:
-        """
-        Sends a message to OpenAI and returns the response.
+    ) -> str | AsyncGenerator[str, None]:
+        """Sends a message to OpenAI and returns the response.
 
         Implements tool calling loop:
         1. Send message to LLM
@@ -73,31 +73,27 @@ class OpenAIChatAdapter(ChatRepository):
                 stream_handler = OpenAIStreamHandler(
                     self.__client, self.__metrics
                 )
-                result_stream = stream_handler.handle_stream(
+                return stream_handler.handle_stream(
                     model, instructions, messages, config, tools
                 )
 
-                return result_stream
-
             handler = OpenAIHandler(self.__client, self.__metrics)
-            result = await handler.execute_tool_loop(
+            return await handler.execute_tool_loop(
                 model, instructions, messages, config, tools
             )
-
-            return result
 
         except ChatException:
             raise
         except Exception as e:
-            self.__logger.error(
-                'An error occurred while communicating with OpenAI: %s', e
+            self.__logger.exception(
+                'An error occurred while communicating with OpenAI'
             )
             raise ChatException(
-                f'An error occurred while communicating with OpenAI: {str(e)}',
+                f'An error occurred while communicating with OpenAI: {e!s}',
                 original_error=e,
             ) from e
 
-    def get_metrics(self) -> List[ChatMetrics]:
+    def get_metrics(self) -> list[ChatMetrics]:
         """Return the list of collected metrics.
 
         Returns:

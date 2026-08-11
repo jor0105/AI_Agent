@@ -1,19 +1,15 @@
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, ClassVar
 
 from .....domain import BaseTool, FileReadException
-from ....config import LoggingConfig
+from ....config import EnvironmentConfig, LoggingConfig
 from .constants import MAX_FILE_SIZE_BYTES
 
 IMPORT_ERROR = None
 
 try:
-    from .file_utils import (
-        count_tokens,
-        determine_file_type,
-        initialize_tiktoken,
-        read_file_by_type,
-    )  # pylint: disable=import-outside-toplevel
+    from .file_dispatch import determine_file_type, read_file_by_type
+    from .token_utils import count_tokens, initialize_tiktoken
 
     DEPENDENCIES_AVAILABLE = True
 except ImportError as e:
@@ -41,7 +37,7 @@ class ReadLocalFileTool(BaseTool):
         'overload. Input must include the absolute or relative file path and '
         'optionally the maximum number of tokens allowed (default: 30000).'
     )
-    parameters: Dict[str, Any] = {
+    parameters: ClassVar[dict[str, Any]] = {
         'type': 'object',
         'properties': {
             'path': {
@@ -62,6 +58,12 @@ class ReadLocalFileTool(BaseTool):
 
     MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_BYTES
 
+    @classmethod
+    def _get_allowed_base_dir(cls) -> Path:
+        """Return the resolved sandbox directory for file reading."""
+        base = EnvironmentConfig.get_env('FILE_TOOL_BASE_DIR') or '.'
+        return Path(base).resolve()
+
     def __init__(self) -> None:
         """Initialize the ReadLocalFileTool.
 
@@ -72,8 +74,8 @@ class ReadLocalFileTool(BaseTool):
         if not DEPENDENCIES_AVAILABLE:
             raise RuntimeError(
                 'ReadLocalFileTool requires optional dependencies. '
-                'Install with: pip install ai-agent[file-tools] or '
-                'poetry install -E file-tools\n'
+                'Optional dependencies for ReadLocalFileTool are not installed.\n'
+                'Install them using: uv sync --extra file-tools or uv pip install -e ".[file-tools]"\n'
                 f'Missing dependencies error: {IMPORT_ERROR}'
             )
 
@@ -109,6 +111,13 @@ class ReadLocalFileTool(BaseTool):
 
         try:
             file_path = Path(path).resolve()
+
+            allowed_dir = self._get_allowed_base_dir()
+            if not file_path.is_relative_to(allowed_dir):
+                return self.__format_error(
+                    'Access denied',
+                    f"Path '{path}' is outside the allowed directory '{allowed_dir}'",
+                )
 
             if not file_path.exists():
                 return self.__format_error('File not found', path)
@@ -168,7 +177,7 @@ class ReadLocalFileTool(BaseTool):
                 f'[ReadLocalFileTool Error] Unexpected error: '
                 f'{type(e).__name__}: {e}'
             )
-            self.__logger.error(error_msg, exc_info=True)
+            self.__logger.exception(error_msg)
             return error_msg
 
     def __format_error(self, error_type: str, details: str) -> str:

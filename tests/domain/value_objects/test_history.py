@@ -250,7 +250,9 @@ class TestHistory:
         original_messages = original.get_messages()
         reconstructed_messages = reconstructed.get_messages()
 
-        for orig, recon in zip(original_messages, reconstructed_messages):
+        for orig, recon in zip(
+            original_messages, reconstructed_messages, strict=True
+        ):
             assert orig == recon
 
     def test_history_with_alternating_messages(self):
@@ -609,7 +611,8 @@ class TestHistoryConcurrency:
                         _ = history.get_messages()
                     else:
                         _ = history.to_dict_list()
-            except Exception as e:
+            # Capture worker failures for the assertion after all threads finish.
+            except Exception as e:  # noqa: BLE001
                 errors.append(str(e))
 
         threads = [

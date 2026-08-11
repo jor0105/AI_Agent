@@ -48,11 +48,6 @@ class ColorScheme:
         return cls.GREEN
 
     @classmethod
-    def get_info_color(cls) -> str:
-        """Get color for info messages."""
-        return cls.GRAY
-
-    @classmethod
     def get_error_color(cls) -> str:
         """Get color for error messages."""
         return cls.RED

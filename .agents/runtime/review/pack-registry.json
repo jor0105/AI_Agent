@@ -1,0 +1,44 @@
+{
+  "security": {
+    "label": "Security Boundaries",
+    "priority": 100,
+    "topic": "security:trust-boundary",
+    "skills": ["vulnerability-scanner", "red-team-tactics"],
+    "checklists": ["SEC-TRUST", "SEC-AUTHZ", "SEC-SECRETS"]
+  },
+  "interface": {
+    "label": "External Interfaces",
+    "priority": 80,
+    "topic": "interface:contract",
+    "skills": ["architecture", "python-patterns"],
+    "checklists": ["IFACE-CONTRACT", "IFACE-COMPAT"]
+  },
+  "data": {
+    "label": "Data Integrity",
+    "priority": 70,
+    "topic": "data:integrity",
+    "skills": ["structural-inspector", "testing-patterns"],
+    "checklists": ["DATA-CONTRACT", "DATA-QUERY", "DATA-OWNERSHIP"]
+  },
+  "behavior": {
+    "label": "Behavior And Runtime",
+    "priority": 60,
+    "topic": "behavior:runtime",
+    "skills": ["architecture", "systematic-debugging"],
+    "checklists": ["BEHAVIOR-CORRECTNESS", "BEHAVIOR-STATE"]
+  },
+  "tests": {
+    "label": "Tests And Verification",
+    "priority": 40,
+    "topic": "tests:coverage",
+    "skills": ["testing-patterns", "tdd-workflow"],
+    "checklists": ["TEST-COVERAGE", "TEST-REGRESSION"]
+  },
+  "docs": {
+    "label": "Documentation And Contracts",
+    "priority": 20,
+    "topic": "docs:contract",
+    "skills": ["plan-writing"],
+    "checklists": ["DOCS-CONTRACT", "DOCS-TRACEABILITY"]
+  }
+}
