@@ -1,7 +1,91 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Finding",
-  "type": "object",
+  "properties": {
+    "artifactType": {
+      "const": "finding"
+    },
+    "blocking": {
+      "type": "boolean"
+    },
+    "checklistIds": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "confidence": {
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "type": "string"
+    },
+    "evidence": {
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "line": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "snippet": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "snippet"
+      ],
+      "type": "object"
+    },
+    "findingId": {
+      "type": "string"
+    },
+    "impact": {
+      "type": "string"
+    },
+    "packId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "recommendedAction": {
+      "type": "string"
+    },
+    "reviewId": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "type": "string"
+    },
+    "severity": {
+      "enum": [
+        "blocker",
+        "warning",
+        "nit"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "open",
+        "accepted",
+        "dismissed"
+      ],
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "topic": {
+      "type": "string"
+    }
+  },
   "required": [
     "artifactType",
     "schemaVersion",
@@ -17,29 +101,6 @@
     "blocking",
     "evidence"
   ],
-  "properties": {
-    "artifactType": { "const": "finding" },
-    "schemaVersion": { "type": "string" },
-    "reviewId": { "type": "string" },
-    "findingId": { "type": "string" },
-    "status": { "type": "string", "enum": ["open", "accepted", "dismissed"] },
-    "severity": { "type": "string", "enum": ["blocker", "warning", "nit"] },
-    "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
-    "topic": { "type": "string" },
-    "summary": { "type": "string" },
-    "impact": { "type": "string" },
-    "recommendedAction": { "type": "string" },
-    "blocking": { "type": "boolean" },
-    "packId": { "type": ["string", "null"] },
-    "checklistIds": { "type": "array", "items": { "type": "string" } },
-    "evidence": {
-      "type": "object",
-      "required": ["file", "snippet"],
-      "properties": {
-        "file": { "type": "string" },
-        "line": { "type": ["integer", "null"] },
-        "snippet": { "type": "string" }
-      }
-    }
-  }
+  "title": "Finding",
+  "type": "object"
 }

@@ -30,8 +30,8 @@ repos:
     hooks:
       - id: validate-commit-msg
         name: validate-commit-msg
-        entry: .github/hooks/validate-commit-msg.sh
-        language: script
+        entry: bash .agents/scripts/validate-commit-msg.sh
+        language: system
         stages: [commit-msg]
 
   # --------------------------------------------------------------------------
@@ -63,44 +63,97 @@ repos:
         args: ["--pytest-test-first"]
 
   # --------------------------------------------------------------------------
-  # 2. Project Integrity
+  # 2. Project Integrity & Governance
   # --------------------------------------------------------------------------
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.9.11
     hooks:
       - id: uv-lock
 
-  # These checks are cheap enough for every commit and must remain visible to
-  # ai:verify. The max-lines script deliberately scans all tracked src files.
   - repo: local
     hooks:
+      - id: lockfile-sync
+        name: lockfile-sync
+        entry: >-
+          uv run python
+          .agents/skills/local-quality-gates/scripts/check_lockfile_sync.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: max-lines-per-file
         name: max-lines-per-file
-        entry: bash .github/hooks/check-max-lines.sh
+        entry: uv run python .agents/scripts/check-max-lines.py
         language: system
         pass_filenames: false
         always_run: true
 
       # .agents is the source of truth for the generated harness mirrors.
-      - id: check-harness-sync
-        name: check-harness-sync
-        entry: bash .github/hooks/check-harness-sync.sh
+      - id: harness-sync-check
+        name: harness-sync-check
+        entry: harness-sync --check
         language: system
         pass_filenames: false
         always_run: true
 
+      - id: validate-agents-md
+        name: validate-agents-md
+        entry: >-
+          uv run python
+          .agents/skills/agents-md-author/scripts/validate_agents_md.py
+        language: system
+        files: ^AGENTS\.md$
+        pass_filenames: false
+
+      - id: validate-agent-protocols
+        name: validate-agent-protocols
+        entry: uv run python .agents/scripts/validate-agent-protocols.py
+        language: system
+        files: ^(\.agents|\.github)/.*$
+        pass_filenames: false
+
+  # --------------------------------------------------------------------------
+  # 2.1. AI Agent Diff Sanity & Test Integrity (Fail-Closed)
+  # --------------------------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: diff-sanity
+        name: diff-sanity
+        entry: >-
+          uv run python
+          .agents/skills/local-quality-gates/scripts/check_diff_sanity.py
+        language: system
+        types: [python]
+        files: ^(src|tests)/.*\.py$
+
+      - id: test-integrity
+        name: test-integrity
+        entry: >-
+          uv run python
+          .agents/skills/local-quality-gates/scripts/check_test_integrity.py
+        language: system
+        files: ^tests/.*\.py$
+
   # --------------------------------------------------------------------------
   # 3. Security and Supply Chain Checks
   # --------------------------------------------------------------------------
-  # Bandit scans every Python file. The wrapper applies the only test-specific
+  # Bandit scans every Python file. Tests apply the only test-specific
   # exception (B101, normal pytest assertions) without hiding other findings.
   - repo: local
     hooks:
-      - id: bandit
-        name: bandit
-        entry: bash .github/hooks/run-bandit.sh
+      - id: bandit-src
+        name: bandit (src & scripts)
+        entry: uv run --no-sync bandit -q -c pyproject.toml
         language: system
         types: [python]
+        files: ^(src|scripts)/.*\.py$
+
+      - id: bandit-tests
+        name: bandit (tests)
+        entry: uv run --no-sync bandit -q -c pyproject.toml --skip B101
+        language: system
+        types: [python]
+        files: ^tests/.*\.py$
 
   # gitleaks is the single secret scanner. detect-secrets was dropped: it
   # needed a 9-file baseline of test fixtures that gitleaks does not flag,
@@ -186,7 +239,7 @@ repos:
 
       - id: import-cycles
         name: import-cycles
-        entry: uv run python .github/hooks/check-import-cycles.py
+        entry: uv run python scripts/check-import-cycles.py
         language: system
         types: [python]
         pass_filenames: false
@@ -202,7 +255,9 @@ repos:
 
       - id: pydocstyle
         name: pydocstyle
-        entry: uv run pydocstyle src --convention=google --add-ignore=D100,D104,D107
+        entry: >-
+          uv run pydocstyle src --convention=google
+          --add-ignore=D100,D104,D107
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
@@ -212,7 +267,7 @@ repos:
   # --------------------------------------------------------------------------
   - repo: local
     hooks:
-      # Same selection and coverage gate as `npm run test:coverage` and CI.
+      # Same selection and coverage gate as pytest coverage and CI.
       - id: pytest-unit
         name: pytest-unit
         entry: >-

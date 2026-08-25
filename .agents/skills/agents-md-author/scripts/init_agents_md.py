@@ -58,7 +58,7 @@ def main() -> int:
     )
     parser.add_argument(
         '--reviewed',
-        default=datetime.now(tz=UTC).date().isoformat(),
+        default=datetime.now(UTC).date().isoformat(),
         help='Review date in YYYY-MM-DD format (default: today)',
     )
     parser.add_argument(

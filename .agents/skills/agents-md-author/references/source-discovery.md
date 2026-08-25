@@ -42,39 +42,39 @@
 
 ## Matriz por ecossistema
 
-| Ecossistema | Fontes primárias | Confirme |
-| --- | --- | --- |
-| Python | `pyproject.toml`, lockfile, módulos CLI, tox/nox | versão, manager/runner, framework, entrypoints, lint, types e testes |
-| Node/TypeScript | `package.json`, lockfile, workspace config, tsconfig | scripts, package manager, runtime, framework, build, lint e testes |
-| Rust | `Cargo.toml`, `Cargo.lock`, workspace members | crates, binários, features, framework, fmt, clippy e testes |
-| Go | `go.mod`, `go.work`, `cmd/`, CI | módulos, framework/router, comandos, geração, lint e testes |
-| JVM | `pom.xml`, Gradle files, wrapper, settings | módulos, JDK, framework, wrapper, tasks, build e testes |
-| .NET | solution/project files, props/targets, tool manifest | SDK, projects, framework, run, format e testes |
-| Ruby | `Gemfile`, gemspec, Rakefile | versão, framework, executáveis, tasks e testes |
-| PHP | `composer.json`, lockfile, framework console | versão, manager, framework, autoload, lint e testes |
-| Swift | `Package.swift`, Xcode project/workspace, CI | platforms, frameworks, schemes, build e testes |
-| Infra/data | Docker, Compose, Terraform, Helm, migration config | boundaries, state owner, apply/deploy commands e safety gates |
+| Ecossistema     | Fontes primárias                                     | Confirme                                                             |
+| --------------- | ---------------------------------------------------- | -------------------------------------------------------------------- |
+| Python          | `pyproject.toml`, lockfile, módulos CLI, tox/nox     | versão, manager/runner, framework, entrypoints, lint, types e testes |
+| Node/TypeScript | `package.json`, lockfile, workspace config, tsconfig | scripts, package manager, runtime, framework, build, lint e testes   |
+| Rust            | `Cargo.toml`, `Cargo.lock`, workspace members        | crates, binários, features, framework, fmt, clippy e testes          |
+| Go              | `go.mod`, `go.work`, `cmd/`, CI                      | módulos, framework/router, comandos, geração, lint e testes          |
+| JVM             | `pom.xml`, Gradle files, wrapper, settings           | módulos, JDK, framework, wrapper, tasks, build e testes              |
+| .NET            | solution/project files, props/targets, tool manifest | SDK, projects, framework, run, format e testes                       |
+| Ruby            | `Gemfile`, gemspec, Rakefile                         | versão, framework, executáveis, tasks e testes                       |
+| PHP             | `composer.json`, lockfile, framework console         | versão, manager, framework, autoload, lint e testes                  |
+| Swift           | `Package.swift`, Xcode project/workspace, CI         | platforms, frameworks, schemes, build e testes                       |
+| Infra/data      | Docker, Compose, Terraform, Helm, migration config   | boundaries, state owner, apply/deploy commands e safety gates        |
 
 Um repositório pode combinar várias linhas. Registre evidência por componente em
 vez de escolher uma stack “principal” sem contrato explícito.
 
 ## Como confirmar cada tipo de claim
 
-| Claim | Evidência forte | Evidência insuficiente isoladamente |
-| --- | --- | --- |
-| nome e missão | package metadata + README vigente + entrypoint | nome do diretório |
-| owner | governança, CODEOWNERS, catálogo de serviços, decisão explícita | autor mais frequente do Git |
-| comando oficial | manifest/task runner + CI ou doc operacional vigente | snippet antigo no README |
-| dependency manager | campo de manifest/workspace + lockfile + CI | ferramenta instalada localmente |
-| framework atual | manifest + entrypoint/imports estruturais + config | dependência transitiva ou pacote auxiliar |
-| idioma de chat | preferência explícita do usuário | idioma casual de uma mensagem |
-| idioma de código/Git | política de contribuição ou decisão explícita | maioria estatística dos arquivos |
-| arquitetura | runtime/entrypoints + ADR/doc aceita | nomes de pastas |
-| versão | manifest, lockfile ou CI | versão instalada na máquina do agente |
-| variável pública | config code ou env example | valor em `.env` real |
-| métrica | SLO, config, teste de gate ou observabilidade | recomendação genérica do setor |
-| consumidor | import/dependency, deploy config ou doc aceita | comentário isolado |
-| documento canônico | governança, portal ou metadata de status | estar dentro de `docs/` |
+| Claim                | Evidência forte                                                 | Evidência insuficiente isoladamente       |
+| -------------------- | --------------------------------------------------------------- | ----------------------------------------- |
+| nome e missão        | package metadata + README vigente + entrypoint                  | nome do diretório                         |
+| owner                | governança, CODEOWNERS, catálogo de serviços, decisão explícita | autor mais frequente do Git               |
+| comando oficial      | manifest/task runner + CI ou doc operacional vigente            | snippet antigo no README                  |
+| dependency manager   | campo de manifest/workspace + lockfile + CI                     | ferramenta instalada localmente           |
+| framework atual      | manifest + entrypoint/imports estruturais + config              | dependência transitiva ou pacote auxiliar |
+| idioma de chat       | preferência explícita do usuário                                | idioma casual de uma mensagem             |
+| idioma de código/Git | política de contribuição ou decisão explícita                   | maioria estatística dos arquivos          |
+| arquitetura          | runtime/entrypoints + ADR/doc aceita                            | nomes de pastas                           |
+| versão               | manifest, lockfile ou CI                                        | versão instalada na máquina do agente     |
+| variável pública     | config code ou env example                                      | valor em `.env` real                      |
+| métrica              | SLO, config, teste de gate ou observabilidade                   | recomendação genérica do setor            |
+| consumidor           | import/dependency, deploy config ou doc aceita                  | comentário isolado                        |
+| documento canônico   | governança, portal ou metadata de status                        | estar dentro de `docs/`                   |
 
 Para transformar esses fatos em regras, aplique
 `references/policy-authoring.md`. Descoberta confirma o estado; autoria de
@@ -84,14 +84,14 @@ política decide como o agente deve agir.
 
 Construa o mapa por perguntas, não por extensão de arquivo:
 
-| Pergunta | Evidência procurada | Resultado no AGENTS.md |
-| --- | --- | --- |
-| O que é o projeto? | portal/README + metadata + entrypoint | identidade e boundaries em `System Overview` |
-| Como o runtime flui? | entrypoint + wiring + deploy/architecture | fluxo em `Pipeline Architecture` |
-| Onde altero cada responsabilidade? | docs owner + módulos implementados | ownership e próximo arquivo a abrir |
-| Como executo e valido? | manifest + scripts + CI/harness | comandos exatos em `Configuration & Runtime` |
-| Como opero ou diagnostico? | operations, runbooks, observability | rota em `Related Documentation` |
-| Qual decisão governa? | governance + ADR/RFC status | classe e autoridade da fonte |
+| Pergunta                           | Evidência procurada                       | Resultado no AGENTS.md                       |
+| ---------------------------------- | ----------------------------------------- | -------------------------------------------- |
+| O que é o projeto?                 | portal/README + metadata + entrypoint     | identidade e boundaries em `System Overview` |
+| Como o runtime flui?               | entrypoint + wiring + deploy/architecture | fluxo em `Pipeline Architecture`             |
+| Onde altero cada responsabilidade? | docs owner + módulos implementados        | ownership e próximo arquivo a abrir          |
+| Como executo e valido?             | manifest + scripts + CI/harness           | comandos exatos em `Configuration & Runtime` |
+| Como opero ou diagnostico?         | operations, runbooks, observability       | rota em `Related Documentation`              |
+| Qual decisão governa?              | governance + ADR/RFC status               | classe e autoridade da fonte                 |
 
 Um link só entra na rota quando existe e seu propósito foi lido. Ordene fontes
 humanas por progressive disclosure: orientação antes de arquitetura detalhada;

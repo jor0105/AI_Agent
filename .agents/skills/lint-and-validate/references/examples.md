@@ -3,54 +3,39 @@
 ## Exemplo 1 - positivo
 
 Pedido: "Alterei código e preciso validar o minimo antes do review."
-Esperado: rodar `npm run ai:verify` e usar o `effectiveProfile` resolvido.
+Esperado: rodar a validação repo-native (`pre-commit run --all-files` ou `uv run python scripts/harness_verify.py`).
 
 ## Exemplo 2 - positivo
 
-Pedido: "Persistir gates desta sessao de review."
-Esperado: usar `npm run ai:verify -- --session-dir ...` e persistir `gate-report`.
+Pedido: "Gerar evidencia estruturada de gates para a change OpenSpec."
+Esperado: usar `uv run python scripts/harness_verify.py --evidence-path openspec/changes/<change>/evidence/gate-report.json`.
 
 ## Exemplo 3 - positivo
 
 Pedido: "Uma das validações falhou; resuma o impacto."
-Esperado: reportar `classification`, comando, gate e impacto no handoff.
+Esperado: reportar o gate que falhou, o comando executado, o exit code e o impacto.
 
 ## Exemplo 4 - positivo
 
-Pedido: "Quero saber antes o que o harness vai rodar."
-Esperado: usar `npm run ai:verify -- --dry-run` e explicar `effectiveProfile`, gates e escalacoes.
+Pedido: "Quero rodar apenas typecheck e linter."
+Esperado: usar os comandos repo-native correspondentes (`uv run ruff check .` e `uv run mypy .` ou hooks do pre-commit).
 
 ## Exemplo 5 - positivo
 
-Pedido: "Meu diff nao esta bem refletido no git; valide esse arquivo especifico."
-Esperado: usar `npm run ai:verify -- --changed-file src/domain/columns.py`.
+Pedido: "Valide so a skill lint-and-validate contra a governance."
+Esperado: usar `python3 scripts/validate-skills.py --skill lint-and-validate`.
 
 ## Exemplo 6 - positivo
 
-Pedido: "Preciso anexar uma smoke customizada sem perder os gates normais."
-Esperado: usar `npm run ai:verify -- --gate "smoke|Smoke|false|npm run smoke"` e manter defaults.
-
-## Exemplo 7 - positivo
-
-Pedido: "Quero rodar so uma gate customizada nesta sessao."
-Esperado: usar `npm run ai:verify -- --skip-defaults --gate "schema|Schema|true|python3 scripts/check_schema.py"`.
-
-## Exemplo 8 - positivo
-
-Pedido: "Valide so a skill lint-and-validate contra a governance."
-Esperado: usar `npm run skills:validate -- --skill lint-and-validate`.
-
-## Exemplo 9 - positivo
-
 Pedido: "Confere agents, manifests e protocolo review-workflow."
-Esperado: usar `npm run agents:validate-protocols` e deixar claro que isso nao cobre toda skill do repo.
+Esperado: usar `python3 scripts/validate-agent-protocols.py` e deixar claro que isso nao cobre toda skill do repo.
 
-## Exemplo 10 - negativo
+## Exemplo 7 - negativo
 
 Pedido: "Quero desenhar a arquitetura da nova feature."
 Esperado: nao acionar `lint-and-validate`; isso e planejamento, nao validacao.
 
-## Exemplo 11 - negativo
+## Exemplo 8 - negativo
 
 Pedido: "Aplique ruff --fix no repo inteiro."
 Esperado: nao acionar como fluxo padrao; autofix e mutacao ampla e precisa autorizacao explicita.

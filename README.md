@@ -10,7 +10,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Checked with mypy](https://img.shields.io/badge/mypy-checked-blue)](http://mypy-lang.org/)
 
-[Documentação](https://jor0105.github.io/Create-Agents-AI/) • [Exemplos](#-exemplos-de-uso) • [API Reference](https://jor0105.github.io/Create-Agents-AI/reference/api/) • [Contribuir](#-contribuindo)
+[Documentação](https://jordanestralioto.github.io/Create-Agents-AI/) • [Exemplos](#-exemplos-de-uso) • [API Reference](https://jordanestralioto.github.io/Create-Agents-AI/reference/api/) • [Contribuir](#-contribuindo)
 
 </div>
 
@@ -106,7 +106,7 @@ Se você deseja contribuir com o projeto:
 
 ```bash
 # Clone o repositório
-git clone https://github.com/jor0105/Create-Agents-AI.git
+git clone https://github.com/jordanestralioto/Create-Agents-AI.git
 cd Create-Agents-AI
 
 # Instale com uv
@@ -120,7 +120,7 @@ cp .env.example .env
 # Edite .env e adicione: OPENAI_API_KEY=sk-proj-sua-chave
 ```
 
-📖 [Guia completo para contribuidores →](https://jor0105.github.io/Create-Agents-AI/dev-guide/contribute/)
+📖 [Guia completo para contribuidores →](https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/contribute/)
 
 ______________________________________________________________________
 
@@ -360,7 +360,7 @@ src/
 
 **Benefícios**: Testável, Flexível, Escalável e Manutenível
 
-📖 [Documentação completa da arquitetura](https://jor0105.github.io/Create-Agents-AI/dev-guide/architecture-developer/)
+📖 [Documentação completa da arquitetura](https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/architecture-developer/)
 
 ______________________________________________________________________
 
@@ -368,22 +368,22 @@ ______________________________________________________________________
 
 ### Guia do Usuário
 
-- 📖 [Instalação](https://jor0105.github.io/Create-Agents-AI/user-guide/installation-user/)
-- 🚀 [Uso Básico](https://jor0105.github.io/Create-Agents-AI/user-guide/basic-usage-user/)
-- 💡 [Exemplos Práticos](https://jor0105.github.io/Create-Agents-AI/user-guide/examples-user/)
-- ❓ [FAQ](https://jor0105.github.io/Create-Agents-AI/user-guide/faq-user/)
+- 📖 [Instalação](https://jordanestralioto.github.io/Create-Agents-AI/user-guide/installation-user/)
+- 🚀 [Uso Básico](https://jordanestralioto.github.io/Create-Agents-AI/user-guide/basic-usage-user/)
+- 💡 [Exemplos Práticos](https://jordanestralioto.github.io/Create-Agents-AI/user-guide/examples-user/)
+- ❓ [FAQ](https://jordanestralioto.github.io/Create-Agents-AI/user-guide/faq-user/)
 
 ### Guia do Desenvolvedor
 
-- 🏗️ [Arquitetura](https://jor0105.github.io/Create-Agents-AI/dev-guide/architecture-developer/)
-- 🔧 [Exemplos Técnicos](https://jor0105.github.io/Create-Agents-AI/dev-guide/technical-examples/)
-- 🤝 [Como Contribuir](https://jor0105.github.io/Create-Agents-AI/dev-guide/contribute/)
+- 🏗️ [Arquitetura](https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/architecture-developer/)
+- 🔧 [Exemplos Técnicos](https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/technical-examples/)
+- 🤝 [Como Contribuir](https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/contribute/)
 
 ### Referência
 
-- 📚 [API Reference](https://jor0105.github.io/Create-Agents-AI/reference/api/)
-- 🛠️ [Ferramentas](https://jor0105.github.io/Create-Agents-AI/reference/tools/)
-- ⌨️ [Comandos](https://jor0105.github.io/Create-Agents-AI/reference/commands/)
+- 📚 [API Reference](https://jordanestralioto.github.io/Create-Agents-AI/reference/api/)
+- 🛠️ [Ferramentas](https://jordanestralioto.github.io/Create-Agents-AI/reference/tools/)
+- ⌨️ [Comandos](https://jordanestralioto.github.io/Create-Agents-AI/reference/commands/)
 
 ### Build Local da Documentação
 
@@ -456,7 +456,7 @@ CreateAgent(
 | `export_metrics_json(path=None)`       | `str`   | Exportar métricas em JSON                            |
 | `export_metrics_prometheus(path=None)` | `str`   | Exportar métricas em Prometheus                      |
 
-📖 [Documentação completa da API](https://jor0105.github.io/Create-Agents-AI/reference/api/)
+📖 [Documentação completa da API](https://jordanestralioto.github.io/Create-Agents-AI/reference/api/)
 
 ______________________________________________________________________
 
@@ -516,7 +516,7 @@ class MeuAdapter(ChatRepository):
         pass
 ```
 
-📖 [Guia completo de contribuição](https://jor0105.github.io/Create-Agents-AI/dev-guide/contribute/)
+📖 [Guia completo de contribuição](https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/contribute/)
 
 ______________________________________________________________________
 
@@ -562,9 +562,9 @@ ______________________________________________________________________
 
 ## 📞 Suporte
 
-- 📖 [Documentação Completa](https://jor0105.github.io/Create-Agents-AI/)
-- 🐛 [Reportar Bugs](https://github.com/jor0105/Create-Agents-AI/issues)
-- 💬 [Discussões](https://github.com/jor0105/Create-Agents-AI/discussions)
+- 📖 [Documentação Completa](https://jordanestralioto.github.io/Create-Agents-AI/)
+- 🐛 [Reportar Bugs](https://github.com/jordanestralioto/Create-Agents-AI/issues)
+- 💬 [Discussões](https://github.com/jordanestralioto/Create-Agents-AI/discussions)
 - 📧 Email: estraliotojordan@gmail.com
 
 ______________________________________________________________________
@@ -573,7 +573,7 @@ ______________________________________________________________________
 
 **Jordan Estralioto**
 
-- GitHub: [@jor0105](https://github.com/jor0105)
+- GitHub: [@jordanestralioto](https://github.com/jordanestralioto)
 - Email: estraliotojordan@gmail.com
 
 ______________________________________________________________________

@@ -1,13 +1,14 @@
 ---
 name: testing-patterns
-description: >
-  Use para desenhar ou revisar testes unitários, integração, mocks, fixtures,
-  regressão e negativos de segurança. Ative com "que teste escrevo?", "isso é
-  unit ou integração?", "mocko isso como?", "como testo auth expirada?",
-  "usuário errado não pode acessar", "essa assertion prova o bug?" ou "cobertura
-  fraca". Cobre asserts que pegam regressão real sem teste tautológico. Não use
-  para apenas rodar checks, coordenar E2E de browser, validar UI visual ou fazer
-  TDD quando o usuário pediu teste falhando antes do fix.
+description: >-
+  Use para planejar ou revisar testes unitários, integração, mocks, fixtures,
+  regressões e negativos de segurança. Ative com "que teste escrevo?", "isso é
+  unit ou integração?", "mocko isso como?", "como testo auth expirada?", "usuário
+  errado não pode acessar", "essa assertion prova o bug?" ou "cobertura fraca".
+  Cobre asserções que pegam regressões reais sem testes tautológicos. Não use
+  apenas para executar checagens (`lint-and-validate`), coordenar E2E no
+  navegador (`webapp-testing`), validar UI visualmente ou conduzir TDD quando o
+  usuário pediu um teste falhando antes da correção.
 ---
 
 # Testing Patterns
@@ -30,10 +31,12 @@ tentar acessar recurso do usuario A protege.
 ## Procedimento
 
 1. Nomeie o comportamento e o risco.
+
    - Escreva o teste em termos de contrato: "rejects expired token" ou "tenant B
      cannot list tenant A invoices", nao apenas o nome da funcao.
 
 2. Escolha o menor nivel confiavel.
+
    - Unit: regra pura, parser, serializer, validator, mapper.
    - Integration: middleware, repository, RLS, DB constraint, auth/session,
      cache, storage ou fila.
@@ -41,12 +44,14 @@ tentar acessar recurso do usuario A protege.
      so aparece no navegador.
 
 3. Desenhe fixtures antes dos asserts.
+
    - Para isolamento, crie dois usuarios/tenants e pelo menos um recurso de cada.
    - Para auth, cubra token ausente, expirado, malformado e tenant/scope errado.
    - Para secrets/logs, injete valor marcador e prove ausencia em resposta,
      log, trace e artifact.
 
 4. Defina Arrange, Act, Assert.
+
    - Arrange cria somente dados necessarios.
    - Act executa uma acao observavel.
    - Assert verifica status, payload, efeito no banco, chamada externa esperada
@@ -54,6 +59,7 @@ tentar acessar recurso do usuario A protege.
      apenas repetem o mock.
 
 5. Valide contra tautologia.
+
    - O teste deve falhar se o controle for removido.
    - Se nao for possivel rodar RED/GREEN, declare gate manual e evidencia que
      ainda falta.
@@ -90,12 +96,12 @@ test_strategy:
 
 Leia apenas o arquivo relevante para o teste que precisa ser desenhado:
 
-| Problema | Arquivo |
-| --- | --- |
-| Heuristicas de mocks, fixtures, asserts e negativos de seguranca | `references/reference.md` |
-| Exemplos de trigger e near-misses | `references/evals/trigger.md` |
-| Assertions de workflow | `references/evals/workflow.md` |
-| Exemplos compactos | `references/examples.md` |
+| Problema                                                         | Arquivo                        |
+| ---------------------------------------------------------------- | ------------------------------ |
+| Heuristicas de mocks, fixtures, asserts e negativos de seguranca | `references/reference.md`      |
+| Exemplos de trigger e near-misses                                | `references/evals/trigger.md`  |
+| Assertions de workflow                                           | `references/evals/workflow.md` |
+| Exemplos compactos                                               | `references/examples.md`       |
 
 ## Exemplos
 
@@ -117,6 +123,7 @@ comando repo-native diretamente.
 ## Evals de trigger
 
 Deve acionar:
+
 - "qual teste cobre essa regressão?"
 - "cria negative tests de auth"
 - "essa assertion prova o bug ou e tautologica?"
@@ -124,8 +131,9 @@ Deve acionar:
 - "tenant B nao pode acessar dado do tenant A"
 
 Não deve acionar:
+
 - "coordena suíte inteira"
-- "roda ai:verify"
+- "roda a validação de gates"
 - "audita UX visual"
 - "desenha o schema do banco"
 

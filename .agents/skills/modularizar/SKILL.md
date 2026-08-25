@@ -1,13 +1,14 @@
 ---
 name: modularizar
-description: >
+description: >-
   Use para sanear god files, god components e módulos monolíticos com migração
   auditável. Ative quando o usuário pedir "quebra esse arquivo gigante", "esse
   componente virou monstro", "separa em módulos", "remove duplicação", "extrai
   utilitários" ou invocar `[$modularizar]`. Aplique quando imports, exports,
-  callers, contratos e gates precisam ser rastreados. Não use para ajuste local
-  simples, rename pequeno, função isolada grande, ou quando o melhor caminho é
-  arquitetura/planejamento antes de tocar código.
+  callers, contratos e gates precisarem ser rastreados. Não use para ajustes
+  locais simples, pequenos renames, funções isoladas grandes ou quando o melhor
+  caminho for planejar a arquitetura antes de tocar no código; nesse caso,
+  prefira `architecture`.
 ---
 
 # Modularizar
@@ -27,20 +28,24 @@ description: >
 
 ## Roteamento por etapa
 
-1. Trate todo caso como workflow faseado. Não há subfluxo leve sem gates.
-2. Identifique a etapa atual antes de abrir referências adicionais:
-   - sem plano, Gate 1 pendente ou Fase 1 ainda em execução -> abra apenas `references/PHASE_1.md`
-   - Gate 1 aprovado, Fase 1 executada e o usuário quer seguir para a extração -> abra apenas `references/PHASE_2.md`
-3. Abra `references/PLAN_TEMPLATE.md` somente quando for preencher ou atualizar `modularizar_<target-basename>.md`.
-4. Abra `references/OUTPUT_TEMPLATE.md` somente quando for montar `modularizar_<target-basename>-output.md`.
-5. Não carregue os dois references de fase na mesma passada de contexto, a menos que esteja revisando a skill em si. O objetivo é manter uma única frente operacional ativa por vez.
-6. Enquanto estiver na Fase 1, escreva no plano apenas baseline, proposta e execução da própria Fase 1. Não preencha `## 6. Phase 2A - Modularization Proposal` nem `## 7. Phase 2B - Modularization Execution Log` antes de `GATE_1_APPROVED: YES` e `PHASE_1_EXECUTED: YES`.
-7. Antes de editar código, peça a aprovação explícita do gate correspondente.
-8. Em cada gate, valide com `.agents/skills/modularizar/scripts/modularizar_guard.sh` antes de avançar.
-9. Se o escopo mudar materialmente em qualquer etapa, revise o plano e peça nova aprovação antes de continuar.
+01. Trate todo caso como workflow faseado. Não há subfluxo leve sem gates.
+02. Identifique a etapa atual antes de abrir referências adicionais:
+    - sem plano, Gate 1 pendente ou Fase 1 ainda em execução -> abra apenas `references/PHASE_1.md`
+    - Gate 1 aprovado, Fase 1 executada, a avaliação pós-Fase 1 marcou `PHASE_2_NEEDED: YES` e o usuário quer seguir para a extração -> abra apenas `references/PHASE_2.md`
+03. Abra `references/PLAN_TEMPLATE.md` somente quando for preencher ou atualizar `modularizar_<target-basename>.md`.
+04. Abra `references/OUTPUT_TEMPLATE.md` somente quando for montar `modularizar_<target-basename>-output.md`.
+05. Não carregue os dois references de fase na mesma passada de contexto, a menos que esteja revisando a skill em si. O objetivo é manter uma única frente operacional ativa por vez.
+06. Enquanto estiver na Fase 1, escreva no plano apenas baseline, proposta e execução da própria Fase 1. Não preencha `## 6. Phase 2A - Modularization Proposal` nem `## 7. Phase 2B - Modularization Execution Log` antes de `GATE_1_APPROVED: YES` e `PHASE_1_EXECUTED: YES`.
+07. Depois de executar a Fase 1, preencha a avaliação de necessidade da Fase 2. Só considere a Fase 2 quando o alvo ainda tiver tamanho ou complexidade material e existir uma necessidade estrutural concreta de separar responsabilidades; tamanho isolado ou redistribuição mecânica não bastam.
+08. Se `PHASE_2_NEEDED: NO`, registre a justificativa, mantenha `## 6` e `## 7` intocadas, valide `phase1-complete` e encerre o workflow na Fase 1 sem pedir o Gate 2.
+09. Antes de editar código, peça a aprovação explícita do gate correspondente.
+10. Em cada gate, valide com `skills/modularizar/scripts/modularizar_guard.sh` antes de avançar.
+11. Se o escopo mudar materialmente em qualquer etapa, revise o plano e peça nova aprovação antes de continuar.
 
 ## Procedimento
+
 N/A
+
 ## Exemplos
 
 ### Caso positivo
@@ -51,7 +56,7 @@ N/A
 ### Caso positivo
 
 **Entrada:** "Esse service está virando um god file; se precisar mexer nos callers e promover utilitários públicos, pode fazer, mas me mostra tudo por fase."
-**Saída esperada:** Abrir `modularizar`, registrar impactos em callers/imports/exports no plano, executar a limpeza aprovada e só abrir `references/PHASE_2.md` quando a Fase 1 estiver concluída.
+**Saída esperada:** Abrir `modularizar`, registrar impactos em callers/imports/exports no plano, executar a limpeza aprovada, avaliar se o alvo continua materialmente grande ou complexo e só abrir `references/PHASE_2.md` quando a avaliação registrar `PHASE_2_NEEDED: YES`.
 
 ### Caso positivo
 
@@ -67,6 +72,11 @@ N/A
 
 **Entrada:** "Mede o gargalo desse fluxo antes de qualquer mudança."
 **Por quê não:** Isso é profiling puro; use `performance-profiling`.
+
+### Caso negativo
+
+**Entrada:** "Após a limpeza o arquivo ficou coeso; não extraia módulos só para distribuir o código."
+**Por quê não:** Registre `PHASE_2_NEEDED: NO`, conclua a Fase 1 e não abra a referência da Fase 2 nem peça o Gate 2.
 
 ### Caso negativo
 
@@ -113,10 +123,23 @@ Não deve acionar:
 
 - [ ] abre `references/PHASE_2.md`
 - [ ] não reabre `references/PHASE_1.md` como referência principal da execução
+- [ ] registra evidência de tamanho ou complexidade material remanescente e uma necessidade estrutural concreta
+- [ ] marca `PHASE_2_NEEDED: YES`
 - [ ] valida `phase2` antes de extrair módulos
 - [ ] gera `modularizar_<target-basename>-output.md`
 
-### Cenário 3: invariantes mantidos na Fase 2
+### Cenário 3: Fase 2 não necessária
+
+**Entrada:** "Após a limpeza o arquivo ficou coeso; não extraia módulos só para distribuir o código."
+
+- [ ] registra `PHASE_2_NEEDED: NO`
+- [ ] registra a evidência pós-Fase 1 e a justificativa da decisão
+- [ ] usa `Structural separation needed: NO` e valida `phase1-complete`
+- [ ] não abre `references/PHASE_2.md`
+- [ ] não solicita nem preenche o Gate 2
+- [ ] mantém `## 6` e `## 7` sem conteúdo novo
+
+### Cenário 4: invariantes mantidos na Fase 2
 
 **Entrada:** "Extrai `_helper.py` e deixa `foo.py` só redirecionando imports."
 
@@ -126,15 +149,15 @@ Não deve acionar:
 
 ## Scripts
 
-- `.agents/skills/modularizar/scripts/modularizar_guard.sh`: inicializa o plano, valida cada gate de fase e confere o relatório final do workflow.
+- `skills/modularizar/scripts/modularizar_guard.sh`: inicializa o plano, valida cada gate de fase e confere o relatório final do workflow.
 
 ## Referências
 
 Leia apenas o arquivo relevante para a etapa atual:
 
-| Situação | Arquivo |
-|---|---|
-| Sem plano, Gate 1 pendente ou Fase 1 em execução | `references/PHASE_1.md` |
-| Gate 1 aprovado, Fase 1 executada e modularização prestes a começar | `references/PHASE_2.md` |
-| Preencher ou atualizar o plano faseado | `references/PLAN_TEMPLATE.md` |
-| Montar o relatório final com evidência das execuções | `references/OUTPUT_TEMPLATE.md` |
+| Situação                                                                                   | Arquivo                         |
+| ------------------------------------------------------------------------------------------ | ------------------------------- |
+| Sem plano, Gate 1 pendente ou Fase 1 em execução                                           | `references/PHASE_1.md`         |
+| Gate 1 aprovado, Fase 1 executada, `PHASE_2_NEEDED: YES` e modularização prestes a começar | `references/PHASE_2.md`         |
+| Preencher ou atualizar o plano faseado                                                     | `references/PLAN_TEMPLATE.md`   |
+| Montar o relatório final com evidência das execuções                                       | `references/OUTPUT_TEMPLATE.md` |

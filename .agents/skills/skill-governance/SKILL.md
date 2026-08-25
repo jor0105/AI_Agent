@@ -1,12 +1,12 @@
 ---
 name: skill-governance
-description: >
-  Use para criar, avaliar, reescrever ou governar skills de agente. Ative quando
-  o usuário disser "cria uma skill", "melhora essa skill", "essa skill não
-  dispara", "a description está boa?", "segue governança?", "devo fazer skill ou
-  script?", "revise esse SKILL.md" ou perguntar sobre `references/`, `scripts` e
-  assets de uma skill. Não use para melhorar código comum do projeto, escrever
-  documentação geral ou criar workflow OpenSpec sem relação com skills.
+description: >-
+  Use para criar, avaliar, reescrever ou governar agent skills. Ative quando o
+  usuário pedir "cria uma skill", "melhora essa skill", "essa skill não dispara",
+  "a description está boa?", "segue governança?", "devo fazer skill ou script?",
+  "revise esse SKILL.md" ou perguntar sobre `references/`, `scripts` e assets da
+  skill. Não use para alterar código comum do projeto, escrever documentação
+  geral ou criar workflows OpenSpec sem relação com skills.
 ---
 
 # Skill Author
@@ -17,7 +17,7 @@ Skills falham por dois motivos quase universais: **a description não dispara** 
 agente nunca lê a skill) ou **o corpo não instrui** (o agente lê mas faria igual
 sem ela). Toda decisão aqui existe para eliminar um desses dois problemas.
 
----
+______________________________________________________________________
 
 ## Decisão inicial: skill ou não?
 
@@ -39,7 +39,7 @@ Antes de escrever uma linha, responda:
 
 Se não vale, entregue a alternativa correta com uma justificativa de uma frase.
 
----
+______________________________________________________________________
 
 ## Anatomia de uma skill
 
@@ -86,7 +86,7 @@ cloud-deploy/
 O agente lê só o arquivo relevante para o contexto. Isso mantém o SKILL.md enxuto
 e evita que instruções de AWS poluam o contexto de um deploy GCP.
 
----
+______________________________________________________________________
 
 ## Como escrever a description (o gatilho)
 
@@ -140,7 +140,7 @@ description: >
 Regra prática: escreva a description antecipando como um humano real descreveria
 o problema — não como você nomearia a função internamente.
 
----
+______________________________________________________________________
 
 ## Como escrever o corpo
 
@@ -199,7 +199,7 @@ esse script pertence a `scripts/` — escreva uma vez, instrua a skill a usá-lo
 Reinventar a mesma lógica a cada invocação é desperdício de contexto e fonte de
 inconsistência.
 
----
+______________________________________________________________________
 
 ## Estrutura mínima de um SKILL.md
 
@@ -241,7 +241,7 @@ Não deve acionar:
 - "[caso claramente fora do escopo]"
 ```
 
----
+______________________________________________________________________
 
 ## Evals: o que torna um caso útil
 
@@ -265,7 +265,7 @@ Para evals de workflow, cada cenário precisa de assertions binárias verificáv
 "O agente escolheu corretamente" não é uma assertion — não pode ser verificada
 sem subjetividade.
 
----
+______________________________________________________________________
 
 ## Processo de criação e iteração
 
@@ -280,7 +280,23 @@ sem subjetividade.
 Ao revisar: leia as transcrições, não só os outputs finais. Se o agente repete
 os mesmos passos auxiliares em todo teste, esse trabalho pertence a `scripts/`.
 
----
+## Evals de trigger
+
+Deve acionar:
+
+- "cria uma skill nova para o repositório"
+- "a description dessa skill está boa ou precisa melhorar?"
+- "essa skill não está disparando quando peço X"
+- "revisa a estrutura do meu SKILL.md"
+
+Não deve acionar:
+
+- "escreve um script bash para renomear arquivos"
+- "cria uma change OpenSpec com proposal e design"
+- "escreve a documentação do projeto no README"
+- "configura o linter do Python"
+
+______________________________________________________________________
 
 ## Checklist antes de entregar
 

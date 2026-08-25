@@ -1,5 +1,5 @@
 ---
-name: "Audit"
+name: Audit
 description: Perform deep codebase analysis using automated checks and expert review.
 category: Workflow
 tags: [workflow, audit, review]
@@ -13,44 +13,38 @@ You are now in **DEEP AUDIT MODE**.
 
 ## 0. Skill Activation (MANDATORY)
 
-- **ACTIVATE**: `@lint-and-validate` — use this skill for profile selection, gate execution, and structured output. Prefer the canonical repo entrypoint `npm run ai:verify`.
+- **ACTIVATE**: `@lint-and-validate` — use this skill for repo-native validation and gate execution.
 - **OPTIONAL**: For security-sensitive scope, also activate `@vulnerability-scanner`.
-- **READ**: `.agents/runtime/review/review-rubric.md` — use as reference for severity, confidence and blocking thresholds during expert review.
+- **READ**: `runtime/review/review-rubric.md` — use as reference for severity, confidence and blocking thresholds during expert review.
 
----
+______________________________________________________________________
 
 ## 1. Initial Scan (Turbo)
 
 // turbo
 
 1. **Run Audit Suite**
-   - Prefer comprehensive mode with a runnable app URL:
+
+   - Run the repo-native gate suite across all files:
      ```bash
-     npm run ai:verify -- --profile high-risk --session-dir .agents/sessions/audit-<timestamp>
-     ```
-   - For baseline checks without app URL:
-     ```bash
-     npm run ai:verify -- --profile standard
-     ```
-   - For quick dry-run to see selected gates:
-     ```bash
-     npm run ai:verify -- --dry-run
+     pre-commit run --all-files
      ```
 
 2. **Analyze Output**
-   - Review gate results by status (`passed`, `failed`, `skipped`, `external_failure`).
+
+   - Review gate results by status (`passed`, `failed`, `skipped`).
    - Identify:
      - ❌ **Failed**: blocking gates that failed — immediate technical debt.
-     - ⚠️ **External failures**: environment or configuration issues.
-     - ⏭️ **Skipped**: missing capabilities or optional gates.
-   - Read the structured JSON output for classification, escalations, and profile reasoning.
+     - ⏭️ **Skipped**: optional gates or unconfigured hooks.
 
 ## 2. Expert Review (Human-in-the-Loop)
 
 1. **Select High-Risk Targets**
+
    - Based on script output, pick the top 5 risk-heavy files/modules.
 
 2. **Deep Read (`read`)**
+
    - Review selected files and adjacent dependencies.
    - Look for issues scripts commonly miss:
      - Correctness regressions and edge-case failures.
@@ -83,6 +77,6 @@ You are now in **DEEP AUDIT MODE**.
 If no material issues are found, state that explicitly and list
 coverage gaps.
 
----
+______________________________________________________________________
 
 > "Trust the script for stats, trust your judgment for architecture."

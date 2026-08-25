@@ -1,0 +1,64 @@
+# Standard Polyglot Lefthook Configuration Template
+# Managed and synthesized by local-quality-gates skill.
+# Fast, deterministic, language-agnostic git hooks.
+
+# NOTE on Auto-Fix: If formatters modify files, the commit fails visibly.
+# Review modifications and stage explicitly:
+#   git add -- <exact-modified-files>
+# Do NOT use stage_fixed or broad git add.
+
+pre-commit:
+  parallel: false
+  commands:
+    # =========================================================================
+    # 01. REPOSITORY HYGIENE & SECRETS
+    # =========================================================================
+    trailing-whitespace:
+      run: git diff --check --cached {staged_files}
+
+    gitleaks:
+      run: gitleaks protect --staged --verbose
+      tags: security secrets
+
+    # =========================================================================
+    # 02. AI AGENT DIFF SANITY, TEST INTEGRITY & LOCKFILE SYNC (FAIL-CLOSED)
+    # =========================================================================
+    diff-sanity:
+      run: python scripts/check_diff_sanity.py {staged_files}
+      tags: ai-guardian sanity
+
+    test-integrity:
+      run: python scripts/check_test_integrity.py {staged_files}
+      tags: ai-guardian tests
+
+    lockfile-sync:
+      run: python scripts/check_lockfile_sync.py
+      tags: dependencies
+
+    # =========================================================================
+    # 03. [CIRCULAR_DEPENDENCIES] ARCHITECTURE (REQUIRED)
+    # =========================================================================
+    # Fill this command with the project's existing graph/architecture check.
+    # Do not remove it or silently turn it into a SKIP. New cycles fail;
+    # historical cycles require a non-growing baseline.
+    # circular-dependencies:
+    #   run: uv run lint-imports  # or the discovered stack-native command
+
+    # =========================================================================
+    # 04. STACK-SPECIFIC FORMATTERS & LINTERS (READ-ONLY IN PRE-COMMIT)
+    # =========================================================================
+    # [PYTHON EXAMPLE]
+    # ruff-format-check:
+    #   glob: "*.py"
+    #   run: uv run ruff format --check {staged_files}
+    # ruff-lint:
+    #   glob: "*.py"
+    #   run: uv run ruff check {staged_files}
+    #
+    # [NODE / TS EXAMPLE]
+    # prettier-check:
+    #   glob: "*.{ts,tsx,js,jsx,json,css,md}"
+    #   run: pnpm prettier --check {staged_files}
+    # eslint:
+    #   glob: "*.{ts,tsx,js,jsx}"
+    #   run: pnpm eslint {staged_files}

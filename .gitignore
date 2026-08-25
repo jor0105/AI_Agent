@@ -190,13 +190,14 @@ metrics.prom
 .uv-cache/
 # examples/
 debug/
-.agents/
 .claude/
+.codex/
 .opencode/
 opencode.json
 .github/prompt/
 .github/agents/
 .github/copilot/
+.github/commands/
 CLAUDE.md
 
 # Mutation testing (mutmut) artifacts
@@ -205,3 +206,7 @@ mutants/
 html/
 uv.lock
 package.json
+
+# Import linter & grimp caches
+.import_linter_cache/
+.grimp_cache/

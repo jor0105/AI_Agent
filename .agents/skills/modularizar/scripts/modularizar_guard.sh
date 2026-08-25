@@ -3,8 +3,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../../../.." >/dev/null 2>&1 && pwd)"
-DEFAULT_PLAN_TEMPLATE="${ROOT_DIR}/.agents/skills/modularizar/references/PLAN_TEMPLATE.md"
+ROOT_DIR="$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel 2>/dev/null || true)"
+if [[ -z "$ROOT_DIR" ]]; then
+  printf "[modularizar-guard] ERROR: Could not resolve the repository root from %s\n" "$SCRIPT_DIR" >&2
+  exit 1
+fi
+DEFAULT_PLAN_TEMPLATE="${ROOT_DIR}/skills/modularizar/references/PLAN_TEMPLATE.md"
 
 log() {
   printf "[modularizar-guard] %s\n" "$1"
@@ -18,9 +22,9 @@ fail() {
 usage() {
   cat <<EOF
 Usage:
-  bash .agents/skills/modularizar/scripts/modularizar_guard.sh init-plan [--plan PATH] [--template PATH] [--task NAME] [--author NAME] [--target PATH] [--ticket REF] [--force]
-  bash .agents/skills/modularizar/scripts/modularizar_guard.sh validate-plan --phase phase1|phase2 [--plan PATH] [--target PATH]
-  bash .agents/skills/modularizar/scripts/modularizar_guard.sh validate-report [--report PATH] [--target PATH] [--plan PATH]
+  bash skills/modularizar/scripts/modularizar_guard.sh init-plan [--plan PATH] [--template PATH] [--task NAME] [--author NAME] [--target PATH] [--ticket REF] [--force]
+  bash skills/modularizar/scripts/modularizar_guard.sh validate-plan --phase phase1|phase1-complete|phase2 [--plan PATH] [--target PATH]
+  bash skills/modularizar/scripts/modularizar_guard.sh validate-report [--report PATH] [--target PATH] [--plan PATH]
 
 Commands:
   init-plan       Create modularizar_<target-basename>.md from PLAN_TEMPLATE and prefill metadata.
@@ -138,12 +142,12 @@ escape_sed_replacement() {
 }
 
 replace_first_exact_line() {
-  local file="$1"
-  local old_line="$2"
-  local new_line="$3"
-  local escaped_new
+  local file="$1" old_line="$2" new_line="$3"
+  local escaped_old escaped_new
+  # shellcheck disable=SC2016
+  escaped_old="$(printf '%s' "$old_line" | sed 's/[.[\*^$()+?{|\/]/\\&/g')"
   escaped_new="$(escape_sed_replacement "$new_line")"
-  sed -i "0,/^$(printf '%s' "$old_line" | sed 's/[.[\*^$()+?{|\/]/\\&/g')$/s//${escaped_new}/" "$file"
+  sed -i "0,/^${escaped_old}$/s//${escaped_new}/" "$file"
 }
 
 require_file() {
@@ -229,6 +233,7 @@ extract_field_value_from_file() {
 
 collect_backticked_values_from_text() {
   local text="$1"
+  # shellcheck disable=SC2016
   printf "%s\n" "$text" | grep -o '`[^`]\+`' | tr -d '`' || true
 }
 
@@ -360,7 +365,7 @@ extract_heading_ids_from_text() {
 
   while IFS= read -r heading; do
     [[ -n "$heading" ]] || continue
-    printf "%s\n" "${heading#$literal_prefix}"
+    printf "%s\n" "${heading#"$literal_prefix"}"
   done <<< "$headings"
 }
 
@@ -397,11 +402,11 @@ validate_heading_blocks_in_section() {
     for rule in "${rules[@]}"; do
       local regex="${rule%%|||*}"
       local message="${rule#*|||}"
-      require_section_regex "$block" "$regex" "$message for ${heading#$heading_prefix}"
+      require_section_regex "$block" "$regex" "$message for ${heading#"$heading_prefix"}"
     done
 
-    enforce_no_finding_sentinels "$block" "${heading#$heading_prefix}"
-    enforce_no_change_sentinels "$block" "${heading#$heading_prefix}"
+    enforce_no_finding_sentinels "$block" "${heading#"$heading_prefix"}"
+    enforce_no_change_sentinels "$block" "${heading#"$heading_prefix"}"
   done <<< "$headings"
 }
 
@@ -530,18 +535,90 @@ validate_phase1_plan() {
     "^- Rollback:[[:space:]]+.+$|||Caller and contract migration rollback is missing"
 }
 
-validate_phase2_plan() {
+validate_phase1_execution_log() {
   local plan_file="$1"
 
-  validate_phase1_plan "$plan_file"
-
-  require_line_regex "$plan_file" "^## 5\\. Phase 1B - Deep Remediation Execution Log" "Phase 1B execution log is missing"
-  require_line_regex "$plan_file" "^- PHASE_1_EXECUTED:[[:space:]]*YES([[:space:]]|$)" "Phase 1 must be executed before Phase 2"
+  require_line_regex "$plan_file" "^## 5\. Phase 1B - Deep Remediation Execution Log" "Phase 1B execution log is missing"
+  require_line_regex "$plan_file" "^- PHASE_1_EXECUTED:[[:space:]]*YES([[:space:]]|$)" "Phase 1 must be executed before completion or Phase 2"
   require_line_regex "$plan_file" "^- Phase 1 execution summary:[[:space:]]+.+$" "Phase 1 execution summary is missing"
   require_line_regex "$plan_file" "^- Files changed in Phase 1:[[:space:]]+.+$" "Phase 1 changed files record is missing"
   require_line_regex "$plan_file" "^- Imports/exports migrated in Phase 1:[[:space:]]+.+$" "Phase 1 import/export migration record is missing"
   require_line_regex "$plan_file" "^- Callers migrated in Phase 1:[[:space:]]+.+$" "Phase 1 caller migration record is missing"
   require_line_regex "$plan_file" "^- Public symbols promoted in Phase 1:[[:space:]]+.+$" "Phase 1 public symbol promotion record is missing"
+}
+
+validate_phase2_necessity_assessment() {
+  local plan_file="$1"
+  local expected_decision="$2"
+
+  [[ "$expected_decision" == "YES" || "$expected_decision" == "NO" ]] || fail "Unsupported Phase 2 necessity decision '$expected_decision'"
+
+  require_line_regex "$plan_file" "^### 5\.1 Phase 2 necessity assessment$" "Phase 2 necessity assessment is missing"
+  local phase2_necessity_text
+  phase2_necessity_text="$(extract_section_block "$plan_file" "### 5.1 Phase 2 necessity assessment" "## 6. Phase 2A - Modularization Proposal")"
+  require_section_regex "$phase2_necessity_text" "^- PHASE_2_NEEDED:[[:space:]]*${expected_decision}$" "Phase 2 necessity decision must be ${expected_decision}"
+  require_section_regex "$phase2_necessity_text" "^- Residual condition:[[:space:]]*(none|size|complexity|both)$" "Residual condition must be none, size, complexity, or both"
+  require_section_regex "$phase2_necessity_text" "^- Structural separation needed:[[:space:]]*(YES|NO)$" "Structural separation decision must be YES or NO"
+  require_section_regex "$phase2_necessity_text" "^- Post-Phase 1 size or complexity evidence:[[:space:]]+.+$" "Post-Phase 1 size or complexity evidence is missing"
+  require_section_regex "$phase2_necessity_text" "^- Residual structural problem:[[:space:]]+.+$" "Residual structural problem is missing"
+  require_section_regex "$phase2_necessity_text" "^- Phase 2 necessity rationale:[[:space:]]+.+$" "Phase 2 necessity rationale is missing"
+  if section_matches_regex "$phase2_necessity_text" "^- (Post-Phase 1 size or complexity evidence|Residual structural problem|Phase 2 necessity rationale):[[:space:]]*<[^>]+>"; then
+    fail "Phase 2 necessity assessment still contains placeholders"
+  fi
+
+  local residual_condition
+  local structural_separation
+  residual_condition="$(extract_field_value_from_text "$phase2_necessity_text" "Residual condition")"
+  structural_separation="$(extract_field_value_from_text "$phase2_necessity_text" "Structural separation needed")"
+  if [[ "$expected_decision" == "YES" ]]; then
+    [[ "$residual_condition" != "none" ]] || fail "Phase 2 cannot be needed when residual condition is none"
+    [[ "$structural_separation" == "YES" ]] || fail "Phase 2 requires structural separation to be YES"
+  else
+    [[ "$structural_separation" == "NO" ]] || fail "Phase 2 must not be skipped when structural separation is YES"
+  fi
+}
+
+validate_no_phase2_sections() {
+  local plan_file="$1"
+  local phase2_text
+  local gate2_text
+
+  phase2_text="$(extract_section_block "$plan_file" "## 6. Phase 2A - Modularization Proposal" "## 8. Final Validation Plan")"
+  gate2_text="$(extract_section_block "$plan_file" "### 6.4 Gate 2 approval" "## 7. Phase 2B - Modularization Execution Log")"
+  require_section_regex "$gate2_text" "^- GATE_2_APPROVED:[[:space:]]*NO$" "Gate 2 must remain NO when Phase 2 is not needed"
+  require_section_regex "$phase2_text" "^- PHASE_2_EXECUTED:[[:space:]]*NO$" "Phase 2 must remain unexecuted when it is not needed"
+
+  if section_matches_regex "$gate2_text" "^- (Approved at|User notes):[[:space:]]+.+$"; then
+    fail "Gate 2 approval fields must remain blank when Phase 2 is not needed"
+  fi
+  if section_matches_regex "$phase2_text" "^- (Final public entrypoints|Public entrypoint justification|File naming policy for extracted modules|Canonical compatibility entrypoint|Internal modules and responsibilities|Symbols promoted to public|Promotion justification|Symbols kept internal|Why symbols stay internal|Imports/exports to update|Callers to migrate|Breakages expected after legacy file removal|Legacy files to remove):[[:space:]]+.+$"; then
+    fail "Phase 2 proposal fields must remain blank when Phase 2 is not needed"
+  fi
+  if section_matches_regex "$phase2_text" "^- (Extraction order|Files touched|Extracted module files|Responsibility moved|Public/private symbol impact|Validation checkpoint|Why this step comes now):[[:space:]]+.+$"; then
+    fail "Phase 2 extraction steps must remain blank when Phase 2 is not needed"
+  fi
+  if section_matches_regex "$phase2_text" "^- (Phase 2 execution summary|Files changed in Phase 2|Modules extracted|Canonical compatibility entrypoint used|Imports/exports migrated in Phase 2|Callers migrated in Phase 2|Breakages fixed after legacy file removal|Public symbols promoted in Phase 2|Legacy files removed|Validation evidence for Phase 2|Residual risks after Phase 2):[[:space:]]+.+$"; then
+    fail "Phase 2 execution fields must remain blank when Phase 2 is not needed"
+  fi
+}
+
+validate_phase1_complete_plan() {
+  local plan_file="$1"
+
+  validate_phase1_plan "$plan_file"
+  validate_phase1_execution_log "$plan_file"
+  validate_phase2_necessity_assessment "$plan_file" "NO"
+  validate_no_phase2_sections "$plan_file"
+}
+
+validate_phase2_plan() {
+  local plan_file="$1"
+
+  validate_phase1_plan "$plan_file"
+
+  validate_phase1_execution_log "$plan_file"
+
+  validate_phase2_necessity_assessment "$plan_file" "YES"
 
   require_line_regex "$plan_file" "^## 6\\. Phase 2A - Modularization Proposal" "Phase 2A section is missing"
   require_line_regex "$plan_file" "^- Final public entrypoints:[[:space:]]+.+$" "Final public entrypoints are missing"
@@ -765,7 +842,8 @@ cmd_init_plan() {
     local report_file
     report_file="$(derive_report_file_from_target "$target_path")"
     replace_first_exact_line "$plan_file" "- Final report file path: modularizar_<target-basename>-output.md" "- Final report file path: ${report_file##*/}"
-    replace_first_exact_line "$plan_file" "- Final lock command: \`bash .agents/skills/modularizar/scripts/modularizar_guard.sh validate-report --target <file-or-module>\`" "- Final lock command: \`bash .agents/skills/modularizar/scripts/modularizar_guard.sh validate-report --target ${target_path}\`"
+    replace_first_exact_line "$plan_file" "- Phase 1-only lock command: \`bash skills/modularizar/scripts/modularizar_guard.sh validate-plan --phase phase1-complete --target <file-or-module>\`" "- Phase 1-only lock command: \`bash skills/modularizar/scripts/modularizar_guard.sh validate-plan --phase phase1-complete --target ${target_path}\`"
+    replace_first_exact_line "$plan_file" "- Final lock command: \`bash skills/modularizar/scripts/modularizar_guard.sh validate-report --target <file-or-module>\`" "- Final lock command: \`bash skills/modularizar/scripts/modularizar_guard.sh validate-report --target ${target_path}\`"
   fi
 
   if [[ -n "$ticket_ref" ]]; then
@@ -804,8 +882,8 @@ cmd_validate_plan() {
     esac
   done
 
-  [[ -n "$phase" ]] || fail "validate-plan requires --phase phase1|phase2"
-  [[ "$phase" == "phase1" || "$phase" == "phase2" ]] || fail "Unknown phase '$phase'. Use phase1 or phase2."
+  [[ -n "$phase" ]] || fail "validate-plan requires --phase phase1|phase1-complete|phase2"
+  [[ "$phase" == "phase1" || "$phase" == "phase1-complete" || "$phase" == "phase2" ]] || fail "Unknown phase '$phase'. Use phase1, phase1-complete, or phase2."
 
   plan_file="$(resolve_plan_file "$plan_file" "$plan_explicit" "$target_path")"
 
@@ -813,11 +891,17 @@ cmd_validate_plan() {
 
   if [[ "$phase" == "phase1" ]]; then
     validate_phase1_plan "$plan_file"
+  elif [[ "$phase" == "phase1-complete" ]]; then
+    validate_phase1_complete_plan "$plan_file"
   else
     validate_phase2_plan "$plan_file"
   fi
 
-  log "${phase^^}_PLAN=pass ($plan_file)"
+  if [[ "$phase" == "phase1-complete" ]]; then
+    log "PHASE1_COMPLETE=pass ($plan_file)"
+  else
+    log "${phase^^}_PLAN=pass ($plan_file)"
+  fi
 }
 
 cmd_validate_report() {
@@ -880,12 +964,10 @@ cmd_validate_report() {
   require_line_regex "$report_file" "^- Import/export migrations applied:[[:space:]]+.+$" "Import/export migration record is missing in report"
   require_line_regex "$report_file" "^- Caller migrations applied:[[:space:]]+.+$" "Caller migration record is missing in report"
   require_line_regex "$report_file" "^- Breakages fixed after legacy file removal:[[:space:]]+.+$" "Legacy removal fallout fix record is missing in report"
-  require_line_regex "$report_file" "^- ai:verify command/profile:[[:space:]]+.+$" "ai:verify command/profile record is missing in report"
+  require_line_regex "$report_file" "^- Repo-native validation command:[[:space:]]+.+$" "Repo-native validation command record is missing in report"
   require_line_regex "$report_file" "^- Refactor status:[[:space:]]+(complete|incomplete)([[:space:]]|$)" "Refactor status is missing in report"
   require_line_regex "$report_file" "^- Recommended next action:[[:space:]]+.+$" "Recommended next action is missing in report"
 
-  local plan_phase2_map_text
-  plan_phase2_map_text="$(extract_section_block "$plan_path" "### 6.1 Final module map" "### 6.2 Import and caller migration plan")"
   local plan_phase2_migration_text
   plan_phase2_migration_text="$(extract_section_block "$plan_path" "### 6.2 Import and caller migration plan" "### 6.3 Step-by-step extraction sequence")"
   local target_path

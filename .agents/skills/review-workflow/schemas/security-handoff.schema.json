@@ -1,7 +1,59 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Security Handoff",
-  "type": "object",
+  "properties": {
+    "affectedFiles": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "artifactType": {
+      "const": "security-handoff"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "evidenceIds": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "gateSummary": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "requestedBy": {
+      "type": "string"
+    },
+    "reviewId": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "in_review",
+        "cleared",
+        "changes_required",
+        "waived"
+      ],
+      "type": "string"
+    },
+    "targetAgent": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    }
+  },
   "required": [
     "artifactType",
     "schemaVersion",
@@ -16,21 +68,6 @@
     "evidenceIds",
     "gateSummary"
   ],
-  "properties": {
-    "artifactType": { "const": "security-handoff" },
-    "schemaVersion": { "type": "string" },
-    "reviewId": { "type": "string" },
-    "status": {
-      "type": "string",
-      "enum": ["pending", "in_review", "cleared", "changes_required", "waived"]
-    },
-    "createdAt": { "type": "string" },
-    "updatedAt": { "type": "string" },
-    "targetAgent": { "type": "string" },
-    "requestedBy": { "type": "string" },
-    "reason": { "type": "string" },
-    "affectedFiles": { "type": "array", "items": { "type": "string" } },
-    "evidenceIds": { "type": "array", "items": { "type": "string" } },
-    "gateSummary": { "type": "array", "items": { "type": "string" } }
-  }
+  "title": "Security Handoff",
+  "type": "object"
 }

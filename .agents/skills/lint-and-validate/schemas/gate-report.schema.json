@@ -1,40 +1,68 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Gate Report",
-  "type": "object",
-  "required": [
-    "artifactType",
-    "schemaVersion",
-    "reviewId",
-    "status",
-    "createdAt",
-    "updatedAt",
-    "gates"
-  ],
   "properties": {
     "artifactType": {
       "const": "gate-report"
     },
-    "schemaVersion": {
-      "type": "string"
-    },
-    "reviewId": {
-      "type": "string"
-    },
-    "status": {
-      "type": "string",
-      "enum": ["pending", "running", "completed"]
-    },
     "createdAt": {
       "type": "string"
     },
-    "updatedAt": {
-      "type": "string"
-    },
     "gates": {
-      "type": "array",
       "items": {
-        "type": "object",
+        "properties": {
+          "blocking": {
+            "type": "boolean"
+          },
+          "classification": {
+            "enum": [
+              "code",
+              "environment",
+              "not_configured",
+              "not_applicable"
+            ],
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          },
+          "durationMs": {
+            "type": "integer"
+          },
+          "durationSeconds": {
+            "type": "number"
+          },
+          "exitCode": {
+            "type": "integer"
+          },
+          "finishedAt": {
+            "type": "string"
+          },
+          "gateId": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "logPath": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "passed",
+              "failed",
+              "skipped",
+              "external_failure"
+            ],
+            "type": "string"
+          }
+        },
         "required": [
           "gateId",
           "label",
@@ -47,50 +75,37 @@
           "exitCode",
           "outcome"
         ],
-        "properties": {
-          "gateId": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          },
-          "command": {
-            "type": "string"
-          },
-          "blocking": {
-            "type": "boolean"
-          },
-          "status": {
-            "type": "string",
-            "enum": ["pending", "passed", "failed", "skipped", "external_failure"]
-          },
-          "classification": {
-            "type": "string",
-            "enum": ["code", "environment", "not_configured", "not_applicable"]
-          },
-          "startedAt": {
-            "type": "string"
-          },
-          "finishedAt": {
-            "type": "string"
-          },
-          "durationSeconds": {
-            "type": "number"
-          },
-          "durationMs": {
-            "type": "integer"
-          },
-          "exitCode": {
-            "type": "integer"
-          },
-          "outcome": {
-            "type": "string"
-          },
-          "logPath": {
-            "type": "string"
-          }
-        }
-      }
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "reviewId": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "running",
+        "completed"
+      ],
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
     }
-  }
+  },
+  "required": [
+    "artifactType",
+    "schemaVersion",
+    "reviewId",
+    "status",
+    "createdAt",
+    "updatedAt",
+    "gates"
+  ],
+  "title": "Gate Report",
+  "type": "object"
 }

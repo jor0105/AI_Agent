@@ -1,13 +1,13 @@
 ---
 name: systematic-debugging
-description: >
-  Use para debugging estruturado quando a causa raiz é incerta. Ative com "não
+description: >-
+  Use para debugging estruturado quando a causa raiz for incerta. Ative com "não
   sei por que quebra", "acha a causa raiz", "bug intermitente", "funciona na
   minha máquina", "CI passa mas local falha", "deu stack trace", "módulo não
   encontrado", "import quebrou", "env não carrega" ou "por que esse erro
-  acontece?". Cobre reproduzir, isolar hipóteses e validar correção. Não use para
-  performance já assumida, teste/validação final, refactor planejado ou bug com
-  causa e correção já delimitadas.
+  acontece?". Cobre reprodução, isolamento de hipóteses e validação de correção.
+  Não use para problemas já identificados como performance, validação final de
+  testes ou bugs com causa e correção já delimitadas.
 ---
 
 # Systematic Debugging
@@ -21,6 +21,7 @@ description: >
 - **Bug Intermitente Nem Sempre Reproduz 10/10:** Quando o defeito é flaky, a meta não é perfeição artificial; a meta é obter um sinal observável, estreito e repetível o bastante para distinguir hipóteses concorrentes sem corrigir no escuro.
 
 ## Procedimento
+
 Adote as fases abaixo na ordem. Quando o sintoma apontar para setup local, a Fase 0 é obrigatória antes de tocar em código.
 
 1. **Fase 0: Preflight de Ambiente**

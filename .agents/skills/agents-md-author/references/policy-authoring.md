@@ -46,18 +46,18 @@ parte do sistema antes da mudança correspondente.
 
 Antes de escrever `Mandatory Rules`, preencha internamente:
 
-| Campo | Pergunta que precisa de resposta | Fonte forte |
-| --- | --- | --- |
-| Chat | Em qual idioma o agente responde ao usuário? | preferência explícita |
-| Code | Idioma de identificadores e código | política ou decisão explícita compatível |
-| Comments | Idioma e quando comentários são aceitáveis | política ou decisão explícita |
-| Documentation | Idioma da documentação | política, corpus governado ou decisão explícita |
-| Git | Idioma/formato de commits, branches e PRs | contribuição ou decisão explícita |
-| Manager | Qual ferramenta altera dependências e lockfile? | manifest + lockfile + CI |
-| Runner | Qual prefixo executa comandos? | scripts, task runner e CI |
-| Framework | Qual framework existe e qual padrão deve ser preservado? | manifest + runtime + arquitetura |
-| Quality | Quais comandos provam format, lint, types, tests e release? | manifests, CI e harness oficial |
-| Change style | Clean cutover, compatibilidade, migração e tamanho de diff | política ou preferência explícita |
+| Campo         | Pergunta que precisa de resposta                            | Fonte forte                                     |
+| ------------- | ----------------------------------------------------------- | ----------------------------------------------- |
+| Chat          | Em qual idioma o agente responde ao usuário?                | preferência explícita                           |
+| Code          | Idioma de identificadores e código                          | política ou decisão explícita compatível        |
+| Comments      | Idioma e quando comentários são aceitáveis                  | política ou decisão explícita                   |
+| Documentation | Idioma da documentação                                      | política, corpus governado ou decisão explícita |
+| Git           | Idioma/formato de commits, branches e PRs                   | contribuição ou decisão explícita               |
+| Manager       | Qual ferramenta altera dependências e lockfile?             | manifest + lockfile + CI                        |
+| Runner        | Qual prefixo executa comandos?                              | scripts, task runner e CI                       |
+| Framework     | Qual framework existe e qual padrão deve ser preservado?    | manifest + runtime + arquitetura                |
+| Quality       | Quais comandos provam format, lint, types, tests e release? | manifests, CI e harness oficial                 |
+| Change style  | Clean cutover, compatibilidade, migração e tamanho de diff  | política ou preferência explícita               |
 
 Uma mesma decisão pode ter mais de uma fonte. Registre o escopo: root,
 subárvore, linguagem, serviço ou interação com o usuário.
@@ -169,7 +169,7 @@ deve ser descrita com seu owner.
 
 Mantenha a ordem:
 
-1. higiene e verificação antes de editar;
+1. higiene, disciplina de código (fatoração coesa, zero duplicação, sem dependências circulares) e verificação antes de editar;
 2. idiomas e colaboração;
 3. manager, runner e comandos oficiais;
 4. framework, arquitetura e ownership;
@@ -214,15 +214,15 @@ inequívocas para um executor literal.
 
 ## Matriz de conflito
 
-| Situação | Ação |
-| --- | --- |
-| usuário escolhe idioma de chat sem conflito | materialize `USER_PREFERENCE` |
-| usuário escolhe idioma de código e não há política contrária | materialize e mantenha Draft até aprovação se necessário |
-| manager/lockfile/CI convergem | documente como `REPO_FACT` e regra operacional |
-| usuário prefere manager diferente | preserve estado real; `CONFLICT`; migração separada |
-| framework existe, padrão não está documentado | descreva framework como fato e use apenas padrões observáveis; Draft |
-| duas políticas do mesmo nível divergem | não escolha; identifique fontes e peça decisão |
-| preferência pede bypass de segurança/permissão | rejeite; política superior prevalece |
+| Situação                                                     | Ação                                                                 |
+| ------------------------------------------------------------ | -------------------------------------------------------------------- |
+| usuário escolhe idioma de chat sem conflito                  | materialize `USER_PREFERENCE`                                        |
+| usuário escolhe idioma de código e não há política contrária | materialize e mantenha Draft até aprovação se necessário             |
+| manager/lockfile/CI convergem                                | documente como `REPO_FACT` e regra operacional                       |
+| usuário prefere manager diferente                            | preserve estado real; `CONFLICT`; migração separada                  |
+| framework existe, padrão não está documentado                | descreva framework como fato e use apenas padrões observáveis; Draft |
+| duas políticas do mesmo nível divergem                       | não escolha; identifique fontes e peça decisão                       |
+| preferência pede bypass de segurança/permissão               | rejeite; política superior prevalece                                 |
 
 ## Checklist de completude
 

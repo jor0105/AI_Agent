@@ -1,12 +1,13 @@
 ---
 name: lint-and-validate
-description: >
-  Use para escolher e executar validação repo-native depois de mudanças. Ative
-  quando o usuário pedir "valida", "roda os checks", "garante que não quebrou",
-  "roda testes", "passa o lint", "gera gate-report", "confere antes de
-  finalizar" ou quando a entrega precisa evidência terminal. Cobre lint,
-  typecheck, testes, `ai:verify`, perfis e gate-report. Não use para desenhar
-  estratégia de testes nem para investigar root cause incerta.
+description: >-
+  Use para escolher e executar validações nativas do repositório após alterações.
+  Ative quando o usuário pedir "valida", "roda os checks", "garante que não
+  quebrou", "roda testes", "passa o lint", "gera gate-report", "confere antes de
+  finalizar" ou quando a entrega exigir evidência de terminal. Cobre lint,
+  typecheck, testes, verificação nativa e gate-report. Não use para planejar
+  estratégia de testes, investigar causa incerta ou validar UI no navegador quando
+  a evidência exigir Playwright/screenshot.
 ---
 
 # Lint And Validate
@@ -14,18 +15,17 @@ description: >
 ## Fundamentos
 
 - **Confiança Cega é Falha:** Nunca entregue um código dizendo "Acredito que vai funcionar". Você deve executar lints e testes reais via terminal para comprovar.
-- **Cheap First, Evidence Complete:** Comece pelos gates mais baratos de interpretar, mas preserve o resultado estruturado do fluxo canônico. Para diff comum, prefira `npm run ai:verify`; ele decide perfil, ordem de gates e escalonamentos sem inventar regra local.
+- **Cheap First, Evidence Complete:** Comece pelos gates mais baratos de interpretar, mas execute a validação repo-native oficial declarada no repositório (`openspec/handoff.json`, `.pre-commit-config.yaml` ou `AGENTS.md`).
 - **Isolamento:** Quando o TypeScript falhar, olhe apenas para o arquivo que você editou e os arquivos que dependem dele. Ignorar erros não relacionados ao escopo a menos que você os tenha causado.
 
 ## Procedimento
 
 1. Identifique o artefato que precisa ser validado antes de escolher o comando:
-   - diff comum do repositório: `npm run ai:verify`
-   - uma skill específica: `npm run skills:validate -- --skill <nome>`
-   - skill central do pack principal: `npm run skills:validate:central`
-   - agents, manifests e protocolo `review-workflow`: `npm run agents:validate-protocols`
-2. Para diff comum, escolha o menor perfil que ainda cubra o risco da mudança. Use `assets/verification-profiles.json` como fonte de verdade dos gates e `npm run ai:verify -- --dry-run` quando a seleção de perfil fizer parte da decisão.
-3. Leia a saída do `ai:verify` nesta ordem: `status`, `effectiveProfile`, `escalations`, `gates`, `summary`. Não trate gate `skipped` como sucesso implícito.
+   - diff comum do repositório: comando repo-native declarado em `openspec/handoff.json` (`validationCommand`) ou `pre-commit run --all-files`
+   - skills gerais ou específicas: `python3 scripts/validate-skills.py` (ou `python3 scripts/validate-skills.py --skill <nome>`)
+   - agents, manifests e protocolo `review-workflow`: `python3 scripts/validate-agent-protocols.py`
+2. Execute a suíte de validação e os gates pertinentes à mudança sem pular verificações obrigatórias.
+3. Leia o resultado das gates e garanta que todas passaram com código 0. Não trate gate não executada ou skipped como sucesso implícito.
 4. Responda com evidência terminal mínima: comando, escopo, status, classificação da falha quando existir e próximo passo. Não declare sucesso sem output correspondente.
 
 ## Exemplos
@@ -33,7 +33,7 @@ description: >
 ### Caso positivo
 
 **Entrada:** Após mudar frontend e backend, usuário pede validação antes de finalizar.
-**Saída esperada:** Resolver perfil, rodar comandos repo-native, resumir evidência e produzir gate-report quando exigido.
+**Saída esperada:** Executar validação repo-native, resumir evidência e produzir gate-report quando exigido.
 
 ### Caso negativo
 
@@ -67,9 +67,9 @@ Entrada: repositório com `.pre-commit-config.yaml` configurado.
 
 Assertions:
 
-- [ ] escolhe `npm run ai:verify` como entrypoint principal
-- [ ] usa o `effectiveProfile` resolvido, não um perfil inventado
-- [ ] reporta gates bloqueantes e advisory separadamente
+- [ ] escolhe a validação repo-native como entrypoint principal
+- [ ] reporta status das gates executadas de forma determinística
+- [ ] reporta falhas e saídas de terminal com clareza
 
 ### Cenário 2 - validação de skill
 
@@ -77,7 +77,7 @@ Entrada: pedido para validar apenas a skill `lint-and-validate`.
 
 Assertions:
 
-- [ ] usa `npm run skills:validate -- --skill lint-and-validate`
+- [ ] usa `python3 scripts/validate-skills.py --skill lint-and-validate`
 - [ ] não chama `validate-agent-protocols.py` como se cobrisse toda governança de skills
 - [ ] reporta erro estrutural se o `SKILL.md` violar o contrato da `skill-governance`
 
@@ -87,13 +87,13 @@ Entrada: pedido para validar agents, manifests e protocolo `review-workflow`.
 
 Assertions:
 
-- [ ] usa `npm run agents:validate-protocols`
+- [ ] usa `python3 scripts/validate-agent-protocols.py`
 - [ ] deixa claro que o escopo é protocolo de agents, não qualquer skill do repo
 - [ ] reporta falha estrutural sem declarar sucesso parcial implícito
 
 ### Cenário 4 - falha externa
 
-Entrada: comando oficial existe, mas `npm` não está disponível no ambiente.
+Entrada: comando oficial falha por ausência de ferramenta no ambiente.
 
 Assertions:
 
@@ -107,15 +107,27 @@ Entrada: mudança de texto em componente interno sem fluxo de navegador afetado.
 
 Assertions:
 
-- [ ] não força E2E por padrão fora do perfil proporcional
-- [ ] usa o perfil/gates resolvidos pelo harness, em vez de exigir browser manualmente
-- [ ] deixa explícito se E2E ficou advisory ou `skipped`
+- [ ] não força E2E sem necessidade quando a mudança é puramente textual ou interna
+- [ ] usa os testes repo-native correspondentes
+- [ ] deixa explícito se testes adicionais são recomendados
 
 ## Scripts
 
-- `scripts/ai-verify.py`: executa perfis repo-native e gera resultado de gates.
+- O executor de verificação (`ai-verify`) pertence ao projeto consumidor:
+  ele codifica os gates, caminhos e escalações daquele repositório. Este
+  harness publica o contrato que ele precisa satisfazer
+  (`schemas/ai-verify.schema.json` e `assets/verification-profiles.json`),
+  não o executor.
 - `scripts/normalize-skill-metadata.py`: remove metadados extras do frontmatter de skills em lote controlado.
 - `scripts/validate-agent-protocols.py`: valida manifests, agents e protocol skills do fluxo de review.
+- `scripts/check-max-lines.py`: gate portátil de tamanho de arquivo por
+  responsabilidade (produção 400, teste 1000, documentação 500 linhas).
+  Selecionar esta skill projeta a ferramenta em
+  `.agents/scripts/check-max-lines.py` (via `tools/check-max-lines`); o
+  consumidor executa `python .agents/scripts/check-max-lines.py` e adiciona
+  o comando ao próprio gate roster — o harness nunca edita a configuração
+  de hooks do consumidor. O repositório central usa
+  `uv run python scripts/check-max-lines.py`.
 
 ## Referências
 

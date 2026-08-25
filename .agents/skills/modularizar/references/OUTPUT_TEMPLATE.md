@@ -25,7 +25,7 @@ Use este template para reportar a execução das duas fases e a validação fina
 - Target module/file:
 - Branch:
 - Plan file path:
-- Report file path: modularizar_<target-basename>-output.md
+- Report file path: modularizar\_<target-basename>-output.md
 
 ## 2. Gate Summary
 
@@ -117,7 +117,7 @@ Para cada passo aprovado na Fase 2A, crie um bloco próprio:
 - Type/static contracts:
 - Unit/integration tests:
 - Build/package checks:
-- ai:verify command/profile:
+- Repo-native validation command:
 - Key output summary:
 - FINAL_VALIDATION: pass/fail
 
@@ -125,4 +125,4 @@ Para cada passo aprovado na Fase 2A, crie um bloco próprio:
 
 - Refactor status: complete/incomplete
 - Recommended next action:
-- Final lock command: `bash .agents/skills/modularizar/scripts/modularizar_guard.sh validate-report --target <file-or-module>`
+- Final lock command: `bash skills/modularizar/scripts/modularizar_guard.sh validate-report --target <file-or-module>`

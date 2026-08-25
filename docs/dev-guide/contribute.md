@@ -82,7 +82,7 @@ ______________________________________________________________________
 
 ## 🐞 Reportar Bugs e Sugerir Melhorias
 
-1. [Abra uma issue](https://github.com/jor0105/Create-Agents-AI/issues)
+1. [Abra uma issue](https://github.com/jordanestralioto/Create-Agents-AI/issues)
 2. Descreva o problema/sugestão com detalhes, passos para reproduzir e contexto
 3. Inclua logs, prints ou exemplos de código se possível
 
@@ -100,8 +100,8 @@ ______________________________________________________________________
 ## 🤝 Contato e Suporte
 
 - Email: estraliotojordan@gmail.com
-- GitHub: [@jor0105](https://github.com/jor0105)
-- Discussões: [GitHub Discussions](https://github.com/jor0105/Create-Agents-AI/discussions)
+- GitHub: [@jordanestralioto](https://github.com/jordanestralioto)
+- Discussões: [GitHub Discussions](https://github.com/jordanestralioto/Create-Agents-AI/discussions)
 
 ______________________________________________________________________
 

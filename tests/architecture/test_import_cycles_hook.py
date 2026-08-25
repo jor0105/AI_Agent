@@ -1,6 +1,6 @@
 """Guardrails for the import-cycle pre-commit hook itself.
 
-The hook at ``.github/hooks/check-import-cycles.py`` is repository code that
+The hook at ``scripts/check-import-cycles.py`` is repository code that
 gates every commit, so it needs the same protection as the package it
 inspects. These tests exercise ``find_cycles`` directly against hand-built
 graphs -- the real package is (correctly) acyclic, so it can never prove the
@@ -15,8 +15,7 @@ import pytest
 
 HOOK_PATH = (
     pathlib.Path(__file__).resolve().parents[2]
-    / '.github'
-    / 'hooks'
+    / 'scripts'
     / 'check-import-cycles.py'
 )
 PACKAGE = 'createagents'

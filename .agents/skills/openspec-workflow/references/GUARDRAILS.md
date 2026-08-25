@@ -1,55 +1,35 @@
 # GUARDRAILS
 
-## Guardrails globais
+## Globais
 
-- `.agents/workflows/` é a fonte canônica. A skill roteia e reforça regras; ela não substitui os prompts `OPSX`.
-- Use `openspec status` e `openspec instructions` sempre que houver dúvida sobre schema, ordem de artefatos, estados `ready/blocked/done` ou arquivos de contexto.
-- Não reintroduza instruções baseadas em arquivos flat em `openspec/changes/*.md` como caminho padrão de execução.
-- Sempre que editar um prompt ativo em `.agents/workflows/`, sincronize os espelhos em `.github/prompts/` e `.opencode/commands/`, preferencialmente com `python3 .agents/scripts/sync-workflows.py`.
+- `workflows/` é canônico; sincronize GitHub, OpenCode e Claude com
+  `python3 scripts/sync-workflows.py` após qualquer edição.
+- Confirme schema e estado com `opsx status`/`opsx instructions`.
+- O gate suporta apenas `spec-driven`; schema não suportado falha.
+- Artefatos OpenSpec são integralmente em inglês e têm um desenvolvedor júnior
+  sem contexto prévio como leitor.
+- Exceção legada existe somente no allowlist `openspec/handoff.json`, sempre com
+  motivo e gatilho de remoção. `.handoff-exempt` não concede bypass, e a
+  allowlist nunca isenta o completion gate.
 
-## Diferença crítica de seleção
+## Lifecycle obrigatório
 
-- `apply` é a única operação OPSX que pode inferir ou auto-selecionar a change quando isso for seguro.
-- `continue`, `sync`, `archive` e `verify` devem pedir seleção explícita se o nome não vier no pedido.
-- `bulk-archive` sempre usa multi-seleção explícita.
+- `continue`: exatamente um artefato, seguido de
+  `opsx-handoff --mode artifact --artifact <id> <change>`.
+- `ff`: bundle completo e `opsx-handoff --mode bundle <change>` verde.
+- `apply`: bundle verde antes de editar; ao terminar, produzir
+  `evidence/gate-report.json` com o verifier repo-native (`--evidence-path`) e
+  exigir o gate `opsx-handoff --mode apply <change>` verde. Completion continua
+  reservado a verify/sync/archive.
+- `verify`: combinar análise semântica com o completion gate.
+- `sync`: somente o owner programatico aplica ADDED, MODIFIED, REMOVED e
+  RENAMED; a segunda passagem `--check` deve ser vazia.
+- `archive`: completion vermelho é hard block sem override.
+- `explore`: read-only; persistência de artefato segue por `continue` ou `ff`.
 
-## Guardrails por comando
+## Fronteira da automação
 
-### `new` e `ff`
-
-- Executar o *Preflight Spec Consistency Check* antes de scaffoldar a mudança.
-- Identificar changes ativas com delta specs e avisar se houver alterações de specs em andamento.
-- Recomendar proativamente `/opsx:sync` e `/opsx:archive` caso exista alguma change concluída cujos delta specs não foram mesclados em `openspec/specs/`.
-
-### `continue`
-
-- Crie um único artefato `ready` por invocação.
-- Leia dependências antes de escrever o artefato novo.
-- Não pule artefatos nem force ordem manual quando o schema indicar outra sequência.
-
-### `apply`
-
-- Leia `openspec instructions apply --change "<name>" --json` antes de implementar.
-- Se `state` for `blocked`, não invente trabalho; encaminhe para `continue`.
-- Se `state` for `all_done`, pare e sugira `archive`.
-
-### `verify`
-
-- Trate tasks, specs, cenários e design como superfícies de verdade quando existirem.
-- Não reduza verificação a "tudo marcado como done".
-
-### `sync`
-
-- Leia delta spec e main spec antes de editar.
-- Preserve requisitos e cenários não tocados pelo delta.
-- A operação precisa ser idempotente.
-
-### `archive`
-
-- Avalie artifacts, tasks e sync antes do `mv`.
-- Quando existirem delta specs, avalie e resuma o sync antes de arquivar.
-
-### `explore`
-
-- Explore, investigue e formalize pensamento.
-- Não implemente código de produção nem trate uma menção de change como autorização implícita para `apply`.
+O handoff gate verifica somente fatos determinísticos: seções, categorias de
+cenário, paths, IDs, checkboxes, estado de arquivo e evidência vinculada ao
+estado. Não atribua a ele correção semântica; essa prova pertence à
+verificação repo-native e à revisão.

@@ -1,0 +1,126 @@
+# Standard Stack-Agnostic Pre-commit Configuration Template
+# Managed and synthesized by local-quality-gates skill.
+# Philosophy: Deterministic and local, with a cost appropriate to the repository's
+# workflow and 80/20 protection against AI traps.
+#
+# This is a scaffold, not a release-pinned project configuration. Before use,
+# replace every `REPLACE_WITH_FROZEN_SHA` with a current 40-character commit SHA
+# and keep the release in a comment. Resolve remote hooks with:
+#   pre-commit autoupdate --freeze
+# If a hook declares `additional_dependencies`, pin a compatible group together
+# after resolving it; do not update the base package independently.
+
+default_install_hook_types: [pre-commit]
+default_stages: [pre-commit]
+fail_fast: false
+
+repos:
+  # =========================================================================
+  # 01. REPOSITORY INTEGRITY & FAST HYGIENE
+  # =========================================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: REPLACE_WITH_FROZEN_SHA  # <RELEASE_VERSION>
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: check-case-conflict
+      - id: check-yaml
+        args: ['--unsafe']
+      - id: check-json
+      - id: check-toml
+
+  # =========================================================================
+  # 02. SECRET SCANNING (STAGED DIFF ONLY)
+  # =========================================================================
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: REPLACE_WITH_FROZEN_SHA  # <RELEASE_VERSION>
+    hooks:
+      - id: gitleaks
+
+  # =========================================================================
+  # 03. AI AGENT DIFF SANITY, TEST INTEGRITY & LOCKFILE SYNC (FAIL-CLOSED)
+  # =========================================================================
+  - repo: local
+    hooks:
+      - id: diff-sanity
+        name: Check Diff Sanity (AI Traps, Debuggers, Bypasses)
+        entry: python scripts/check_diff_sanity.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: test-integrity
+        name: Check Test Integrity (Skips, Focuses, Deleted Assertions)
+        entry: python scripts/check_test_integrity.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: lockfile-sync
+        name: Check Manifest and Lockfile Parity
+        entry: python scripts/check_lockfile_sync.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
+  # =========================================================================
+  # 04. [CIRCULAR_DEPENDENCIES] ARCHITECTURE (REQUIRED)
+  # =========================================================================
+  # This slot must be filled before using the template. Replace the examples
+  # below with the project's existing local command; do not silently omit it.
+  # A new cycle must fail. Historical cycles require a non-growing baseline.
+  # [PYTHON EXAMPLE]
+  # - repo: local
+  #   hooks:
+  #     - id: circular-dependencies
+  #       name: Check Circular Imports (import-linter)
+  #       entry: uv run lint-imports
+  #       language: system
+  #       pass_filenames: false
+  #       always_run: true
+  # [NODE / TS EXAMPLE]
+  # - repo: local
+  #   hooks:
+  #     - id: circular-dependencies
+  #       name: Check Circular Dependencies (dependency-cruiser)
+  #       entry: pnpm exec depcruise --config .dependency-cruiser.js src
+  #       language: system
+  #       pass_filenames: false
+  #       always_run: true
+
+  # =========================================================================
+  # 05. STACK-SPECIFIC SYNTAX, FORMATTER & LINTER
+  # (Adapted by skill based on discovered workspace tools)
+  # NOTE: Formatter changes must be reviewed and staged explicitly:
+  #   git add -- <exact-modified-files>
+  # =========================================================================
+  # [PYTHON EXAMPLE]
+  # - repo: local
+  #   hooks:
+  #     - id: ruff-format
+  #       name: Format Code (Ruff)
+  #       entry: uv run ruff format
+  #       language: system
+  #       types: [python]
+  #     - id: ruff-lint
+  #       name: Lint Code (Ruff)
+  #       entry: uv run ruff check --fix
+  #       language: system
+  #       types: [python]
+  #
+  # [NODE / TS EXAMPLE]
+  # - repo: local
+  #   hooks:
+  #     - id: prettier
+  #       name: Format (Prettier)
+  #       entry: pnpm prettier --write --ignore-unknown
+  #       language: system
+  #       types_or: [javascript, jsx, ts, tsx, json, css, markdown]
+  #     - id: eslint
+  #       name: Lint (ESLint)
+  #       entry: pnpm eslint --fix
+  #       language: system
+  #       types_or: [javascript, jsx, ts, tsx]

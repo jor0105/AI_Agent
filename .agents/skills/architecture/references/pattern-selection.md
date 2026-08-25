@@ -17,14 +17,14 @@ Se um degrau menor já resolve o risco dominante, prefira o menor.
 
 ## Sintoma para direção provável
 
-| Sintoma dominante | Direções prováveis | Só escolha se... | Sinal de overengineering |
-|---|---|---|---|
-| Deploys e mudanças locais quebram áreas sem relação | modular monolith, boundary explícita, pacote interno | a dor principal é acoplamento de mudança e ownership | extrair serviço sem precisar de deploy independente |
-| Operação longa ou instável trava request síncrono | job assíncrono, worker, fila | o usuário tolera conclusão posterior e há estratégia de retries/idempotência | usar fila sem contrato de job nem observabilidade |
-| Partes diferentes precisam de isolamento forte de falha ou escala | worker isolado, serviço separado | o ganho operacional supera tracing, coordenação e custo de deploy | dizer "vai escalar no futuro" sem evidência atual |
-| Modelo de leitura diverge muito do de escrita | projeção dedicada, CQRS seletivo | há consultas caras ou view denormalizada recorrente | aplicar CQRS em CRUD comum |
-| Domínio tem invariantes densas e risco alto de regra duplicada | domain model, boundary clara, DDD-lite | a lógica realmente concentra valor e conflito | usar DDD completo para fluxo simples |
-| Dependência externa domina o desenho | anti-corruption layer, adapter, ports/adapters | a integração muda, falha ou impõe vocabulário estranho | criar abstração genérica sem múltiplos adapters reais |
+| Sintoma dominante                                                 | Direções prováveis                                   | Só escolha se...                                                             | Sinal de overengineering                              |
+| ----------------------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Deploys e mudanças locais quebram áreas sem relação               | modular monolith, boundary explícita, pacote interno | a dor principal é acoplamento de mudança e ownership                         | extrair serviço sem precisar de deploy independente   |
+| Operação longa ou instável trava request síncrono                 | job assíncrono, worker, fila                         | o usuário tolera conclusão posterior e há estratégia de retries/idempotência | usar fila sem contrato de job nem observabilidade     |
+| Partes diferentes precisam de isolamento forte de falha ou escala | worker isolado, serviço separado                     | o ganho operacional supera tracing, coordenação e custo de deploy            | dizer "vai escalar no futuro" sem evidência atual     |
+| Modelo de leitura diverge muito do de escrita                     | projeção dedicada, CQRS seletivo                     | há consultas caras ou view denormalizada recorrente                          | aplicar CQRS em CRUD comum                            |
+| Domínio tem invariantes densas e risco alto de regra duplicada    | domain model, boundary clara, DDD-lite               | a lógica realmente concentra valor e conflito                                | usar DDD completo para fluxo simples                  |
+| Dependência externa domina o desenho                              | anti-corruption layer, adapter, ports/adapters       | a integração muda, falha ou impõe vocabulário estranho                       | criar abstração genérica sem múltiplos adapters reais |
 
 ## Decisões clássicas
 

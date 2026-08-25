@@ -14,7 +14,7 @@ Use estes cenários para revisar a consistência da skill após mudanças.
 
 ## Eval 2: detalhe local não deve acionar
 
-**Prompt:** "Onde coloco esse helper de formatação no módulo?"
+**Prompt:** "Onde coloco esse hook do React?"
 
 **Assertions:**
 
@@ -56,7 +56,7 @@ Use estes cenários para revisar a consistência da skill após mudanças.
 
 ## Eval 6: CQRS rejeitado por exagero
 
-**Prompt:** "Quero usar CQRS porque o streaming está lento."
+**Prompt:** "Quero usar CQRS porque a dashboard está lenta."
 
 **Assertions:**
 

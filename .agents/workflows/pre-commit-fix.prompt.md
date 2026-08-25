@@ -1,33 +1,73 @@
 ---
-description: Run pre-commit on all files and fix the errors using Developer Engineer.
+name: Pre-commit Fix
+description: Systematically triage, fix, and verify pre-commit gate errors using Developer Engineer without introducing regressions or hacking bypasses
+category: Workflow
+tags: [workflow, quality, pre-commit, fix, lint]
 ---
 
 # 🛠️ Pre-commit Fix Workflow (`/pre-commit-fix`)
 
-Acione o agente **Developer Engineer** e solicite que ele execute o seguinte workflow para corrigir todos os problemas de pre-commit no repositório.
+Activate the **Developer Engineer** agent (`developer-engineer`) to systematically diagnose and fix all pre-commit gate failures across the repository.
+
+> **Execution Mindset:** Surgical fixes, no bypasses, adhere to root policies in `AGENTS.md`, and never edit generated mirrors directly.
+
+______________________________________________________________________
 
 ## Instructions
 
-1. **Run the Pre-commit Suite**
-   Execute the pre-commit checks across all files in the repository to identify issues.
-   // turbo
-   ```bash
-   pre-commit run --all-files
-   ```
+### 1. Run the Pre-commit Suite
 
-2. **Analyze and Fix Errors**
-   - Review the output of the pre-commit run carefully.
-   - Fix all reported errors systematically using the appropriate tools.
-   - **NO HACKS:** You must implement proper, robust solutions. Do not use bypasses like `// @ts-ignore`, `eslint-disable`, `# noqa`, or `fmt: skip` unless strictly unavoidable and architecturally justified.
+Execute the project's native pre-commit runner across all files:
 
-3. **Follow System Rules and Principles**
-   - Ensure all fixes strictly adhere to the best programming principles (Clean Code, SOLID, proper typing).
-   - You MUST follow all system constraints, project structures, and guidelines defined in `AGENTS.md`.
-   - Maintain the functional integrity and performance of the existing codebase.
+```bash
+uv run pre-commit run --all-files
+```
 
-4. **Verify the Fixes**
-   - Once the fixes are applied, re-run `pre-commit run --all-files` to guarantee that the codebase is completely clean.
-   - If there are still errors, iterate on steps 2-4 until all checks pass successfully.
+*(Fallback if `uv` is not used: `pre-commit run --all-files`)*
 
-5. **Final Status**
-   - Provide a concise summary of the files changed and the nature of the fixes applied.
+______________________________________________________________________
+
+### 2. Systematic Triage & Fix Order
+
+Resolve failures in logical dependency order:
+
+1. **Auto-formatting & File Cleanup** (`ruff-format`, `trim trailing whitespace`, `fix end of files`):
+   - Hooks that automatically modify files will exit with failure on their first run. Let them format and check if a simple re-run resolves them.
+2. **Synchronization & Generated Mirrors** (`harness-sync`, `*-mirror-sync`, `skill-index-sync`):
+   - **CRITICAL:** NEVER edit generated mirror files directly (e.g., in `.claude/`, `.github/`, `.opencode/`, `.agents/`).
+   - Fix the source in `skills/`, `workflows/`, `agents/`, or `harness/` and run the designated sync script (e.g., `harness-sync`, `python scripts/sync-workflows.py`).
+3. **Linting & Code Quality** (`ruff check`, `bandit`, `flake8`):
+   - Fix genuine lint and security issues.
+   - **NO HACKS:** Do not bypass checks with `# noqa`, `// @ts-ignore`, `eslint-disable`, or `type: ignore` unless strictly necessary and architecturally justified.
+4. **Type Checking** (`mypy`, `pyright`, `tsc`):
+   - Fix underlying type discrepancies with proper annotations, guards, and type-safe narrowings.
+   - Do not weaken types to `Any` / `unknown` merely to satisfy the checker.
+5. **Domain & Protocol Validators** (`validate-skills`, `opsx-alignment`, `validate-agent-protocols`):
+   - Follow the exact specification schemas and structural rules defined by the project.
+6. **Test Regressions** (`pytest`, test suites):
+   - Fix broken tests by addressing root causes, not by deleting or tautologically neutering assertions.
+
+______________________________________________________________________
+
+### 3. Guardrails
+
+- **Surgical Scope:** Keep changes minimal and focused strictly on the reported errors. Do not perform unrequested mass refactoring.
+- **Contract Preservation:** Never alter public function signatures, API contracts, or breaking behavior to silence a linter.
+- **Repository Standards:** Strictly respect formatting, single responsibility, and architectural rules in `AGENTS.md`.
+
+______________________________________________________________________
+
+### 4. Verification Loop
+
+1. Re-run `uv run pre-commit run --all-files`.
+2. Repeat fixes until **100% of hooks pass with exit code 0**.
+
+______________________________________________________________________
+
+### 5. Summary
+
+Provide a concise summary:
+
+- Summary of failed gates resolved.
+- Files modified (and source-to-mirror sync commands executed, if applicable).
+- Confirmation of a 100% clean pre-commit run.

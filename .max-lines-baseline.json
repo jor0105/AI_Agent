@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "path": "README.md",
+      "classification": "documentation",
+      "limit": 500,
+      "cap": 598,
+      "action": "split-document"
+    },
+    {
+      "path": "docs/reference/api.md",
+      "classification": "documentation",
+      "limit": 500,
+      "cap": 506,
+      "action": "split-document"
+    },
+    {
+      "path": "tests/integration/test_client_ollama_integration.py",
+      "classification": "test",
+      "limit": 1000,
+      "cap": 1349,
+      "action": "split-test"
+    },
+    {
+      "path": "tests/integration/test_client_openai_integration.py",
+      "classification": "test",
+      "limit": 1000,
+      "cap": 1998,
+      "action": "split-test"
+    },
+    {
+      "path": "tests/main/facade/test_client.py",
+      "classification": "test",
+      "limit": 1000,
+      "cap": 1674,
+      "action": "split-test"
+    }
+  ]
+}

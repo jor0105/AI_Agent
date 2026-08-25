@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess  # nosec: executes detected local test commands only.
+import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -14,10 +14,8 @@ from pathlib import Path
 from typing import Any
 
 try:
-    if hasattr(sys.stdout, 'reconfigure'):
-        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-    if hasattr(sys.stderr, 'reconfigure'):
-        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')  # type: ignore[union-attr]
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')  # type: ignore[union-attr]
 except (AttributeError, OSError):
     pass
 
@@ -158,7 +156,7 @@ def execute_test_command(
             errors='replace',
             timeout=timeout,
             check=False,
-        )  # nosec
+        )
     except FileNotFoundError:
         return {
             'status': 'blocked',

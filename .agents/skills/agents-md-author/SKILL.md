@@ -1,15 +1,16 @@
 ---
 name: agents-md-author
-description: >
+description: >-
   Use para criar, recriar, revisar ou fortalecer um AGENTS.md que explique o
-  projeto, ensine agentes a navegar nele e estabeleça políticas rigorosas de
+  projeto, oriente a navegação dos agentes e defina políticas rigorosas de
   desenvolvimento, qualidade e execução. Ative quando o usuário pedir "cria um
-  agents.md", "documenta este projeto para agentes", "define as rules dos
-  agents", "inclui meu idioma/gerenciador/framework", "melhora a execution
-  policy" ou exigir que arquitetura, comandos e preferências não sejam
-  inventados. Cobre repositórios simples, monorepos e AGENTS.md locais. Não use
-  para criar outra skill, escrever README comum ou decidir arquitetura sem
-  produzir ou revisar AGENTS.md.
+  agents.md", "documenta este projeto para agentes", "define as regras dos
+  agentes", "inclui meu idioma/gerenciador/framework", "melhora a política de
+  execução" ou exigir que arquitetura, comandos e preferências não sejam
+  inventados. Cobre
+  repositórios simples, monorepos e arquivos AGENTS.md locais. Não use para
+  criar outra skill, escrever um README comum ou decidir arquitetura sem
+  produzir ou revisar o AGENTS.md.
 ---
 
 # AGENTS.md Author
@@ -47,163 +48,157 @@ bundled dos dados coletados no alvo, não de enfraquecer as regras.
 
 ## Procedimento
 
-1. Resolva o escopo e a hierarquia de instruções.
+01. Resolva o escopo e a hierarquia de instruções.
 
-   - Identifique o caminho exato do `AGENTS.md` alvo e a raiz governada por ele.
-   - Leia todos os `AGENTS.md` ancestrais aplicáveis antes de propor texto.
-   - Leia o arquivo alvo existente antes de editar e preserve regras válidas
-     fora do pedido.
-   - Em monorepos, mantenha políticas transversais no root. Crie arquivos locais
-     somente quando stack, comandos, ownership, contratos ou riscos diferirem.
-   - Um arquivo local herda o superior e registra diferenças; não replique a
-     política inteira em toda subárvore.
+    - Identifique o caminho exato do `AGENTS.md` alvo e a raiz governada por ele.
+    - Leia todos os `AGENTS.md` ancestrais aplicáveis antes de propor texto.
+    - Leia o arquivo alvo existente antes de editar e preserve regras válidas
+      fora do pedido.
+    - Em monorepos, mantenha políticas transversais no root. Crie arquivos locais
+      somente quando stack, comandos, ownership, contratos ou riscos diferirem.
+    - Um arquivo local herda o superior e registra diferenças; não replique a
+      política inteira em toda subárvore.
 
-2. Resolva o perfil operacional do usuário e do projeto antes da prosa.
+02. Resolva o perfil operacional do usuário e do projeto antes da prosa.
 
-   Construa esta matriz internamente:
+    Construa esta matriz internamente:
 
-   | Decisão | Valor | Fonte | Autoridade | Escopo | Estado |
-   | --- | --- | --- | --- | --- | --- |
-   | idioma de chat | ... | ... | ... | ... | confirmed/unknown/conflict |
-   | idioma de código, comentários, docs e Git | ... | ... | ... | ... | ... |
-   | gerenciador de dependências | ... | ... | ... | ... | ... |
-   | command runner e validação oficial | ... | ... | ... | ... | ... |
-   | framework atual e regra para novas implementações | ... | ... | ... | ... | ... |
-   | formatter, lint, tipos e testes | ... | ... | ... | ... | ... |
-   | estilo de mudança e compatibilidade | ... | ... | ... | ... | ... |
+    | Decisão                                           | Valor | Fonte | Autoridade | Escopo | Estado                     |
+    | ------------------------------------------------- | ----- | ----- | ---------- | ------ | -------------------------- |
+    | idioma de chat                                    | ...   | ...   | ...        | ...    | confirmed/unknown/conflict |
+    | idioma de código, comentários, docs e Git         | ...   | ...   | ...        | ...    | ...                        |
+    | gerenciador de dependências                       | ...   | ...   | ...        | ...    | ...                        |
+    | command runner e validação oficial                | ...   | ...   | ...        | ...    | ...                        |
+    | framework atual e regra para novas implementações | ...   | ...   | ...        | ...    | ...                        |
+    | formatter, lint, tipos e testes                   | ...   | ...   | ...        | ...    | ...                        |
+    | estilo de mudança e compatibilidade               | ...   | ...   | ...        | ...    | ...                        |
 
-   - Use preferências explicitamente declaradas pelo usuário na conversa ou em
-     instruções aplicáveis. O idioma usado casualmente na mensagem, sozinho,
-     não define o idioma de código, documentação ou commits.
-   - Use manifests, lockfiles, CI e scripts para confirmar o tooling real. Uma
-     preferência não transforma um gerenciador ou framework ausente em fato.
-   - Quando o usuário escolhe uma regra compatível com o projeto, registre-a
-     como `USER_PREFERENCE` e escreva uma diretiva concreta em `Mandatory Rules`.
-   - Quando preferência e contrato vigente colidem, mantenha o estado real,
-     classifique `CONFLICT` e explique que adotar a preferência exige uma mudança
-     separada. Não documente uma migração inexistente como política atual.
-   - Se uma preferência essencial não estiver declarada, não invente. Para um
-     draft, use uma regra conservadora baseada no repositório; para declarar o
-     documento pronto para aprovação, obtenha a decisão faltante.
+    - Use preferências explicitamente declaradas pelo usuário na conversa ou em
+      instruções aplicáveis. O idioma usado casualmente na mensagem, sozinho,
+      não define o idioma de código, documentação ou commits.
+    - Use manifests, lockfiles, CI e scripts para confirmar o tooling real. Uma
+      preferência não transforma um gerenciador ou framework ausente em fato.
+    - Quando o usuário escolhe uma regra compatível com o projeto, registre-a
+      como `USER_PREFERENCE` e escreva uma diretiva concreta em `Mandatory Rules`.
+    - Quando preferência e contrato vigente colidem, mantenha o estado real,
+      classifique `CONFLICT` e explique que adotar a preferência exige uma mudança
+      separada. Não documente uma migração inexistente como política atual.
+    - Se uma preferência essencial não estiver declarada, não invente. Para um
+      draft, use uma regra conservadora baseada no repositório; para declarar o
+      documento pronto para aprovação, obtenha a decisão faltante.
 
-3. Faça descoberta somente de leitura.
+03. Faça descoberta somente de leitura.
 
-   - Localize orientação, governança, manifests, lockfiles, entrypoints,
-     configuração, scripts oficiais, CI, testes, documentação, ADRs, runbooks e
-     ownership.
-   - Meça o tamanho do código de produção. Ele define o orçamento de linhas em
-     `references/content-contract.md`, seção `Proporcionalidade`, e decide
-     quanto cada seção pode ocupar antes de virar cópia de outra fonte.
-   - Confirme conteúdo dentro dos arquivos. Nomes de diretório são pistas, não
-     prova de arquitetura ou responsabilidade.
-   - Leia exemplos de ambiente e código de configuração para descobrir nomes de
-     variáveis; não abra valores de `.env`, cofres ou credenciais.
-   - Não execute build, deploy, migração, pipeline, acesso externo ou qualquer
-     fluxo com efeitos colaterais apenas para descobrir como documentar.
+    - Localize orientação, governança, manifests, lockfiles, entrypoints,
+      configuração, scripts oficiais, CI, testes, documentação, ADRs, runbooks e
+      ownership.
+    - Confirme conteúdo dentro dos arquivos. Nomes de diretório são pistas, não
+      prova de arquitetura ou responsabilidade.
+    - Leia exemplos de ambiente e código de configuração para descobrir nomes de
+      variáveis; não abra valores de `.env`, cofres ou credenciais.
+    - Não execute build, deploy, migração, pipeline, acesso externo ou qualquer
+      fluxo com efeitos colaterais apenas para descobrir como documentar.
 
-4. Construa o ledger de evidências antes do texto final.
+04. Construa o ledger de evidências antes do texto final.
 
-   | Claim | Classe | Fonte | Estado | Destino |
-   | --- | --- | --- | --- | --- |
-   | <afirmação> | <classe> | <arquivo:linha ou decisão> | <confirmed/unknown/conflict> | <seção> |
+    | Claim        | Classe   | Fonte                       | Estado                        | Destino  |
+    | ------------ | -------- | --------------------------- | ----------------------------- | -------- |
+    | \<afirmação> | <classe> | \<arquivo:linha ou decisão> | \<confirmed/unknown/conflict> | \<seção> |
 
-   Use somente estas classes:
+    Use somente estas classes:
 
-   - `PORTABLE_BASELINE`: política copiada do template e independente de stack,
-     domínio ou organização;
-   - `REPO_FACT`: comportamento confirmado por código, manifest, CI, teste ou
-     documentação vigente;
-   - `REPO_POLICY`: regra confirmada por instrução aplicável, governança,
-     CODEOWNERS ou decisão aceita;
-   - `USER_PREFERENCE`: modo de trabalho explicitamente escolhido pelo usuário,
-     como idiomas, ferramenta preferida ou estilo de mudança;
-   - `USER_DECISION`: aprovação pontual, como owner ou status do documento;
-   - `EXPLICIT_UNKNOWN`: informação procurada e não encontrada, representada por
-     fallback declarado;
-   - `CONFLICT`: fontes ou autoridades atuais discordam e exigem decisão.
+    - `PORTABLE_BASELINE`: política copiada do template e independente de stack,
+      domínio ou organização;
+    - `REPO_FACT`: comportamento confirmado por código, manifest, CI, teste ou
+      documentação vigente;
+    - `REPO_POLICY`: regra confirmada por instrução aplicável, governança,
+      CODEOWNERS ou decisão aceita;
+    - `USER_PREFERENCE`: modo de trabalho explicitamente escolhido pelo usuário,
+      como idiomas, ferramenta preferida ou estilo de mudança;
+    - `USER_DECISION`: aprovação pontual, como owner ou status do documento;
+    - `EXPLICIT_UNKNOWN`: informação procurada e não encontrada, representada por
+      fallback declarado;
+    - `CONFLICT`: fontes ou autoridades atuais discordam e exigem decisão.
 
-   Nenhum comando, path, versão, métrica, componente, fase, owner, idioma,
-   gerenciador ou framework entra no documento sem classe e fonte.
+    Nenhum comando, path, versão, métrica, componente, fase, owner, idioma,
+    gerenciador ou framework entra no documento sem classe e fonte.
 
-5. Produza um mapa de navegação, não apenas uma descrição.
+05. Produza um mapa de navegação, não apenas uma descrição.
 
-   Confirme e registre:
+    Confirme e registre:
 
-   - o entrypoint humano: README, portal ou onboarding;
-   - o entrypoint de runtime e o caminho macro até os componentes principais;
-   - o documento de arquitetura e o owner de detalhes por domínio;
-   - onde ficam configuração, testes, operações, runbooks, contratos e decisões;
-   - quais fontes são canônicas, planejadas, geradas, exploratórias ou
-     não canônicas, quando essa classificação existir;
-   - a ordem de leitura para uma primeira mudança segura.
+    - o entrypoint humano: README, portal ou onboarding;
+    - o entrypoint de runtime e o caminho macro até os componentes principais;
+    - o documento de arquitetura e o owner de detalhes por domínio;
+    - onde ficam configuração, testes, operações, runbooks, contratos e decisões;
+    - quais fontes são canônicas, planejadas, geradas, exploratórias ou
+      não canônicas, quando essa classificação existir;
+    - a ordem de leitura para uma primeira mudança segura.
 
-   `System Overview` explica identidade e limites. `Pipeline Architecture`
-   explica fluxo, ownership e onde começar no código. `Related Documentation`
-   fornece a rota de leitura por pergunta. Um agente não deve precisar varrer o
-   repositório inteiro para descobrir o próximo documento.
+    `System Overview` explica identidade e limites. `Pipeline Architecture`
+    explica fluxo, ownership e onde começar no código. `Related Documentation`
+    fornece a rota de leitura por pergunta. Um agente não deve precisar varrer o
+    repositório inteiro para descobrir o próximo documento.
 
-6. Resolva os metadados sem transformar ausência em certeza.
+06. Resolva os metadados sem transformar ausência em certeza.
 
-   - `Owner`: use governança, CODEOWNERS ou decisão do usuário; caso contrário,
-     use `Unassigned` e mantenha `Status: Draft`.
-   - `Last reviewed`: use a data real da inspeção no formato `YYYY-MM-DD`.
-   - `Status`: preserve status confirmado; sem vocabulário ou aprovação, use
-     `Draft`.
-   - `Knowledge class`: use a taxonomia documentada; sem ela, use `Agent policy`.
+    - `Owner`: use governança, CODEOWNERS ou decisão do usuário; caso contrário,
+      use `Unassigned` e mantenha `Status: Draft`.
+    - `Last reviewed`: use a data real da inspeção no formato `YYYY-MM-DD`.
+    - `Status`: preserve status confirmado; sem vocabulário ou aprovação, use
+      `Draft`.
+    - `Knowledge class`: use a taxonomia documentada; sem ela, use `Agent policy`.
 
-7. Materialize o template e preencha cada contrato.
+07. Materialize o template e preencha cada contrato.
 
-   Para arquivo novo, gere o scaffold sem sobrescrever destino existente:
+    Para arquivo novo, gere o scaffold sem sobrescrever destino existente:
 
-   ```bash
-   python3 <skill-directory>/scripts/init_agents_md.py --output <path/to/AGENTS.md>
-   ```
+    ```bash
+    python3 <skill-directory>/scripts/init_agents_md.py --output <path/to/AGENTS.md>
+    ```
 
-   Para arquivo existente, não rode o scaffolder. Edite o documento preservando
-   as regras válidas. Em ambos os casos:
+    Para arquivo existente, não rode o scaffolder. Edite o documento preservando
+    as regras válidas. Em ambos os casos:
 
-   - mantenha os headings, metadados, tabelas e política completa do template;
-   - remova todo comentário `AGENTS_AUTHOR` após resolver a instrução;
-   - escreva missão, boundaries, entradas, saídas, consumidores e invariantes;
-   - inclua somente métricas adotadas; sem metas, use `Not documented` e Draft;
-   - descreva runtime, componentes, fluxo, gates, ownership e rota de navegação;
-   - liste superfícies de configuração, variáveis públicas e comandos oficiais;
-   - identifique linguagem, runtime, gerenciador, frameworks e tooling com
-     versões quando confirmadas;
-   - ordene a documentação por progressive disclosure e por autoridade;
-   - respeite o orçamento de `Proporcionalidade`: quando uma seção passar dele,
-     corte o que já tem dono (manifest, CI, doc de arquitetura) e deixe um
-     ponteiro. Estrutura é obrigatória; volume não é.
+    - mantenha os headings, metadados, tabelas e política completa do template;
+    - remova todo comentário `AGENTS_AUTHOR` após resolver a instrução;
+    - escreva missão, boundaries, entradas, saídas, consumidores e invariantes;
+    - inclua somente métricas adotadas; sem metas, use `Not documented` e Draft;
+    - descreva runtime, componentes, fluxo, gates, ownership e rota de navegação;
+    - liste superfícies de configuração, variáveis públicas e comandos oficiais;
+    - identifique linguagem, runtime, gerenciador, frameworks e tooling com
+      versões quando confirmadas;
+    - ordene a documentação por progressive disclosure e por autoridade.
 
-8. Componha `Mandatory Rules` como política de desenvolvimento forte.
+08. Componha `Mandatory Rules` como política de desenvolvimento forte.
 
-   Preserve todas as regras gerais preenchidas no template. Depois acrescente
-   diretivas concretas, com fonte, para:
+    Preserve todas as regras gerais preenchidas no template. Depois acrescente
+    diretivas concretas, com fonte, para:
 
-   - idioma de chat, código, comentários, documentação e Git;
-   - gerenciador de dependências, command runner e proibição de misturar managers;
-   - framework e padrões arquiteturais a preservar em novas implementações;
-   - formatter, lint, typecheck, testes e comando de validação oficial;
-   - invariantes de dados, segurança, ownership e contratos públicos;
-   - preferência de compatibilidade, migração, legado e tamanho de mudança;
-   - rota inicial para questões de arquitetura, operações e testes.
+    - idioma de chat, código, comentários, documentação e Git;
+    - gerenciador de dependências, command runner e proibição de misturar managers;
+    - framework e padrões arquiteturais a preservar em novas implementações;
+    - formatter, lint, typecheck, testes e comando de validação oficial;
+    - invariantes de dados, segurança, ownership e contratos públicos;
+    - preferência de compatibilidade, migração, legado e tamanho de mudança;
+    - rota inicial para questões de arquitetura, operações e testes.
 
-   Escreva valores exatos: `Use <manager>`, `Chat = <idioma>`, `Run <comando>`.
-   Não escreva “use a ferramenta adequada” quando o projeto já revela qual é.
-   Não transforme detalhes efêmeros de módulos em regras globais; a política
-   deve orientar decisões repetidas e apontar para o documento owner dos detalhes.
+    Escreva valores exatos: `Use <manager>`, `Chat = <idioma>`, `Run <comando>`.
+    Não escreva “use a ferramenta adequada” quando o projeto já revela qual é.
+    Não transforme detalhes efêmeros de módulos em regras globais; a política
+    deve orientar decisões repetidas e apontar para o documento owner dos detalhes.
 
-9. Preserve `Execution Policy` próxima ao baseline completo.
+09. Preserve `Execution Policy` próxima ao baseline completo.
 
-   - Mantenha os oito subtítulos e todos os controles concretos do template.
-   - Customize nomes de boundary (`repository`/`workspace`) somente para refletir
-     o escopo real.
-   - Uma política superior pode fortalecer ou substituir uma regra, mas registre
-     a fonte e não remova silenciosamente hard blocks, proteção de segredos,
-     alinhamento, validação, segurança ou tratamento de falhas.
-   - Preferências do usuário podem tornar a autonomia mais restritiva; não podem
-     autorizar bypass de permissões, exposição de segredos ou ação destrutiva sem
-     consentimento exato.
+    - Mantenha os oito subtítulos e todos os controles concretos do template.
+    - Customize nomes de boundary (`repository`/`workspace`) somente para refletir
+      o escopo real.
+    - Uma política superior pode fortalecer ou substituir uma regra, mas registre
+      a fonte e não remova silenciosamente hard blocks, proteção de segredos,
+      alinhamento, validação, segurança ou tratamento de falhas.
+    - Preferências do usuário podem tornar a autonomia mais restritiva; não podem
+      autorizar bypass de permissões, exposição de segredos ou ação destrutiva sem
+      consentimento exato.
 
 10. Trate conflitos e lacunas proporcionalmente.
 
@@ -255,10 +250,6 @@ bundled dos dados coletados no alvo, não de enfraquecer as regras.
 - Reduzir `Execution Policy` a frases genéricas e apagar a lista concreta de
   operações bloqueadas.
 - Copiar stack, paths, métricas ou nomes de componentes de outro projeto.
-- Inflar o documento além do que o repositório sustenta. Reproduzir versões do
-  manifest, gates do CI ou o design que o doc de arquitetura já explica cria
-  duas verdades e cobra contexto em toda sessão. Cumprir a estrutura não é
-  licença para encher cada seção.
 - Escolher silenciosamente entre README, manifest e CI conflitantes.
 - Declarar `Canonical` apenas porque o texto foi concluído.
 

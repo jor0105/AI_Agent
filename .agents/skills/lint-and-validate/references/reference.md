@@ -26,59 +26,47 @@ Ela existe para evitar tres erros comuns:
 
 Em vez disso, a skill separa o problema por entrypoint canonico:
 
-- `npm run ai:verify` para diff comum;
-- `npm run skills:validate -- --skill <nome>` para uma skill especifica;
-- `npm run skills:validate:central` para o pack central;
-- `npm run agents:validate-protocols` para agents, manifests e protocol skills.
+- `uv run python scripts/harness_verify.py --evidence-path ...` ou `pre-commit run --all-files` para diff comum e gates do repo;
+- `python3 scripts/validate-skills.py` (ou `--skill <nome>`) para governança e integridade de skills;
+- `python3 scripts/validate-agent-protocols.py` para agents, manifests e protocol skills.
 
 ## O que fazer na pratica
 
 1. Confirme se o pedido e de validacao, nao de implementacao ou arquitetura.
 2. Escolha o entrypoint pelo artefato:
-   - diff comum: `npm run ai:verify`
-   - skill individual: `npm run skills:validate -- --skill <nome>`
-   - skill central: `npm run skills:validate:central`
-   - agents/protocolos: `npm run agents:validate-protocols`
-3. Se o caminho for diff comum e a selecao de gates for parte da decisao, rode antes `npm run ai:verify -- --dry-run`.
-4. Se houver review runtime, passe `--session-dir` no `ai:verify`.
-5. No `ai:verify`, leia o resultado nesta ordem: `status`, `effectiveProfile`, `escalations`, `gates`, `summary`.
+   - diff comum e gates: `pre-commit run --all-files` ou `uv run python scripts/harness_verify.py --evidence-path openspec/changes/<change>/evidence/gate-report.json`
+   - skill individual ou todas: `python3 scripts/validate-skills.py [--skill <nome>]`
+   - agents/protocolos: `python3 scripts/validate-agent-protocols.py`
+3. Execute o comando e confira o exit code e o status de cada gate.
+4. Responda com a evidencia terminal resumida.
 
 ## O que nao fazer
 
 - Nao substituir `review-workflow` ou `security-engineer`.
 - Nao usar autofix amplo como comportamento padrao.
 - Nao criar wrapper local se o script oficial do repo ja cobre a necessidade.
-- Nao escolher perfil manualmente sem motivo claro.
 - Nao usar `validate-agent-protocols` como se fosse validador geral de todas as skills.
 
 ## Perguntas que esta skill responde bem
 
 - "Qual e o menor comando canonico para validar isso?"
-- "Preciso executar ou basta um `--dry-run`?"
 - "Essa falha e de codigo ou de ambiente?"
-- "Preciso persistir artifacts para review?"
 - "Isso e governanca de skill ou protocolo de agents?"
 
 ## Atalhos uteis
 
-- Explicar o que vai rodar (lista hooks e stages do `.pre-commit-config.yaml`):
-  `npm run ai:verify -- --dry-run`
-- Diff comum (roda o stage `pre-commit` no escopo e o `pre-push` com testes/auditoria):
-  `npm run ai:verify`
-- Validacao reforcada (roda ambos os stages em todos os arquivos):
-  `npm run ai:verify -- --profile high-risk`
-- Forcar arquivo quando o diff local nao ajuda:
-  `npm run ai:verify -- --changed-file src/features/auth/AuthProvider.tsx`
-- Persistir para review:
-  `npm run ai:verify -- --session-dir .agents/sessions/review-<id>`
+- Executar todos os gates repo-native:
+  `pre-commit run --all-files`
+- Produzir evidencia estruturada per-change:
+  `uv run python scripts/harness_verify.py --evidence-path openspec/changes/<change>/evidence/gate-report.json`
 - Validar uma skill:
-  `npm run skills:validate -- --skill lint-and-validate`
-- Validar skills centrais:
-  `npm run skills:validate:central`
+  `python3 scripts/validate-skills.py --skill lint-and-validate`
+- Validar todas as skills:
+  `python3 scripts/validate-skills.py`
 - Validar agents e protocol skills:
-  `npm run agents:validate-protocols`
+  `python3 scripts/validate-agent-protocols.py`
 
 ## Exemplos e guia amplo
 
 - [examples.md](./examples.md): pedidos concretos e resposta esperada da skill.
-- [verification-harness.md](../../verification-harness.md): runtime completo de `ai:verify`, perfis, output, artifacts e troubleshooting.
+- [verification-harness.md](../../verification-harness.md): documentacao do verifier repo-native, contrato de gates e integridade de evidencia.

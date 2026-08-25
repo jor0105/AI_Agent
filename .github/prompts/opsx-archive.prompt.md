@@ -1,71 +1,100 @@
 ---
-name: "OPSX: Archive"
-description: Archive a completed change in the experimental workflow
+name: 'OPSX: Archive'
+description: Archive a completed OpenSpec change after verification and synchronization
 category: Workflow
-tags: [workflow, archive, experimental]
+tags: [workflow, openspec, archive]
 ---
 
-Archive a completed change in the experimental workflow.
+Archive a completed OpenSpec change after verification and synchronization.
 
 **Input**: Optionally specify a change name after `/opsx:archive` (e.g., `/opsx:archive add-auth`). If omitted, you MUST ask the user to select from the active changes. Never infer or auto-select a change for `archive`.
 
 **Selection policy**: `archive` requires explicit change selection whenever the request does not already identify the target change.
 
-**Schema note**: Use `openspec status --change "<name>" --json` as the source of truth for artifact state, then inspect tasks and delta specs before moving anything.
+**Schema note**: Use `opsx status --change "<name>" --json` as the source of truth for artifact state, then inspect tasks and delta specs before moving anything.
+
+**Lifecycle policy**: Archive is a mechanical finalization step. It requires
+fresh decision-source preflight, a green completion gate, a passed semantic
+verification report, complete tasks, and synchronized delta specs. No prompt,
+warning, user confirmation, or legacy exemption overrides a red condition.
 
 **Steps**
 
 1. **If no change name provided, prompt for selection**
 
-   Run `openspec list --json` to get available changes. Use the **AskUserQuestion tool** to let the user select.
+   Run `opsx list --json` to get available changes. Use an enumerated-selection capability when available. If it is unavailable or cannot represent every option, print every option in a numbered text list and wait for one explicit selection before continuing.
 
    Show only active changes (not already archived).
    Include the schema used for each change if available.
 
    **IMPORTANT**: Do NOT guess or auto-select a change. Always let the user choose.
 
-2. **Check artifact completion status**
+2. **Run decision-source preflight and inspect the full bundle**
 
-   Run `openspec status --change "<name>" --json` to check artifact completion.
+   ```bash
+   opsx preflight --change "<name>" --json
+   opsx status --change "<name>" --json
+   ```
+
+   Stop on any provenance, ownership, dependency, or artifact-state finding.
+   Read the source envelope, proposal, design, tasks, every delta spec, and
+   every corresponding main spec before deciding whether synchronization is
+   complete.
+
+3. **Assess and complete delta synchronization**
+
+   If delta specs exist, compare them with the main specs. If any delta is
+   missing, stale, or not provably synchronized, stop and require
+   `/opsx:sync <name>` before archive. There is no "Archive without syncing"
+   path. Sync requires its own exact change-name authorization and must run
+   its own preflight; archive authorization cannot authorize sync.
+
+   After synchronization, confirm the result is idempotent, contains no
+   placeholder purpose/requirement, preserves unrelated main-spec content,
+   and records the decision-source provenance.
+
+4. **Generate fresh semantic evidence**
+
+   Run `/opsx:verify <name>` and require it to write
+   `evidence/verification-report.json` with verdict `passed`. The report must
+   map every requirement, categorized scenario, and design decision to
+   concrete implementation and test evidence, contain no in-contract
+   blocker, and bind the exact current repository fingerprint. Do not reuse a
+   report from a previous repository state or from a sibling change.
+
+5. **Run the non-overridable completion gate**
+
+   ```bash
+   opsx-handoff --mode completion "<name>"
+   ```
+
+   Stop on any nonzero exit. There is no archive path with an interactive override.
+   Do not move the change. Archive requires a complete bundle, all tasks
+   closed, synchronized deltas, concrete output state, current green gate
+   evidence, and a current passed semantic report.
+
+6. **Check artifact completion status**
+
+   Run `opsx status --change "<name>" --json` to check artifact completion.
 
    Parse the JSON to understand:
+
    - `schemaName`: The workflow being used
    - `artifacts`: List of artifacts with their status (`done` or other)
 
-   **If any artifacts are not `done`:**
-   - Display warning listing incomplete artifacts
-   - Prompt user for confirmation to continue
-   - Proceed if user confirms
+   **If any artifacts are not `done`:** stop and list them.
 
-3. **Check task completion status**
+7. **Check task completion status**
 
    Read the tasks file (typically `tasks.md`) to check for incomplete tasks.
 
    Count tasks marked with `- [ ]` (incomplete) vs `- [x]` (complete).
 
-   **If incomplete tasks found:**
-   - Display warning showing count of incomplete tasks
-   - Prompt user for confirmation to continue
-   - Proceed if user confirms
+   **If incomplete tasks are found:** stop and list them.
 
    **If no tasks file exists:** Proceed without task-related warning.
 
-4. **Assess delta spec sync state**
-
-   Check for delta specs at `openspec/changes/<name>/specs/`. If none exist, proceed without sync prompt.
-
-   **If delta specs exist:**
-   - Compare each delta spec with its corresponding main spec at `openspec/specs/<capability>/spec.md`
-   - Determine what changes would be applied (adds, modifications, removals, renames)
-   - Show a combined summary before prompting
-
-   **Prompt options:**
-   - If changes needed: "Sync now (recommended)", "Archive without syncing"
-   - If already synced: "Archive now", "Sync anyway", "Cancel"
-
-   If user chooses sync, execute `/opsx:sync` logic. Proceed to archive regardless of choice.
-
-5. **Perform the archive**
+8. **Perform the archive**
 
    Create the archive directory if it doesn't exist:
 
@@ -76,6 +105,7 @@ Archive a completed change in the experimental workflow.
    Generate target name using current date: `YYYY-MM-DD-<change-name>`
 
    **Check if target already exists:**
+
    - If yes: Fail with error, suggest renaming existing archive or using different date
    - If no: Move the change directory to archive
 
@@ -83,9 +113,10 @@ Archive a completed change in the experimental workflow.
    mv openspec/changes/<name> openspec/changes/archive/YYYY-MM-DD-<name>
    ```
 
-6. **Display summary**
+9. **Display summary**
 
    Show archive completion summary including:
+
    - Change name
    - Schema that was used
    - Archive location
@@ -126,14 +157,7 @@ All artifacts complete. All tasks complete.
 **Change:** <change-name>
 **Schema:** <schema-name>
 **Archived to:** openspec/changes/archive/YYYY-MM-DD-<name>/
-**Specs:** Sync skipped (user chose to skip)
-
-**Warnings:**
-- Archived with 2 incomplete artifacts
-- Archived with 3 incomplete tasks
-- Delta spec sync was skipped (user chose to skip)
-
-Review the archive if this was not intentional.
+**Warnings:** None. This output is valid only when all final gates passed.
 ```
 
 **Output On Error (Archive Exists)**
@@ -155,9 +179,13 @@ Target archive directory already exists.
 **Guardrails**
 
 - Always prompt for change selection if not provided
-- Use artifact graph (openspec status --json) for completion checking
-- Don't block archive on warnings - just inform and confirm
+- Use artifact graph (`opsx status --change "<name>" --json`) for completion checking
+- Never archive when the completion gate is red; no warning or confirmation overrides it
+- Never archive when decision-source preflight, semantic evidence, or delta
+  synchronization is red or stale
 - Preserve .openspec.yaml when moving to archive (it moves with the directory)
 - Show clear summary of what happened
 - If sync is requested, use /opsx:sync approach (agent-driven)
-- If delta specs exist, always run the sync assessment and show the combined summary before prompting
+- If delta specs exist, always run the sync assessment and require the
+  synchronized result before the final gate
+- Never delete an existing archive target to make room for a new archive

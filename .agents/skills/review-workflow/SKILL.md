@@ -1,14 +1,14 @@
 ---
 name: review-workflow
-description: >
-  Use para conduzir revisão estruturada de uma mudança. Ative quando o pedido
-  envolver "abrir sessão de revisão", "montar plano por risco", "registrar
-  apontamento", "gerar parecer", "fechar revisão", "ler gate-report", "preparar
-  encaminhamento de segurança", "rodar revisão isolada", "review de PR",
-  "revisa esse diff", "segunda leitura" ou revisar uma mudança antes de
-  encerrar. Não use para validação mecânica isolada; prefira
-  `lint-and-validate`. Não use para auditoria terminal de segurança; encaminhe
-  para `security-engineer`.
+description: >-
+  Use para conduzir revisões estruturadas de changes e PRs. Ative quando a
+  solicitação envolver "abrir sessão de revisão", "montar plano por risco",
+  "registrar apontamento", "gerar parecer", "fechar revisão", "ler gate-report",
+  "preparar encaminhamento de segurança", "rodar revisão isolada", "review de
+  PR", "revisa esse diff" ou "segunda leitura", ou revisar uma mudança antes de
+  encerrá-la. Não use para validação mecânica isolada de comandos; prefira
+  `lint-and-validate`. Não use para auditoria de segurança no terminal;
+  encaminhe para `security-engineer`.
 ---
 
 # Review Workflow
@@ -42,9 +42,7 @@ Use estes nomes técnicos apenas como identificadores estáveis de arquivo:
 4. Leia o diff e contexto adjacente de cada item planejado.
 5. Registre apenas apontamentos acionáveis com `scripts/append-finding.py`.
    Evite comentários de estilo que uma validação mecânica resolveria.
-6. Use `lint-and-validate` para gerar ou atualizar o relatório `gate-report`.
-   Quando houver sessão de review, passe `--session-dir` ao `ai:verify` para
-   persistir o resultado em `artifacts/gate-report.json`.
+6. Execute a validação repo-native (ex.: `pre-commit run --all-files` ou o comando declarado em `openspec/handoff.json`) e escreva o artefato `artifacts/gate-report.json` da sessão (com status `completed` e a lista `gates` preenchida a partir do resultado) usando a estrutura base de `build_empty_gate_report()` em `runtime/review/runtime_support.py`.
 7. Crie `security-handoff` quando houver risco material com
    `scripts/create-security-handoff.py`; não aprove segurança material sem uma
    revisão própria de segurança.
@@ -58,26 +56,25 @@ Use os scripts como interface canônica. Estes exemplos reduzem inferência sobr
 argumentos e payloads sem substituir a leitura do diff.
 
 ```bash
-python3 .agents/skills/review-workflow/scripts/init-review-session.py \
+python3 skills/review-workflow/scripts/init-review-session.py \
   --change-type bug-fix \
   --changed-by codex \
   --changed-file src/example.py
 ```
 
 ```bash
-python3 .agents/skills/review-workflow/scripts/build-review-plan.py \
+python3 skills/review-workflow/scripts/build-review-plan.py \
   --session-dir .agents/sessions/review-<id>
 ```
 
-```bash
-npm run ai:verify -- --session-dir .agents/sessions/review-<id>
-```
+Execute a validação repo-native (ex.: `pre-commit run --all-files`) e popule
+`artifacts/gate-report.json` na sessão.
 
 Para registrar `finding`, envie JSON pelo stdin para manter o artefato
 validável pelo schema:
 
 ```bash
-python3 .agents/skills/review-workflow/scripts/append-finding.py \
+python3 skills/review-workflow/scripts/append-finding.py \
   --session-dir .agents/sessions/review-<id> <<'JSON'
 {
   "topic": "behavior:runtime",
@@ -199,7 +196,7 @@ limitação.
 
 ### Caso positivo
 
-**Entrada:** "fecha a revisão desse diff e gera o parecer depois do ai:verify"
+**Entrada:** "fecha a revisão desse diff e gera o parecer depois da validação"
 **Saída esperada:** criar ou retomar sessão, ler `gate-report`, revisar por
 risco, consolidar `verdict` e exportar resumo.
 
@@ -223,7 +220,7 @@ Deve acionar:
 
 Não deve acionar:
 
-- "roda ai:verify"
+- "roda validação dos gates"
 - "explora esse possível IDOR"
 - "corrige o bug diretamente"
 - "define uma estratégia de testes ampla"

@@ -36,7 +36,7 @@ Assertions:
 
 ### Caso 1
 
-Pedido: "Rode o ai:verify e testes."
+Pedido: "Rode a validação repo-native e testes."
 
 Assertions:
 

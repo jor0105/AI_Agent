@@ -1,13 +1,14 @@
 ---
-name: "OPSX: Sync"
-description: Sync delta specs from a change to main specs
+name: 'OPSX: Sync'
+description: Sync delta specs from an OpenSpec change to canonical main specs
 category: Workflow
-tags: [workflow, specs, experimental]
+tags: [workflow, openspec, specs, sync]
 ---
 
 Sync delta specs from a change to main specs.
 
-This is an **agent-driven** operation - you will read delta specs and directly edit main specs to apply the changes. This allows intelligent merging (e.g., adding a scenario without copying the entire requirement).
+This is a deterministic operation. The agent explains and authorizes the exact
+scope; `sync_specs.py` owns every main-spec mutation.
 
 **Input**: Optionally specify a change name after `/opsx:sync` (e.g., `/opsx:sync add-auth`). If omitted, you MUST ask the user to select a change from the active changes. Never infer or auto-select a change for `sync`.
 
@@ -15,21 +16,44 @@ This is an **agent-driven** operation - you will read delta specs and directly e
 
 **Schema note**: Use the actual delta spec files and main spec files as the source of truth. Do not assume a fixed schema beyond the files that exist in the selected change.
 
+**Decision-source policy**: `sync` is permitted only after the selected change
+passes the decision-source preflight. The declared source, digest, decision
+IDs, dependencies, and sibling ownership are binding. A sync authorization
+does not authorize artifact creation, implementation, or archive.
+
 **Steps**
 
 1. **If no change name provided, prompt for selection**
 
-   Run `openspec list --json` to get available changes. Use the **AskUserQuestion tool** to let the user select.
+   Run `opsx list --json` to get available changes. Use an enumerated-selection capability when available. If it is unavailable or cannot represent every option, print every option in a numbered text list and wait for one explicit selection before continuing.
 
    Show changes that have delta specs (under `specs/` directory).
 
    **IMPORTANT**: Do NOT guess or auto-select a change. Always let the user choose.
 
-2. **Find delta specs**
+2. **Run decision-source preflight**
+
+   ```bash
+   opsx preflight --change "<name>" --json
+   ```
+
+   Stop on any nonzero exit or any finding. Do not infer missing decisions
+   from the delta text, and do not continue with a partial or stale source
+   envelope.
+
+3. **Read the complete sync scope before authorization**
+
+   Read `.openspec.yaml`, the declared decision source, proposal, design,
+   tasks, every delta spec, and every corresponding main spec. Resolve the
+   exact capability and requirement mapping before asking for authorization.
+   A delta-only read is insufficient.
+
+4. **Find delta specs**
 
    Look for delta spec files in `openspec/changes/<name>/specs/*/spec.md`.
 
    Each delta spec file contains sections like:
+
    - `## ADDED Requirements` - New requirements to add
    - `## MODIFIED Requirements` - Changes to existing requirements
    - `## REMOVED Requirements` - Requirements to remove
@@ -37,42 +61,48 @@ This is an **agent-driven** operation - you will read delta specs and directly e
 
    If no delta specs found, inform user and stop.
 
-3. **For each delta spec, apply changes to main specs**
+5. **Request explicit sync authorization**
 
-   For each capability with a delta spec at `openspec/changes/<name>/specs/<capability>/spec.md`:
+   Show the selected change name, decision-source digest, every capability,
+   and the exact add/modify/remove/rename operations. Ask the user to
+   authorize this sync by its exact change name. Do not reuse authorization
+   for another change, artifact operation, or archive operation.
 
-   a. **Read the delta spec** to understand the intended changes
+6. **Apply the authorized operations mechanically**
 
-   b. **Read the main spec** at `openspec/specs/<capability>/spec.md` (may not exist yet)
+   Run exactly:
 
-   c. **Apply changes intelligently**:
+   ```bash
+   opsx-sync --change "<name>" --json
+   ```
 
-   **ADDED Requirements:**
-   - If requirement doesn't exist in main spec → add it
-   - If requirement already exists → update it to match (treat as implicit MODIFIED)
+   `ADDED` appends only an absent full block and rejects a conflicting existing
+   name. `MODIFIED` replaces the complete existing block and rejects an absent
+   owner. `REMOVED` guarantees absence. `RENAMED` changes only the declared
+   heading and rejects ambiguous old/new coexistence. A new capability requires
+   a concrete `## Purpose` in its delta. The command preserves untouched blocks
+   byte-for-byte and writes decision-source provenance.
 
-   **MODIFIED Requirements:**
-   - Find the requirement in main spec
-   - Apply the changes - this can be:
-     - Adding new scenarios (don't need to copy existing ones)
-     - Modifying existing scenarios
-     - Changing the requirement description
-   - Preserve scenarios/content not mentioned in the delta
+7. **Validate the synchronized result**
 
-   **REMOVED Requirements:**
-   - Remove the entire requirement block from main spec
+   Re-run the decision-source preflight and inspect the complete diff. Confirm
+   that the target main specs contain the delta requirements and no
+   placeholders, and that unrelated main specs were not changed. If the
+   result is unclear or not idempotent, stop and report the discrepancy.
 
-   **RENAMED Requirements:**
-   - Find the FROM requirement, rename to TO
+   Run the canonical read-only check:
 
-   d. **Create new main spec** if capability doesn't exist yet:
-   - Create `openspec/specs/<capability>/spec.md`
-   - Add Purpose section (can be brief, mark as TBD)
-   - Add Requirements section with the ADDED requirements
+   ```bash
+   opsx-sync --change "<name>" --check --json
+   ```
 
-4. **Show summary**
+   It must exit zero with no finding. Inspect the diff and confirm that no
+   unrelated canonical spec changed.
+
+8. **Show summary**
 
    After applying all changes, summarize:
+
    - Which capabilities were updated
    - What changes were made (requirements added/modified/removed/renamed)
 
@@ -109,13 +139,10 @@ The system SHALL do something new.
 - TO: `### Requirement: New Name`
 ```
 
-**Key Principle: Intelligent Merging**
+**Key Principle: Full-block deterministic operations**
 
-Unlike programmatic merging, you can apply **partial updates**:
-
-- To add a scenario, just include that scenario under MODIFIED - don't copy existing scenarios
-- The delta represents _intent_, not a wholesale replacement
-- Use your judgment to merge changes sensibly
+`MODIFIED` always carries the entire updated requirement. Partial scenario
+patches and implicit operation conversion are invalid.
 
 **Output On Success**
 
@@ -141,4 +168,7 @@ Main specs are now updated. The change remains active - archive when implementat
 - Preserve existing content not mentioned in delta
 - If something is unclear, ask for clarification
 - Show what you're changing as you go
-- The operation should be idempotent - running twice should give same result
+- Never use `Archive without syncing`; archive requires synchronized deltas
+  and a newly generated semantic verification report
+- The operation must be idempotent - running twice must give the same result
+- Never hand-edit a main spec to hide an unsatisfied decision-source finding

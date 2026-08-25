@@ -210,7 +210,7 @@ class StructuralInspector:
             }
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description='Structural Inspector')
     parser.add_argument(
         '--path', required=True, help='Path to the file to inspect'

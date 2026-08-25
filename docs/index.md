@@ -291,8 +291,8 @@ ______________________________________________________________________
 ## 📞 Suporte
 
 - 📧 **Email**: estraliotojordan@gmail.com
-- 🐛 **Bugs**: [GitHub Issues](https://github.com/jor0105/Create-Agents-AI/issues)
-- 💬 **Discussões**: [GitHub Discussions](https://github.com/jor0105/Create-Agents-AI/discussions)
+- 🐛 **Bugs**: [GitHub Issues](https://github.com/jordanestralioto/Create-Agents-AI/issues)
+- 💬 **Discussões**: [GitHub Discussions](https://github.com/jordanestralioto/Create-Agents-AI/discussions)
 
 ______________________________________________________________________
 
@@ -306,7 +306,7 @@ ______________________________________________________________________
 
 **Jordan Estralioto**
 
-- GitHub: [@jor0105](https://github.com/jor0105)
+- GitHub: [@jordanestralioto](https://github.com/jordanestralioto)
 - Email: estraliotojordan@gmail.com
 
 ______________________________________________________________________

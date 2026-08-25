@@ -2,6 +2,13 @@
 
 Use este template para criar ou atualizar `modularizar_<target-basename>.md` na raiz do repositório.
 
+## Sumário
+
+- `1-3`: metadata, estado dos gates e baseline de contrato.
+- `4-5`: proposta, aprovação, execução da Fase 1 e decisão sobre a Fase 2.
+- `6-7`: proposta e execução da modularização estrutural, somente quando necessária.
+- `8-10`: validação final, rollback e readiness.
+
 Regra de naming:
 
 - Prefixe o basename final do alvo com `modularizar_`.
@@ -16,7 +23,7 @@ Fluxo:
 
 Comando recomendado:
 
-- `bash .agents/skills/modularizar/scripts/modularizar_guard.sh init-plan --target <file-or-module> --task <task-name> --author developer-engineer`
+- `bash skills/modularizar/scripts/modularizar_guard.sh init-plan --target <file-or-module> --task <task-name> --author developer-engineer`
 
 > [!IMPORTANT]
 >
@@ -195,11 +202,31 @@ For each finding, copy the block below:
 - Validation evidence for Phase 1:
 - Residual risks after Phase 1:
 
+### 5.1 Phase 2 necessity assessment
+
+- PHASE_2_NEEDED: NO
+- Residual condition: none|size|complexity|both
+- Structural separation needed: NO
+- Post-Phase 1 size or complexity evidence:
+- Residual structural problem:
+- Phase 2 necessity rationale:
+
+> [!IMPORTANT]
+>
+> Marque `PHASE_2_NEEDED: YES` somente quando o alvo ainda tiver tamanho ou
+> complexidade material e existir uma necessidade estrutural concreta de separar
+> responsabilidades. Tamanho isolado ou redistribuição mecânica não bastam.
+> Para `YES`, use `Residual condition: size`, `complexity` ou `both` e
+> `Structural separation needed: YES`. Para `NO`, use `Structural separation needed: NO`, inclusive quando ainda houver tamanho ou complexidade, mas o alvo
+> estiver coeso.
+> Quando a decisão for `NO`, registre a justificativa e mantenha `## 6` e `## 7`
+> sem conteúdo novo.
+
 > [!IMPORTANT]
 >
 > Não preencha `## 6` nem `## 7` durante a Fase 1. Essas seções só devem ser
-> atualizadas depois de `GATE_1_APPROVED: YES`, `PHASE_1_EXECUTED: YES` e nova
-> aprovação explícita do usuário para iniciar a Fase 2.
+> atualizadas depois de `GATE_1_APPROVED: YES`, `PHASE_1_EXECUTED: YES`,
+> `PHASE_2_NEEDED: YES` e nova aprovação explícita do usuário para iniciar a Fase 2.
 
 ## 6. Phase 2A - Modularization Proposal
 
@@ -271,7 +298,7 @@ For each finding, copy the block below:
 - Type/static contracts:
 - Unit/integration tests:
 - Build/package checks:
-- ai:verify profile or rationale:
+- Repo-native validation command:
 
 ## 9. Rollback Plan
 
@@ -282,5 +309,6 @@ For each finding, copy the block below:
 ## 10. Final Readiness
 
 - FINAL_VALIDATION_READY: NO
-- Final report file path: modularizar_<target-basename>-output.md
-- Final lock command: `bash .agents/skills/modularizar/scripts/modularizar_guard.sh validate-report --target <file-or-module>`
+- Final report file path: modularizar\_<target-basename>-output.md
+- Phase 1-only lock command: `bash skills/modularizar/scripts/modularizar_guard.sh validate-plan --phase phase1-complete --target <file-or-module>`
+- Final lock command (Phase 2 only): `bash skills/modularizar/scripts/modularizar_guard.sh validate-report --target <file-or-module>`

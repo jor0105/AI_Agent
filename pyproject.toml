@@ -64,10 +64,10 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/jor0105/Create-Agents-AI"
-Repository = "https://github.com/jor0105/Create-Agents-AI"
-Documentation = "https://github.com/jor0105/Create-Agents-AI"
-"Bug Tracker" = "https://github.com/jor0105/Create-Agents-AI/issues"
+Homepage = "https://github.com/jordanestralioto/Create-Agents-AI"
+Repository = "https://github.com/jordanestralioto/Create-Agents-AI"
+Documentation = "https://github.com/jordanestralioto/Create-Agents-AI"
+"Bug Tracker" = "https://github.com/jordanestralioto/Create-Agents-AI/issues"
 
 [tool.setuptools.package-data]
 createagents = ["*.txt", "*.md"]
@@ -184,6 +184,8 @@ select = [
     "ERA",           # commented-out code
     "TRY",           # exception handling
     "RUF",           # ruff-specific
+    "T20",           # flake8-print: disallow print/pprint in library code
+    "PGH",           # pygrep-hooks: disallow blanket type: ignore and noqa
 ]
 ignore = [
     "E501",    # line length is owned by ruff-format
@@ -193,6 +195,11 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+# CLI presentation, scripts, and harness tools are responsible for terminal output
+"src/createagents/presentation/cli/**" = ["T20"]
+".agents/**" = ["T20"]
+".github/hooks/**" = ["T20"]
+"scripts/**" = ["T20"]
 # Tests may use fixtures, looser typing, repetitive setup and standard
 # exceptions as subjects under test. Correctness checks for blind catches,
 # exception types and commented-out code remain enabled; intentional broad
@@ -202,6 +209,7 @@ ignore = [
     "RUF012", "RUF015", "RUF005", "RUF001",
     "SIM105", "SIM117", "SIM118", "SIM222",
     "RET", "UP015", "C401", "C403", "B007", "G201",
+    "T20",
 ]
 
 [tool.ruff.format]

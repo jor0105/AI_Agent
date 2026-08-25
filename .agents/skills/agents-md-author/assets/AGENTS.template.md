@@ -16,8 +16,8 @@ repository.
 
 ## Success Metrics
 
-| Metric | Target |
-| --- | --- |
+| Metric                                                          | Target                                                     |
+| --------------------------------------------------------------- | ---------------------------------------------------------- |
 | <!-- AGENTS_AUTHOR: adopted metric or Project-owned metrics --> | <!-- AGENTS_AUTHOR: evidenced target or Not documented --> |
 
 ## Pipeline Architecture
@@ -28,14 +28,14 @@ repository.
 
 ## Configuration & Runtime
 
-| Surface | Location | Purpose |
-| --- | --- | --- |
+| Surface                                                                              | Location                              | Purpose                                   |
+| ------------------------------------------------------------------------------------ | ------------------------------------- | ----------------------------------------- |
 | <!-- AGENTS_AUTHOR: configuration surface, runtime, manager, or framework config --> | <!-- AGENTS_AUTHOR: existing path --> | <!-- AGENTS_AUTHOR: evidenced purpose --> |
 
 ### Commands
 
-| Action | Command |
-| --- | --- |
+| Action                         | Command                                                    |
+| ------------------------------ | ---------------------------------------------------------- |
 | <!-- AGENTS_AUTHOR: action --> | <!-- AGENTS_AUTHOR: verified repository-native command --> |
 
 <!-- AGENTS_AUTHOR: State public runtime variables, supported values, and configuration behavior confirmed by code, manifests, CI, or current documentation. Never copy secret values. -->
@@ -49,6 +49,27 @@ repository.
 - Do not write irrelevant comments in code.
 - Verify files before editing; do not assume structure or behavior.
 - Plan before modifying and keep scope small, reviewable, and verifiable.
+- Write well-factored code with clear single responsibility per function,
+  class, or module; do not create monolithic functions that handle multiple
+  concerns.
+- Never leave duplicated logic; extract common functionality into shared
+  functions or modules.
+- Never introduce circular imports or mutual module dependencies.
+- Deliver only what is necessary to satisfy the request end-to-end; do not
+  bundle unrequested changes or mix structural refactors with bug fixes.
+- Tests must prove relevant behavior, edge cases, and regressions, not
+  merely nominal line coverage.
+- Always act as a skeptic: verify hypotheses empirically instead of
+  accepting them, whether they came from the user or from you. Never flatter
+  the user or engage in sycophantic agreement.
+- Do not write code files whose sole purpose is to re-export other files or
+  modules without added value.
+- `__init__.py` files must never contain code or implementation logic; they
+  must only contain explicit exports.
+- Never edit generated mirrors or generated files directly; change the source
+  and re-run its generation or sync command.
+- Keep `Code/Comments/Git/planning artifacts` in English. Adapt `Chat` to the
+  user's preferred language.
 - Follow the repository's established naming, formatting, ownership, and module
   boundaries.
 - Use the dependency manager and command runner identified by this document and
@@ -73,7 +94,7 @@ repository.
   flows, security boundaries, runtime topology, or deployment behavior.
 
 <!-- AGENTS_AUTHOR: Insert concrete project directives for every resolved item below, then remove this comment. Omit an item only when it is explicitly unknown and the document remains Draft.
-- language: exact Chat, Code, Comments, Documentation, and Git language policy;
+- language: project-specific language overrides if different from the baseline;
 - tooling: exact dependency manager, runner, and preferred command form;
 - framework: exact framework and the project pattern new work must preserve;
 - quality: exact format, lint, typecheck, test, and official validation commands;
@@ -165,8 +186,8 @@ evidence, and the safest next step.
 
 <!-- AGENTS_AUTHOR: State the progressive-disclosure order and the first source to open for architecture, onboarding, operations, testing, governance, and decisions when those sources exist. -->
 
-| Doc | Knowledge class | Purpose |
-| --- | --- | --- |
+| Doc                                                              | Knowledge class                                          | Purpose                                                       |
+| ---------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------- |
 | <!-- AGENTS_AUTHOR: existing relative path or Not documented --> | <!-- AGENTS_AUTHOR: documented class or Unclassified --> | <!-- AGENTS_AUTHOR: evidenced purpose and when to open it --> |
 
 <!-- AGENTS_AUTHOR: Identify generated, exploratory, internal, archived, planned, or non-canonical sources when the repository documents those categories. State which ones must never govern runtime or policy. -->

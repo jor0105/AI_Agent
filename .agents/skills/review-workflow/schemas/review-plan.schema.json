@@ -1,30 +1,86 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Review Plan",
-  "type": "object",
-  "required": [
-    "artifactType",
-    "schemaVersion",
-    "reviewId",
-    "status",
-    "createdAt",
-    "updatedAt",
-    "items"
-  ],
   "properties": {
-    "artifactType": { "const": "review-plan" },
-    "schemaVersion": { "type": "string" },
-    "reviewId": { "type": "string" },
-    "status": {
-      "type": "string",
-      "enum": ["draft", "ready", "in_review", "completed"]
+    "artifactType": {
+      "const": "review-plan"
     },
-    "createdAt": { "type": "string" },
-    "updatedAt": { "type": "string" },
+    "createdAt": {
+      "type": "string"
+    },
     "items": {
-      "type": "array",
       "items": {
-        "type": "object",
+        "properties": {
+          "checklists": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "contextFiles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "expansions": {
+            "items": {
+              "properties": {
+                "createdAt": {
+                  "type": "string"
+                },
+                "files": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "reason",
+                "files",
+                "createdAt"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "files": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "itemId": {
+            "type": "string"
+          },
+          "packId": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer"
+          },
+          "skills": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "in_review",
+              "completed",
+              "skipped"
+            ],
+            "type": "string"
+          },
+          "topic": {
+            "type": "string"
+          }
+        },
         "required": [
           "itemId",
           "topic",
@@ -37,33 +93,38 @@
           "contextFiles",
           "expansions"
         ],
-        "properties": {
-          "itemId": { "type": "string" },
-          "topic": { "type": "string" },
-          "priority": { "type": "integer" },
-          "packId": { "type": "string" },
-          "status": {
-            "type": "string",
-            "enum": ["pending", "in_review", "completed", "skipped"]
-          },
-          "files": { "type": "array", "items": { "type": "string" } },
-          "skills": { "type": "array", "items": { "type": "string" } },
-          "checklists": { "type": "array", "items": { "type": "string" } },
-          "contextFiles": { "type": "array", "items": { "type": "string" } },
-          "expansions": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["reason", "files", "createdAt"],
-              "properties": {
-                "reason": { "type": "string" },
-                "files": { "type": "array", "items": { "type": "string" } },
-                "createdAt": { "type": "string" }
-              }
-            }
-          }
-        }
-      }
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "reviewId": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "ready",
+        "in_review",
+        "completed"
+      ],
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
     }
-  }
+  },
+  "required": [
+    "artifactType",
+    "schemaVersion",
+    "reviewId",
+    "status",
+    "createdAt",
+    "updatedAt",
+    "items"
+  ],
+  "title": "Review Plan",
+  "type": "object"
 }

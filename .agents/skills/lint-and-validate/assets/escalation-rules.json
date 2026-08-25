@@ -1,73 +1,73 @@
 {
-  "schemaVersion": "1.0.0",
   "reviewRequired": [
     {
       "profile": "high-risk",
       "reason": "Perfil high-risk exige review obrigatorio."
     },
     {
+      "profile": "ui-flow",
+      "reason": "Fluxo UI critico pede review final."
+    },
+    {
       "profile": "security-touch",
       "reason": "Fluxo com toque de seguranca pede review final."
     },
     {
-      "pattern": "src/createagents/__init__.py",
-      "reason": "Superficie publica do pacote e contrato para consumidores."
+      "pattern": "src/shared/types/**",
+      "reason": "Tipos compartilhados sao contrato publico."
     },
     {
-      "pattern": "src/createagents/main/facade/**",
-      "reason": "Facade publica CreateAgent e contrato publico."
+      "pattern": "src/app/store/**",
+      "reason": "Store global e contrato sensivel."
     },
     {
-      "pattern": "src/createagents/domain/interfaces/**",
-      "reason": "Contratos de dominio sao API publica."
+      "pattern": "src/features/auth/**",
+      "reason": "Fluxo de auth alterado."
     },
     {
-      "pattern": "src/createagents/main/composers/**",
-      "reason": "Composition root define o wiring de todas as camadas."
-    },
-    {
-      "pattern": "pyproject.toml",
-      "reason": "Dependencias, versao e tooling do pacote publicado."
-    },
-    {
-      "pattern": ".github/workflows/**",
-      "reason": "Pipeline de CI, docs ou publicacao alterado."
+      "pattern": "src/shared/api/**",
+      "reason": "Boundary de API alterada."
     },
     {
       "pattern": ".agents/**",
       "reason": "Harness de agents alterado."
     }
   ],
+  "schemaVersion": "1.0.0",
   "securityRequired": [
     {
       "profile": "security-touch",
       "reason": "Perfil security-touch exige security-engineer."
     },
     {
-      "pattern": "src/createagents/infra/adapters/**",
-      "reason": "Adapters manipulam credenciais e chamadas a provedores externos."
+      "pattern": "src/features/auth/**",
+      "reason": "Fluxo de autenticacao alterado."
     },
     {
-      "pattern": "src/createagents/infra/config/**",
-      "reason": "Logging, sanitizacao de dados sensiveis e leitura de ambiente."
-    },
-    {
-      "pattern": ".env.example",
-      "reason": "Superficie de variaveis de ambiente alterada."
-    },
-    {
-      "pattern": "uv.lock",
-      "reason": "Cadeia de dependencias alterada; exige avaliacao de supply chain."
+      "pattern": "src/shared/api/**",
+      "reason": "Boundary de autenticacao/API compartilhada alterada."
     }
   ],
   "testerRecommended": [
     {
-      "pattern": "src/createagents/presentation/cli/**",
-      "reason": "Fluxo interativo de terminal alterado."
+      "profile": "ui-flow",
+      "reason": "Fluxo UI pede validacao com browser real."
     },
     {
-      "pattern": "src/createagents/infra/adapters/**/*stream*.py",
-      "reason": "Streaming e tool calling iterativo pedem teste dedicado."
+      "pattern": "src/**/*.tsx",
+      "reason": "Componente visual alterado."
+    },
+    {
+      "pattern": "tests/frontend/e2e/**",
+      "reason": "Suite E2E alterada."
+    },
+    {
+      "pattern": "playwright.config.ts",
+      "reason": "Configuracao de browser alterada."
+    },
+    {
+      "pattern": "playwright.simulated.config.ts",
+      "reason": "Configuracao de browser alterada."
     }
   ]
 }

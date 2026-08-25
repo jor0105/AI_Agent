@@ -1,55 +1,34 @@
 {
-  "schemaVersion": "1.0.0",
   "rules": [
     {
-      "pattern": "src/createagents/infra/config/**",
+      "pattern": "src/features/auth/**",
       "profile": "security-touch",
-      "reason": "Configuracao de logging, sanitizacao e leitura de ambiente."
+      "reason": "Fluxos de autenticacao exigem escalacao de seguranca."
     },
     {
-      "pattern": "src/createagents/infra/adapters/**",
+      "pattern": "src/shared/api/**",
       "profile": "security-touch",
-      "reason": "Adapters de provedor manipulam credenciais e chamadas externas."
+      "reason": "Cliente e contratos compartilhados de API exigem hardening."
     },
     {
-      "pattern": "src/createagents/__init__.py",
+      "pattern": "src/app/store/**",
       "profile": "high-risk",
-      "reason": "Superficie publica do pacote publicado no PyPI."
+      "reason": "Store global alterada."
     },
     {
-      "pattern": "src/createagents/main/facade/**",
+      "pattern": "src/shared/types/**",
       "profile": "high-risk",
-      "reason": "Facade publica CreateAgent alterada."
+      "reason": "Tipos compartilhados alterados."
     },
     {
-      "pattern": "src/createagents/domain/interfaces/**",
+      "pattern": "src/filters/dfp_itr/mapping/**",
       "profile": "high-risk",
-      "reason": "Contratos de dominio, incluindo BaseTool, sao API publica."
+      "reason": "Contrato de mapping DFP/ITR alterado."
     },
     {
-      "pattern": "src/createagents/main/composers/**",
+      "pattern": "openspec/changes/**",
       "profile": "high-risk",
-      "reason": "Composition root; wiring de todas as camadas."
-    },
-    {
-      "pattern": "pyproject.toml",
-      "profile": "high-risk",
-      "reason": "Dependencias, versao e configuracao de tooling alteradas."
-    },
-    {
-      "pattern": "uv.lock",
-      "profile": "high-risk",
-      "reason": "Lockfile de dependencias alterado."
-    },
-    {
-      "pattern": ".pre-commit-config.yaml",
-      "profile": "high-risk",
-      "reason": "Gates de qualidade alterados."
-    },
-    {
-      "pattern": ".github/workflows/**",
-      "profile": "high-risk",
-      "reason": "Pipeline de CI, docs ou publicacao alterado."
+      "reason": "Contrato OpenSpec ativo alterado."
     },
     {
       "pattern": "src/**/*.py",
@@ -62,14 +41,33 @@
       "reason": "Testes Python alterados."
     },
     {
+      "pattern": "scripts/**/*.py",
+      "profile": "standard",
+      "reason": "Script operacional Python alterado."
+    },
+    {
+      "pattern": "tests/frontend/e2e/**",
+      "profile": "ui-flow",
+      "reason": "Fluxo E2E alterado."
+    },
+    {
+      "pattern": "playwright.config.ts",
+      "profile": "ui-flow",
+      "reason": "Configuracao Playwright alterada."
+    },
+    {
+      "pattern": "playwright.simulated.config.ts",
+      "profile": "ui-flow",
+      "reason": "Configuracao Playwright simulada alterada."
+    },
+    {
+      "pattern": "src/**/*.tsx",
+      "reason": "UI visivel alterada; teste dedicado pode ser util."
+    },
+    {
       "pattern": ".agents/**",
       "profile": "high-risk",
       "reason": "Infra de agents alterada."
-    },
-    {
-      "pattern": ".claude/agents/**",
-      "profile": "high-risk",
-      "reason": "Espelho local de agents alterado."
     },
     {
       "pattern": ".github/agents/**",
@@ -92,11 +90,6 @@
       "reason": "Scripts oficiais de validacao alterados."
     },
     {
-      "pattern": "mkdocs.yml",
-      "profile": "quick",
-      "reason": "Configuracao do site de documentacao alterada."
-    },
-    {
       "pattern": "docs/**",
       "profile": "quick",
       "reason": "Mudanca documental."
@@ -106,5 +99,6 @@
       "profile": "quick",
       "reason": "Mudanca documental."
     }
-  ]
+  ],
+  "schemaVersion": "1.0.0"
 }

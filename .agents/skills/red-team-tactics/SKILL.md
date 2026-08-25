@@ -1,13 +1,14 @@
 ---
 name: red-team-tactics
-description: >
-  Use para validação controlada e não destrutiva de exploitabilidade em finding
-  HIGH/CRITICAL já suspeito ou confirmado. Ative com "dá para explorar isso?",
-  "esse bug é grave mesmo?", "como provo sem quebrar nada?", "tem bypass?",
-  "qual payload seguro demonstra?", "modela a cadeia de ataque" ou "confirma
-  esse IDOR/SSRF sem vazar dado". Não use para scan inicial, correção genérica de
-  segurança, payload destrutivo, exfiltração, abuso de credenciais reais ou
-  ambiente sem autorização; prefira `vulnerability-scanner` para triagem ampla.
+description: >-
+  Use para validação controlada e não destrutiva de explorabilidade em achados
+  suspeitos ou confirmados de severidade HIGH/CRITICAL. Ative com "dá para
+  explorar isso?", "esse bug é grave mesmo?", "como provo sem quebrar nada?",
+  "tem bypass?", "qual payload seguro demonstra?", "modela a cadeia de ataque"
+  ou "confirma esse IDOR/SSRF sem vazar dado". Não use para varreduras iniciais,
+  correções genéricas, payloads destrutivos, exfiltração, abuso de credenciais
+  reais ou ambientes não autorizados; prefira `vulnerability-scanner` para
+  triagem ampla.
 ---
 
 # Red Team Tactics
@@ -30,17 +31,20 @@ por prova isolada, teste negativo, fixture, mock ou raciocinio de reachability.
 ## Procedimento
 
 1. Confirme escopo e precondicoes.
+
    - Nomeie ator, ativo protegido, entrada controlada, ambiente autorizado e
      limite operacional.
    - Se nao houver ambiente seguro ou permissao clara, nao rode payload; produza
      apenas modelo de cadeia e mitigacao.
 
 2. Modele a cadeia antes de qualquer prova.
+
    - Conecte precondicao -> acao -> fronteira cruzada -> controle ausente ->
      impacto.
    - Declare onde a cadeia quebra se um controle ja existir.
 
 3. Escolha uma prova segura.
+
    - Prefira payload marcador, request minimo, fixture local, teste A/B,
      dry-run, exploit string inertizada ou pseudopayload.
    - Para auth/IDOR, use dois principals de teste e recurso sem dado real.
@@ -48,6 +52,7 @@ por prova isolada, teste negativo, fixture, mock ou raciocinio de reachability.
      local ou mock controlado, sem acesso a rede interna ou segredo real.
 
 4. Classifique explorabilidade.
+
    - `confirmed`: prova segura demonstra o bypass no limite correto.
    - `plausible`: codigo mostra reachability e controle ausente, mas ambiente
      impede execucao segura.
@@ -55,6 +60,7 @@ por prova isolada, teste negativo, fixture, mock ou raciocinio de reachability.
    - `unknown`: falta evidencia essencial sem ampliar escopo.
 
 5. Converta a cadeia em guardrail.
+
    - Aponte o controle que bloqueia a etapa exploravel: middleware, policy,
      predicate, sanitizer, allow-list, parser, rate limit, assinatura, schema,
      isolamento de storage ou teste negativo.
@@ -110,6 +116,7 @@ tenant A/B ou leitura de policy/predicate que prove ou descarte a cadeia.
 ## Evals de trigger
 
 Deve acionar:
+
 - "valida explorabilidade desse HIGH"
 - "modela cadeia de ataque sem exfiltrar"
 - "qual payload seguro prova esse SSRF?"
@@ -117,6 +124,7 @@ Deve acionar:
 - "tem como confirmar esse IDOR com fixture local?"
 
 Não deve acionar:
+
 - "scan inicial de segurança"
 - "corrige copy da landing"
 - "gera uma política RLS nova do zero"

@@ -7,7 +7,7 @@ troque para `PHASE_2.md`.
 ## Abrir junto nesta etapa
 
 - `references/PLAN_TEMPLATE.md` ao preencher ou atualizar `modularizar_<target-basename>.md`
-- `.agents/skills/modularizar/scripts/modularizar_guard.sh` ao inicializar e validar o plano
+- `skills/modularizar/scripts/modularizar_guard.sh` ao inicializar e validar o plano
 
 ## Objetivo da etapa
 
@@ -15,44 +15,62 @@ troque para `PHASE_2.md`.
 2. Congelar riscos, migrações e promoções de símbolos no Gate 1.
 3. Executar apenas o saneamento profundo aprovado.
 4. Encerrar a etapa com o log da Fase 1B preenchido no mesmo plano.
+5. Decidir, com evidência pós-execução, se a modularização estrutural da Fase 2 ainda é necessária.
 
 ## Sequência operacional
 
-1. Inicialize ou atualize `modularizar_<target-basename>.md` com:
-   - `bash .agents/skills/modularizar/scripts/modularizar_guard.sh init-plan --target <file-or-module> --task <task-name> --author developer-engineer`
-2. Reescreva imediatamente cabeçalho, título e campos derivados do template. O guard falha se placeholders como `<target-basename>` ou `<file-or-module>` permanecerem.
-3. Preencha `## 3. Contract and Migration Baseline`.
-4. Preencha todas as subseções de `## 4. Phase 1A - Deep Remediation Proposal`.
-5. Registre cada categoria do inventário, mesmo sem achado material:
-   - duplicatas internas
-   - reaproveitamento de utilitário compartilhado ou justificativa para não reaproveitar
-   - otimização de complexidade e Big-O
-   - limpeza de comentários
-   - naming e visibilidade
-   - migrações de callers e contrato
-6. Nesta etapa, não preencha `## 6. Phase 2A - Modularization Proposal` nem `## 7. Phase 2B - Modularization Execution Log`. Essas seções continuam intocadas até `GATE_1_APPROVED: YES` e `PHASE_1_EXECUTED: YES`.
-7. Quando não houver achado material, use os sentinelas oficiais do `PLAN_TEMPLATE.md`:
-   - `Finding status: no-finding`
-   - `Files affected: none`
-   - `Contract/import/export impact: none`
-   - `Risk: none material`
-   - `Rollback: not applicable`
-8. Para Python, registre explicitamente em `P1-NAME` todo símbolo privado com prefixo `_` que precise virar público por já representar superfície real de uso.
-9. Peça aprovação explícita do usuário para o Gate 1 e pare antes de editar código.
+01. Inicialize ou atualize `modularizar_<target-basename>.md` com:
+    - `bash skills/modularizar/scripts/modularizar_guard.sh init-plan --target <file-or-module> --task <task-name> --author developer-engineer`
+02. Reescreva imediatamente cabeçalho, título e campos derivados do template. O guard falha se placeholders como `<target-basename>` ou `<file-or-module>` permanecerem.
+03. Preencha `## 3. Contract and Migration Baseline`.
+04. Preencha todas as subseções de `## 4. Phase 1A - Deep Remediation Proposal`.
+05. Registre cada categoria do inventário, mesmo sem achado material:
+    - duplicatas internas
+    - reaproveitamento de utilitário compartilhado ou justificativa para não reaproveitar
+    - otimização de complexidade e Big-O
+    - limpeza de comentários
+    - naming e visibilidade
+    - migrações de callers e contrato
+06. Nesta etapa, não preencha `## 6. Phase 2A - Modularization Proposal` nem `## 7. Phase 2B - Modularization Execution Log`. Essas seções continuam intocadas até `GATE_1_APPROVED: YES` e `PHASE_1_EXECUTED: YES`.
+07. Quando não houver achado material, use os sentinelas oficiais do `PLAN_TEMPLATE.md`:
+    - `Finding status: no-finding`
+    - `Files affected: none`
+    - `Contract/import/export impact: none`
+    - `Risk: none material`
+    - `Rollback: not applicable`
+08. Para Python, registre explicitamente em `P1-NAME` todo símbolo privado com prefixo `_` que precise virar público por já representar superfície real de uso.
+09. Peça aprovação explícita do usuário para o Gate 1 e pare antes de editar código.
 10. Após a aprovação, valide com:
-   - `bash .agents/skills/modularizar/scripts/modularizar_guard.sh validate-plan --phase phase1 --target <file-or-module>`
+
+- `bash skills/modularizar/scripts/modularizar_guard.sh validate-plan --phase phase1 --target <file-or-module>`
+
 11. Execute apenas o saneamento profundo aprovado na Fase 1B:
-   - remover duplicação interna
-   - trocar duplicação por utilitário compartilhado existente quando fizer sentido
-   - criar novo utilitário compartilhado só com justificativa e consumidores previstos
-   - aplicar otimizações materiais de complexidade
-   - limpar comentários ruins ou obsoletos
-   - corrigir naming e visibilidade
-   - promover símbolos Python privados aprovados
-   - migrar callers/imports/exports necessários para concluir a limpeza
+
+- remover duplicação interna
+- trocar duplicação por utilitário compartilhado existente quando fizer sentido
+- criar novo utilitário compartilhado só com justificativa e consumidores previstos
+- aplicar otimizações materiais de complexidade
+- limpar comentários ruins ou obsoletos
+- corrigir naming e visibilidade
+- promover símbolos Python privados aprovados
+- migrar callers/imports/exports necessários para concluir a limpeza
+
 12. Atualize `## 5. Phase 1B - Deep Remediation Execution Log` no mesmo plano com arquivos alterados, callers migrados, símbolos promovidos e evidência de validação.
-13. Só depois de `GATE_1_APPROVED: YES` e `PHASE_1_EXECUTED: YES`, e com nova aprovação explícita do usuário para continuar, troque para `PHASE_2.md` e comece a preencher `## 6`.
-14. Se o escopo crescer materialmente durante a execução, revise o plano e peça nova aprovação antes de seguir.
+13. Depois de preencher o log da Fase 1, complete `### 5.1 Phase 2 necessity assessment`:
+
+- classifique `Residual condition` como `none`, `size`, `complexity` ou `both`;
+- marque `Structural separation needed` como `YES` ou `NO`;
+- marque `PHASE_2_NEEDED: YES` somente se o alvo ainda tiver tamanho ou complexidade material e existir uma necessidade estrutural concreta de separar responsabilidades;
+- registre a evidência remanescente, o problema estrutural e o benefício esperado da extração;
+- marque `PHASE_2_NEEDED: NO` quando a Fase 1 tiver resolvido o problema, o alvo estiver coeso ou a extração apenas redistribuir código mecanicamente.
+
+14. Se `PHASE_2_NEEDED: NO`, use `Structural separation needed: NO`, registre a justificativa, não preencha `## 6` nem `## 7`, e valide o encerramento com:
+
+- `bash skills/modularizar/scripts/modularizar_guard.sh validate-plan --phase phase1-complete --target <file-or-module>`
+  Depois disso, não peça o Gate 2 nem gere o report da Fase 2.
+
+15. Só depois de `GATE_1_APPROVED: YES`, `PHASE_1_EXECUTED: YES`, `PHASE_2_NEEDED: YES` e nova aprovação explícita do usuário para continuar, troque para `PHASE_2.md` e comece a preencher `## 6`.
+16. Se o escopo crescer materialmente durante a execução, revise o plano e peça nova aprovação antes de seguir.
 
 ## Armadilhas que devem parar a etapa
 
@@ -60,6 +78,9 @@ troque para `PHASE_2.md`.
 - Alguma categoria do inventário ficou implícita ou sem bloco próprio.
 - O plano ainda contém placeholders do template.
 - A execução começou antes do `validate-plan --phase phase1`.
+- A avaliação de necessidade da Fase 2 está ausente ou não explica o estado `YES|NO`.
+- `PHASE_2_NEEDED`, `Residual condition` e `Structural separation needed` estão inconsistentes.
+- A Fase 2 foi iniciada com `PHASE_2_NEEDED: NO` ou sem evidência estrutural remanescente.
 - A proposta já está tentando detalhar extração estrutural da Fase 2 em vez de fechar a limpeza.
 - `## 6` ou `## 7` recebeu conteúdo novo antes de a Fase 1 terminar e o usuário aprovar a entrada na Fase 2.
 

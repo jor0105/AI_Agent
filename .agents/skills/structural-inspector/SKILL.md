@@ -1,17 +1,16 @@
 ---
 name: structural-inspector
-description: >
+description: >-
   Use para inspecionar arquivos, datasets ou formatos desconhecidos sem carregar
-  tudo em memória. Ative com "que arquivo é esse?", "qual encoding?", "qual
+  tudo na memória. Ative com "que arquivo é esse?", "qual encoding?", "qual
   delimitador?", "descobre o schema", "CSV/JSONL/Parquet estranho?", "tem BOM?",
-  "CRLF ou LF?", "por que esse parser falha?" ou quando a estrutura ainda não é
-  confiável. Cobre byte sniffing, amostragem, schema e formato. Não use para
-  otimizar query Polars já conhecida, modelar banco ou validar regra de negócio.
+  "CRLF ou LF?" ou "por que esse parser falha?", ou quando a estrutura ainda não
+  for confiável. Cobre byte sniffing, amostragem, schema e identificação de
+  formato. Não use para otimizar queries Polars conhecidas, modelar bancos de
+  dados ou validar regras de negócio.
 ---
 
 # Structural Inspector
-
-
 
 ## O Princípio do Zero Memory Overhead
 
@@ -33,7 +32,7 @@ head -n 1000 dataset.csv | grep -U $'\r$' | wc -l
 head -n 50 dataset.csv > sample_dataset.csv
 ```
 
----
+______________________________________________________________________
 
 ## Inspeção de Dados Estruturados
 
@@ -71,7 +70,7 @@ head -n 50 dataset.csv > sample_dataset.csv
   print(schema)
   ```
 
----
+______________________________________________________________________
 
 ## Detecção de Oportunidades de Otimização (Recon)
 
@@ -83,7 +82,7 @@ head -n 50 dataset.csv > sample_dataset.csv
    grep -o '\\\\"' data.jsonl | head -n 1
    ```
 
----
+______________________________________________________________________
 
 ## Checklist de Decisão de Reconhecimento
 
@@ -92,7 +91,6 @@ head -n 50 dataset.csv > sample_dataset.csv
 - [ ] Em CSV, a contagem de colunas por linha é absolutamente idêntica na amostra?
 - [ ] Foram encontradas strings duplamente escapadas ou JSON aninhado em strings?
 - [ ] Em datasets >1GB, a inspeção inicial usou stream (`head`, `awk`) em vez de carregar tudo?
-
 
 ## Procedimento
 
@@ -108,19 +106,28 @@ head -n 50 dataset.csv > sample_dataset.csv
 ## Exemplos
 
 ### Caso positivo
+
 **Entrada:** Usuário entrega arquivo/dataset desconhecido, grande ou suspeito de encoding/formato.
 **Saída esperada:** Fazer byte-sniffing, amostragem streaming e identificar schema/otimização sem carregar tudo em memória.
 
 ### Caso negativo
+
 **Entrada:** Usuário pede interpretar regra de negócio no código.
 **Por quê não:** Não é inspeção estrutural de arquivo/dados.
 
 ## Evals de trigger
 
 Deve acionar:
+
 - "identifica encoding e schema desse CSV enorme"
 - "inspeciona parquet sem carregar tudo"
+- "esse JSONL tem BOM ou quebra de linha CRLF?"
+- "por que o parser falhou ao ler esse arquivo binário?"
+- "descobre o delimitador e encoding desse arquivo"
 
 Não deve acionar:
+
 - "interpreta regra de negócio"
 - "redesenha UI"
+- "otimiza query lenta no Postgres"
+- "escreve teste unitário para o parser"

@@ -1,13 +1,13 @@
 ---
-name: "OPSX: Explore"
-description: "Enter explore mode - think through ideas, investigate problems, clarify requirements"
+name: 'OPSX: Explore'
+description: Enter explore mode - think through ideas, investigate problems, clarify requirements
 category: Workflow
-tags: [workflow, explore, experimental, thinking]
+tags: [workflow, openspec, explore, thinking]
 ---
 
 Enter explore mode. Think deeply. Visualize freely. Follow the conversation wherever it goes.
 
-**IMPORTANT: Explore mode is for thinking, not implementing.** You may read files, search code, and investigate the codebase, but you must NEVER write code or implement features. If the user asks you to implement something, remind them to exit explore mode first (e.g., start a change with `/opsx:new` or `/opsx:ff`). You MAY create OpenSpec artifacts (proposals, designs, specs) if the user asks—that's capturing thinking, not implementing.
+**IMPORTANT: Explore mode is read-only.** You may read files, search code, and investigate the codebase, but you must NEVER write code or OpenSpec artifacts. If the user wants to persist an artifact, route them to `/opsx:continue` for one artifact or `/opsx:ff` for an apply-ready bundle.
 
 **This is a stance, not a workflow.** There are no fixed steps, no required sequence, no mandatory outputs. You're a thinking partner helping the user explore.
 
@@ -23,7 +23,7 @@ Enter explore mode. Think deeply. Visualize freely. Follow the conversation wher
 
 **Schema note**: When a referenced change exists, inspect its real artifacts and status instead of assuming a default artifact sequence.
 
----
+______________________________________________________________________
 
 ## The Stance
 
@@ -34,7 +34,7 @@ Enter explore mode. Think deeply. Visualize freely. Follow the conversation wher
 - **Patient** - Don't rush to conclusions, let the shape of the problem emerge
 - **Grounded** - Explore the actual codebase when relevant, don't just theorize
 
----
+______________________________________________________________________
 
 ## What You Might Do
 
@@ -86,7 +86,7 @@ Depending on what the user brings, you might:
 - Find gaps in understanding
 - Suggest spikes or investigations
 
----
+______________________________________________________________________
 
 ## OpenSpec Awareness
 
@@ -97,7 +97,7 @@ You have full context of the OpenSpec system. Use it naturally, don't force it.
 At the start, quickly check what exists:
 
 ```bash
-openspec list --json
+opsx list --json
 ```
 
 This tells you:
@@ -121,12 +121,14 @@ Think freely. When insights crystallize, you might offer:
 If the user mentions a change or you detect one is relevant:
 
 1. **Read existing artifacts for context**
+
    - `openspec/changes/<name>/proposal.md`
    - `openspec/changes/<name>/design.md`
    - `openspec/changes/<name>/tasks.md`
    - etc.
 
 2. **Reference them naturally in conversation**
+
    - "Your design mentions using Redis, but we just realized SQLite fits better..."
    - "The proposal scopes this to premium users, but we're now thinking everyone..."
 
@@ -142,13 +144,14 @@ If the user mentions a change or you detect one is relevant:
    | Assumption invalidated     | Relevant artifact            |
 
    Example offers:
+
    - "That's a design decision. Capture it in design.md?"
    - "This is a new requirement. Add it to specs?"
    - "This changes scope. Update the proposal?"
 
 4. **The user decides** - Offer and move on. Don't pressure. Don't auto-capture.
 
----
+______________________________________________________________________
 
 ## What You Don't Have To Do
 
@@ -159,24 +162,24 @@ If the user mentions a change or you detect one is relevant:
 - Stay on topic if a tangent is valuable
 - Be brief (this is thinking time)
 
----
+______________________________________________________________________
 
 ## Ending Discovery
 
 There's no required ending. Discovery might:
 
 - **Flow into action**: "Ready to start? `/opsx:new` or `/opsx:ff`"
-- **Result in artifact updates**: "Updated design.md with these decisions"
+- **Flow into artifact authorship**: route the decision to `/opsx:continue`
 - **Just provide clarity**: User has what they need, moves on
 - **Continue later**: "We can pick this up anytime"
 
 When things crystallize, you might offer a summary - but it's optional. Sometimes the thinking IS the value.
 
----
+______________________________________________________________________
 
 ## Guardrails
 
-- **Don't implement** - Never write code or implement features. Creating OpenSpec artifacts is fine, writing application code is not.
+- **Read-only** - Never write code or OpenSpec artifacts in explore mode.
 - **Don't fake understanding** - If something is unclear, dig deeper
 - **Don't rush** - Discovery is thinking time, not task time
 - **Don't force structure** - Let patterns emerge naturally

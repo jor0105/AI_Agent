@@ -23,15 +23,15 @@ Capture pelo menos estes blocos:
 
 Escolha os atributos que realmente decidem o caso. Nem todo cenário precisa de todos.
 
-| Atributo | Perguntas úteis |
-|---|---|
-| Latência | A resposta precisa ser imediata? O usuário espera feedback síncrono? |
-| Consistência | Pode haver leitura defasada ou conflito eventual? |
-| Isolamento de falha | Quando uma parte quebra, o resto do sistema pode continuar? |
-| Operabilidade | Quem observa, sobe, debuga e reconcilia essa solução? |
-| Facilidade de mudança | O sistema muda toda semana ou é mais estável? |
-| Segurança/compliance | A decisão mexe em segredo, auditoria, permissão ou trilha regulatória? |
-| Custo | A solução adiciona infraestrutura, licenças ou dependência organizacional? |
+| Atributo              | Perguntas úteis                                                            |
+| --------------------- | -------------------------------------------------------------------------- |
+| Latência              | A resposta precisa ser imediata? O usuário espera feedback síncrono?       |
+| Consistência          | Pode haver leitura defasada ou conflito eventual?                          |
+| Isolamento de falha   | Quando uma parte quebra, o resto do sistema pode continuar?                |
+| Operabilidade         | Quem observa, sobe, debuga e reconcilia essa solução?                      |
+| Facilidade de mudança | O sistema muda toda semana ou é mais estável?                              |
+| Segurança/compliance  | A decisão mexe em segredo, auditoria, permissão ou trilha regulatória?     |
+| Custo                 | A solução adiciona infraestrutura, licenças ou dependência organizacional? |
 
 ## Perguntas por sintoma
 

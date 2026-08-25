@@ -183,7 +183,7 @@ ______________________________________________________________________
 - Use `uv tree` ou `pip list` para listar dependências instaladas.
 - Consulte os logs de erro completos para identificar problemas específicos.
 
-Se persistir, consulte a [FAQ](faq-user.md) ou abra uma issue no [GitHub](https://github.com/jor0105/Create-Agents-AI/issues).
+Se persistir, consulte a [FAQ](faq-user.md) ou abra uma issue no [GitHub](https://github.com/jordanestralioto/Create-Agents-AI/issues).
 
 ______________________________________________________________________
 
@@ -194,7 +194,7 @@ Se você deseja **contribuir** com o projeto ou precisa da versão de desenvolvi
 ### 1. Clonar o Repositório
 
 ```bash
-git clone https://github.com/jor0105/Create-Agents-AI.git
+git clone https://github.com/jordanestralioto/Create-Agents-AI.git
 cd Create-Agents-AI
 ```
 

@@ -1,13 +1,13 @@
 ---
 name: architecture
-description: >
+description: >-
   Use para decisões estruturais de software com trade-offs reais. Ative quando o
   usuário perguntar "isso fica onde?", "separo em módulos?", "crio outro
   serviço?", "vale usar fila?", "monólito ou serviço?", "isso está acoplado
   demais?", "preciso de ADR" ou "como organizo essa responsabilidade?". Cobre
   fronteiras, ownership, consistência, deploy, operabilidade e custo de mudança.
-  Não use para bug isolado, refactor local já delimitado, escolha de índice,
-  layout visual ou plano simples sem decisão arquitetural.
+  Não use para bugs isolados, refatorações locais delimitadas, escolha de
+  índices, layout visual ou planos simples sem decisão arquitetural.
 ---
 
 # Architecture
@@ -37,20 +37,22 @@ depois da escolha. Se a resposta não diz o que piora, ela está incompleta.
 
 Leia apenas os arquivos relevantes para a decisão em mãos:
 
-| Problema | Arquivo |
-|---|---|
-| Descobrir contexto, constraints e atributos de qualidade | `references/context-discovery.md` |
-| Escolher padrões e fronteiras por sintomas e trade-offs | `references/pattern-selection.md` |
+| Problema                                                      | Arquivo                            |
+| ------------------------------------------------------------- | ---------------------------------- |
+| Descobrir contexto, constraints e atributos de qualidade      | `references/context-discovery.md`  |
+| Escolher padrões e fronteiras por sintomas e trade-offs       | `references/pattern-selection.md`  |
 | Consultar padrões comuns, custos operacionais e disqualifiers | `references/patterns-reference.md` |
-| Estruturar comparação, decisão, mitigação e ADR | `references/trade-off-analysis.md` |
-| Ver o contrato esperado da resposta final | `references/output-contract.md` |
-| Validar manualmente a consistência da skill | `references/workflow-evals.md` |
-| Ver exemplos concretos de decisões parecidas | `references/examples.md` |
+| Estruturar comparação, decisão, mitigação e ADR               | `references/trade-off-analysis.md` |
+| Ver o contrato esperado da resposta final                     | `references/output-contract.md`    |
+| Validar manualmente a consistência da skill                   | `references/workflow-evals.md`     |
+| Ver exemplos concretos de decisões parecidas                  | `references/examples.md`           |
 
-Se a dúvida for organização local de um arquivo ou módulo que cresceu demais,
-use `modularizar`. Se for idioma Python — typing, async, tradução de exceção —
-use `python-patterns`. Se a direção ainda não foi escolhida, use
-`brainstorming`.
+Se o problema tocar HTTP, handlers, authz, status codes ou contratos de API, use
+`api-patterns`. Se tocar schema, tipos de dados, constraints, migrations, indices,
+consistencia ou ownership, use `database-design`. Se virar RLS, grants, pooling,
+service role ou particularidades de Supabase/Postgres, use
+`supabase`. Se a dúvida for organização local de componente,
+hook ou módulo, use `modularizar` ou `frontend-design`.
 
 ## Procedimento
 
@@ -164,16 +166,16 @@ principal; incluir revisit trigger e ADR curto se a decisão for duradoura.
 
 ### Caso positivo — fronteira de responsabilidade
 
-**Entrada:** "Essa lógica de retry fica no adapter do provedor ou no use case?"
-**Saída esperada:** avaliar source of truth, quem é dono da política, custo de
-duplicação entre provedores e impacto no contrato público; recomendar a camada
-que mantém a invariante e o que fica como detalhe do adapter.
+**Entrada:** "Essa regra de cálculo de risco fica no frontend ou no backend?"
+**Saída esperada:** avaliar source of truth, sensibilidade da regra, necessidade
+de consistência, custo de duplicação e impacto em UX; recomendar backend para a
+invariante central e frontend apenas para projeção ou visualização se fizer sentido.
 
 ### Caso negativo
 
-**Entrada:** "Como eu quebro esse `file_utils.py` de 686 linhas?"
-**Por quê não:** decisão local de organização, com fronteira já definida.
-Direcione para `modularizar`.
+**Entrada:** "Onde coloco esse hook do React no meu repositório?"
+**Por quê não:** decisão local de organização e implementação. Direcione para
+`modularizar`, `frontend-design` ou `react-performance`.
 
 ## Evals de trigger
 
@@ -190,10 +192,12 @@ Direcione para `modularizar`.
 
 **Não deve acionar:**
 
-- "Qual `TypedDict` eu uso aqui?" (Problema de linguagem, use `python-patterns`)
-- "Quebra esse arquivo gigante em módulos." (Organização local, use `modularizar`)
-- "Esse teste é tautológico?" (Desenho de teste, use `testing-patterns`)
-- "O import quebra só no CI." (Causa raiz incerta, use `systematic-debugging`)
+- "Qual função do pandas eu uso para isso?" (Problema de linguagem/biblioteca)
+- "Como eu otimizo essa query SQL?" (Problema de banco de dados, use `database-design`)
+- "Minha policy RLS no Supabase esta lenta e preciso revisar grants." (Problema especifico de engine, use `supabase`)
+- "Onde coloco o middleware no Express?" (Problema de API/framework, use `api-patterns`)
+- "Esse componente React re-renderiza demais." (Problema de frontend/performance)
+- "Escreve um hook para consumir esse endpoint." (Implementação local, não arquitetura)
 
 ## Assets
 

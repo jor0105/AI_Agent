@@ -4,61 +4,85 @@
 from __future__ import annotations
 
 import json
+import sys
 from copy import deepcopy
 from datetime import UTC, datetime
 from pathlib import Path
 from string import Template
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from harness.paths import repo_root
+from harness.selection import load_review_owner
+
 CURRENT_SCHEMA_VERSION = '1.0.0'
-REPO_ROOT = Path(__file__).resolve().parents[3]
-AGENTS_ROOT = REPO_ROOT / '.agents'
-SESSIONS_ROOT = AGENTS_ROOT / 'sessions'
+HARNESS_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = repo_root()
+AGENTS_ROOT = HARNESS_ROOT
+SESSIONS_ROOT = REPO_ROOT / '.agents' / 'sessions'
 REVIEW_RUNTIME_ROOT = AGENTS_ROOT / 'runtime' / 'review'
 SKILLS_ROOT = AGENTS_ROOT / 'skills'
-REVIEW_WORKFLOW_ROOT = SKILLS_ROOT / 'review-workflow'
 LINT_AND_VALIDATE_ROOT = SKILLS_ROOT / 'lint-and-validate'
+REVIEW_OWNER_PATH = AGENTS_ROOT / 'harness' / 'review-owner.json'
+REVIEW_OWNER = load_review_owner(REVIEW_OWNER_PATH)
+REVIEW_OWNER_ROOT = (
+    SKILLS_ROOT / REVIEW_OWNER.split('/', 1)[1]
+    if REVIEW_OWNER is not None
+    else None
+)
+PACK_REGISTRY_PATH = REVIEW_RUNTIME_ROOT / 'pack-registry.json'
 
 TEMPLATE_PATHS = {
-    'review-session.template.md': REVIEW_WORKFLOW_ROOT
-    / 'templates'
-    / 'review-session.template.md',
-    'review-plan.template.md': REVIEW_WORKFLOW_ROOT
-    / 'templates'
-    / 'review-plan.template.md',
-    'finding.template.md': REVIEW_WORKFLOW_ROOT
-    / 'templates'
-    / 'finding.template.md',
-    'security-handoff.template.md': REVIEW_WORKFLOW_ROOT
-    / 'templates'
-    / 'security-handoff.template.md',
-    'verdict.template.md': REVIEW_WORKFLOW_ROOT
-    / 'templates'
-    / 'verdict.template.md',
-    'review-summary.template.md': REVIEW_WORKFLOW_ROOT
-    / 'templates'
-    / 'review-summary.template.md',
     'gate-report.template.md': LINT_AND_VALIDATE_ROOT
     / 'templates'
     / 'gate-report.template.md',
 }
 
 ARTIFACT_SCHEMA_PATHS = {
-    'review-session': REVIEW_WORKFLOW_ROOT
-    / 'schemas'
-    / 'review-session.schema.json',
-    'review-plan': REVIEW_WORKFLOW_ROOT
-    / 'schemas'
-    / 'review-plan.schema.json',
-    'finding': REVIEW_WORKFLOW_ROOT / 'schemas' / 'finding.schema.json',
-    'security-handoff': REVIEW_WORKFLOW_ROOT
-    / 'schemas'
-    / 'security-handoff.schema.json',
-    'verdict': REVIEW_WORKFLOW_ROOT / 'schemas' / 'verdict.schema.json',
     'gate-report': LINT_AND_VALIDATE_ROOT
     / 'schemas'
     / 'gate-report.schema.json',
 }
+
+if REVIEW_OWNER_ROOT is not None:
+    TEMPLATE_PATHS.update(
+        {
+            'review-session.template.md': REVIEW_OWNER_ROOT
+            / 'templates'
+            / 'review-session.template.md',
+            'review-plan.template.md': REVIEW_OWNER_ROOT
+            / 'templates'
+            / 'review-plan.template.md',
+            'finding.template.md': REVIEW_OWNER_ROOT
+            / 'templates'
+            / 'finding.template.md',
+            'security-handoff.template.md': REVIEW_OWNER_ROOT
+            / 'templates'
+            / 'security-handoff.template.md',
+            'verdict.template.md': REVIEW_OWNER_ROOT
+            / 'templates'
+            / 'verdict.template.md',
+            'review-summary.template.md': REVIEW_OWNER_ROOT
+            / 'templates'
+            / 'review-summary.template.md',
+        }
+    )
+    ARTIFACT_SCHEMA_PATHS.update(
+        {
+            'review-session': REVIEW_OWNER_ROOT
+            / 'schemas'
+            / 'review-session.schema.json',
+            'review-plan': REVIEW_OWNER_ROOT
+            / 'schemas'
+            / 'review-plan.schema.json',
+            'finding': REVIEW_OWNER_ROOT / 'schemas' / 'finding.schema.json',
+            'security-handoff': REVIEW_OWNER_ROOT
+            / 'schemas'
+            / 'security-handoff.schema.json',
+            'verdict': REVIEW_OWNER_ROOT / 'schemas' / 'verdict.schema.json',
+        }
+    )
 
 SESSION_STATUSES = {
     'initialized',
@@ -92,8 +116,10 @@ SECURITY_HANDOFF_STATUSES = {
 }
 NON_TERMINAL_SECURITY_STATUSES = {'pending', 'in_review'}
 
-PACK_REGISTRY = json.loads(
-    (REVIEW_RUNTIME_ROOT / 'pack-registry.json').read_text(encoding='utf-8')
+PACK_REGISTRY = (
+    json.loads(PACK_REGISTRY_PATH.read_text(encoding='utf-8'))
+    if REVIEW_OWNER is not None
+    else {}
 )
 
 
@@ -107,9 +133,13 @@ def now_iso() -> str:
 
 def normalize_repo_path(value: str) -> str:
     path = Path(value)
-    if path.is_absolute():
-        path = path.resolve().relative_to(REPO_ROOT)
-    return path.as_posix()
+    candidate = path if path.is_absolute() else REPO_ROOT / path
+    try:
+        return candidate.resolve().relative_to(REPO_ROOT.resolve()).as_posix()
+    except ValueError as exc:
+        raise ArtifactError(
+            f'repository path must stay inside the repository: {value!r}'
+        ) from exc
 
 
 def normalize_paths(values: list[str]) -> list[str]:
@@ -190,8 +220,8 @@ def view_filename(artifact_type: str, artifact_id: str | None = None) -> Path:
 
 def load_json(path: Path) -> dict[str, Any]:
     with path.open('r', encoding='utf-8') as handle:
-        result = json.load(handle)
-        return result if isinstance(result, dict) else {}
+        payload: dict[str, Any] = json.load(handle)
+    return payload
 
 
 def dump_json(path: Path, payload: dict[str, Any]) -> None:
@@ -705,6 +735,8 @@ def build_default_verdict(review_id: str) -> dict[str, Any]:
 
 
 def detect_packs(changed_files: list[str], security_touch: str) -> list[str]:
+    if not PACK_REGISTRY:
+        return []
     matched = set()
     for file_path in changed_files:
         lower = file_path.lower()

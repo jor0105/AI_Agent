@@ -1,6 +1,6 @@
 # AGENTS.md
 
-> Owner: Jordan Estralioto (@jor0105)
+> Owner: Jordan Estralioto (@jordanestralioto)
 > Last reviewed: 2026-08-10
 > Status: Confirmed
 > Knowledge class: Agent policy
@@ -55,25 +55,24 @@ here.
 | ----------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | Manifest, dependencies, tool config | `pyproject.toml`          | the authority on stack, versions and lint/type settings                                                                    |
 | Lockfile                            | `uv.lock`                 | owned by `uv`; never hand-edited                                                                                           |
-| Quality gates                       | `.pre-commit-config.yaml` | the 37 hooks: 34 on `pre-commit` and 2 on `pre-push` (both run by `ai:verify`), plus `validate-commit-msg` on `commit-msg` |
+| Quality gates                       | `.pre-commit-config.yaml` | the 42 hooks: 39 on `pre-commit` and 2 on `pre-push` (both run by `ai:verify`), plus `validate-commit-msg` on `commit-msg` |
 | Environment variable names          | `.env.example`            | names only; `OPENAI_API_KEY` for the openai provider, none for Ollama                                                      |
 | Agent harness                       | `.agents/`                | internal and gitignored; `.agents/README.md` is its manual                                                                 |
 
 ### Commands
 
-| Action                   | Command                                      |
-| ------------------------ | -------------------------------------------- |
-| Install                  | `uv sync`                                    |
-| All quality hooks        | `uv run pre-commit run --all-files`          |
-| Tests                    | `npm test`                                   |
-| Tests with coverage gate | `npm run test:coverage`                      |
-| Docs, strict as in CI    | `uv run mkdocs build --strict`               |
-| Aggregated verification  | `npm run ai:verify`                          |
-| Verify a harness change  | `npm run ai:verify -- --changed-file <path>` |
-| Sync harness mirrors     | `npm run sync:all`                           |
+| Action                   | Command                                                                             |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| Install                  | `uv sync`                                                                           |
+| All quality hooks        | `uv run pre-commit run --all-files`                                                 |
+| Tests                    | `uv run pytest -m 'not integration and not slow' -ra`                               |
+| Tests with coverage gate | `uv run pytest -m 'not integration and not slow' -ra --cov=src --cov-fail-under=85` |
+| Docs, strict as in CI    | `uv run mkdocs build --strict`                                                      |
+| Aggregated verification  | `uv run python .agents/scripts/harness_verify.py`                                   |
+| Verify a harness change  | `uv run python .agents/scripts/harness_verify.py --changed-file <path>`             |
+| Sync harness mirrors     | `harness-sync`                                                                      |
 
-Run Python tooling through `uv run`. `npm run` is only an alias layer over the
-same commands; there is no JavaScript build here.
+Run all Python tooling and tests directly through `uv run`.
 
 ## Technical Stack
 
@@ -85,6 +84,10 @@ not restate them.
 
 ## Mandatory Rules
 
+- **Critical Stance.** Act as a rigorous skeptic. Do not accept hypotheses — whether
+  proposed by the user or self-generated — without empirical proof. NEVER flatter
+  or engage in sycophancy; prioritize technical rigor, root-cause evidence, and
+  honest trade-offs.
 - Verify files before editing; do not assume structure or behavior. A claim
   about current behavior needs a path you opened, not a recollection.
 - Keep scope small and reviewable, and deliver one kind of work per change.
@@ -106,6 +109,9 @@ not restate them.
 - **Published API.** `src/createagents/__init__.py` and the public signatures of
   `main/facade/client.py` are released to PyPI. Do not change them without an
   explicit decision.
+- **Module Structure & Exports.** Do not create code files whose sole purpose is to
+  re-export other modules. `__init__.py` files must NEVER contain implementation
+  logic; use them ONLY for package exports and public imports.
 - **Language.** `Chat/Docs = Portuguese`, `Code/Comments/Git = English`. Commit
   messages follow Conventional Commits.
 - **Tooling.** `uv` for every dependency operation, `uv run` for every tool.
@@ -171,8 +177,8 @@ secrets, the published API, a `version` bump, or any `.github/workflows/` edit.
 ### Validation
 
 Before concluding, use the official validation entrypoint:
-`uv run pre-commit run --all-files`, then `npm run test:coverage` for behavior
-changes. `npm run ai:verify` is the aggregated agent-facing harness; state which
+`uv run pre-commit run --all-files`, then `uv run pytest -m 'not integration and not slow' -ra --cov=src --cov-fail-under=85` for behavior
+changes. `uv run python .agents/scripts/harness_verify.py` is the aggregated agent-facing harness; state which
 `effectiveProfile` ran. If validation is skipped or failing, report that with
 the reason and impact.
 

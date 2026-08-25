@@ -1,20 +1,26 @@
 # Modularizar Phase 2
 
 Use este reference apenas para **Fase 2A** e **Fase 2B**. Entre aqui somente
-quando o Gate 1 já estiver aprovado, a Fase 1B já tiver sido executada e o
-usuário tiver autorizado seguir para a modularização estrutural.
+quando o Gate 1 já estiver aprovado, a Fase 1B já tiver sido executada, a
+avaliação pós-Fase 1 tiver marcado `PHASE_2_NEEDED: YES` com evidência de
+necessidade estrutural e o usuário tiver autorizado seguir para a modularização
+estrutural.
 
 ## Abrir junto nesta etapa
 
 - `references/PLAN_TEMPLATE.md` ao atualizar `## 6` e `## 7` do plano
 - `references/OUTPUT_TEMPLATE.md` ao montar `modularizar_<target-basename>-output.md`
-- `.agents/skills/modularizar/scripts/modularizar_guard.sh` ao validar plano e report
+- `skills/modularizar/scripts/modularizar_guard.sh` ao validar plano e report
 
 ## Pré-condições
 
 - `GATE_1_APPROVED: YES`
 - `PHASE_1_EXECUTED: YES`
+- `PHASE_2_NEEDED: YES`
 - baseline, inventário e log da Fase 1 já preenchidos no mesmo plano
+- `Residual condition: size`, `complexity` ou `both`
+- `Structural separation needed: YES`
+- evidência de que o alvo continua materialmente grande ou complexo e ainda precisa de separação estrutural
 - aprovação explícita do usuário para sair da Fase 1 e começar `## 6. Phase 2A - Modularization Proposal`
 
 ## Objetivo da etapa
@@ -26,46 +32,47 @@ usuário tiver autorizado seguir para a modularização estrutural.
 
 ## Sequência operacional
 
-1. Atualize `## 6. Phase 2A - Modularization Proposal` no mesmo `modularizar_<target-basename>.md`.
-2. Preencha pelo menos estes pontos:
-   - entrypoints públicos finais
-   - justificativa de cada entrypoint público
-   - policy de naming com `public-only`
-   - entrypoint canônico de compatibilidade
-   - módulos internos e suas responsabilidades
-   - símbolos promovidos a públicos e justificativa
-   - símbolos mantidos internos e justificativa
-   - imports/exports a migrar
-   - callers a migrar
-   - fallout esperada após remover o legado
-   - arquivos legados a remover
-   - sequência unitária de extração com `P2-STEP-*`
-3. Em cada `Planned step`, registre:
-   - ordem de extração
-   - arquivos tocados
-   - arquivos extraídos
-   - responsabilidade movida
-   - impacto em símbolos públicos/privados
-   - checkpoint de validação
-   - motivo da ordem
-4. Peça aprovação explícita do usuário para o Gate 2 e pare antes de extrair módulos.
-5. Após a aprovação, valide com:
-   - `bash .agents/skills/modularizar/scripts/modularizar_guard.sh validate-plan --phase phase2 --target <file-or-module>`
-6. Execute a Fase 2B:
-   - extraia módulos por responsabilidade real
-   - preserve como público apenas o que continua com callers reais ou reuso planejado
-   - promova a público apenas o que se tornou reutilizável
-   - use o entrypoint canônico do módulo ou pacote como superfície de compatibilidade
-   - remova o arquivo legado
-   - corrija imports, exports, callers, entrypoints e testes quebrados pela remoção do legado
-7. Atualize `## 7. Phase 2B - Modularization Execution Log`.
-8. Gere `modularizar_<target-basename>-output.md` a partir de `references/OUTPUT_TEMPLATE.md`.
-9. No report final, espelhe:
-   - cada `Inventory item` aprovado da Fase 1 em `4.1`
-   - cada `Planned step` aprovado da Fase 2 em `5.3`
+01. Atualize `## 6. Phase 2A - Modularization Proposal` no mesmo `modularizar_<target-basename>.md`.
+02. Preencha pelo menos estes pontos:
+    - entrypoints públicos finais
+    - justificativa de cada entrypoint público
+    - policy de naming com `public-only`
+    - entrypoint canônico de compatibilidade
+    - módulos internos e suas responsabilidades
+    - símbolos promovidos a públicos e justificativa
+    - símbolos mantidos internos e justificativa
+    - imports/exports a migrar
+    - callers a migrar
+    - fallout esperada após remover o legado
+    - arquivos legados a remover
+    - sequência unitária de extração com `P2-STEP-*`
+03. Em cada `Planned step`, registre:
+    - ordem de extração
+    - arquivos tocados
+    - arquivos extraídos
+    - responsabilidade movida
+    - impacto em símbolos públicos/privados
+    - checkpoint de validação
+    - motivo da ordem
+04. Peça aprovação explícita do usuário para o Gate 2 e pare antes de extrair módulos.
+05. Após a aprovação, valide com:
+    - `bash skills/modularizar/scripts/modularizar_guard.sh validate-plan --phase phase2 --target <file-or-module>`
+06. Execute a Fase 2B:
+    - extraia módulos por responsabilidade real
+    - preserve como público apenas o que continua com callers reais ou reuso planejado
+    - promova a público apenas o que se tornou reutilizável
+    - use o entrypoint canônico do módulo ou pacote como superfície de compatibilidade
+    - remova o arquivo legado
+    - corrija imports, exports, callers, entrypoints e testes quebrados pela remoção do legado
+07. Atualize `## 7. Phase 2B - Modularization Execution Log`.
+08. Gere `modularizar_<target-basename>-output.md` a partir de `references/OUTPUT_TEMPLATE.md`.
+09. No report final, espelhe:
+    - cada `Inventory item` aprovado da Fase 1 em `4.1`
+    - cada `Planned step` aprovado da Fase 2 em `5.3`
 10. Rode a validação final via `lint-and-validate` com o menor escopo útil para o diff.
 11. Finalize com:
-   - `bash .agents/skills/modularizar/scripts/modularizar_guard.sh validate-report --target <file-or-module>`
+
+- `bash skills/modularizar/scripts/modularizar_guard.sh validate-report --target <file-or-module>`
 
 ## Regras que não podem ser violadas
 
@@ -80,11 +87,13 @@ usuário tiver autorizado seguir para a modularização estrutural.
 ## Armadilhas que devem parar a etapa
 
 - Gate 2 ainda está `NO`.
+- `PHASE_2_NEEDED` não está marcado como `YES` com evidência pós-Fase 1.
 - A proposta usa `_helper.py` ou outro basename privado para módulo extraído.
 - O plano mantém o arquivo legado como entrypoint canônico.
 - `Legacy files to remove` não inclui o alvo original.
 - A extração foi executada sem `validate-plan --phase phase2`.
 - O report final virou resumo solto sem blocos por item e por passo.
+- A avaliação pós-Fase 1 usa condição `none` ou `Structural separation needed: NO` para iniciar a Fase 2.
 
 ## Exemplo: proposta de Fase 2A
 

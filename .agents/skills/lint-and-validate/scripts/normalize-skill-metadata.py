@@ -7,8 +7,8 @@ import argparse
 import re
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
-SKILLS_ROOT = REPO_ROOT / '.agents' / 'skills'
+HARNESS_ROOT = Path(__file__).resolve().parents[3]
+SKILLS_ROOT = HARNESS_ROOT / 'skills'
 ALLOWED_ACTIVE_KEYS = {'name', 'description'}
 ALLOWED_ARCHIVED_KEYS = {'name', 'description', 'status', 'replaced_by'}
 SKIP_PARTS = {
@@ -131,7 +131,7 @@ def main() -> int:
         modified, removed = normalize_skill(path, check_only=args.check)
         if modified:
             changed.append(
-                f'{path.relative_to(REPO_ROOT)}: removed {sorted(set(removed))}'
+                f'{path.relative_to(HARNESS_ROOT)}: removed {sorted(set(removed))}'
             )
 
     if changed:

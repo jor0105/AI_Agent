@@ -39,12 +39,12 @@ eventos ou processamento e diga claramente qual modelo se aplica.
 
 ## Metadados e fallbacks
 
-| Campo | Fonte preferida | Fallback permitido | Efeito do fallback |
-| --- | --- | --- | --- |
-| `Owner` | governança, CODEOWNERS ou decisão explícita | `Unassigned` | documento permanece `Draft` |
-| `Last reviewed` | data real da inspeção atual | nenhum | use `YYYY-MM-DD` real |
-| `Status` | vocabulário de governança confirmado | `Draft` | modo estrito deve falhar |
-| `Knowledge class` | taxonomia documentada | `Agent policy` | classificação base deste artefato |
+| Campo             | Fonte preferida                             | Fallback permitido | Efeito do fallback                |
+| ----------------- | ------------------------------------------- | ------------------ | --------------------------------- |
+| `Owner`           | governança, CODEOWNERS ou decisão explícita | `Unassigned`       | documento permanece `Draft`       |
+| `Last reviewed`   | data real da inspeção atual                 | nenhum             | use `YYYY-MM-DD` real             |
+| `Status`          | vocabulário de governança confirmado        | `Draft`            | modo estrito deve falhar          |
+| `Knowledge class` | taxonomia documentada                       | `Agent policy`     | classificação base deste artefato |
 
 O nome do diretório, autor de commit ou mantenedor de pacote não prova
 ownership. Não converta `Draft` para `Canonical`, `Accepted` ou equivalente sem
@@ -52,57 +52,20 @@ a aprovação exigida pelo repositório.
 
 ## Classes de conteúdo
 
-| Classe | Pode materializar? | Fonte exigida | Exemplos |
-| --- | --- | --- | --- |
-| `PORTABLE_BASELINE` | sim, do template bundled | template | segurança, qualidade geral e limites operacionais |
-| `REPO_FACT` | sim | código, manifest, CI, teste ou doc vigente | stack, versão, comando, entrypoint, fluxo, consumidor |
-| `REPO_POLICY` | sim | instrução, governança, ownership ou decisão aceita | idioma obrigatório, branching, boundaries, manager |
-| `USER_PREFERENCE` | sim, se compatível com os fatos | declaração explícita do usuário | idioma de chat, ferramenta preferida, clean cutover |
-| `USER_DECISION` | sim | aprovação explícita | owner, status, escolha entre fontes conflitantes |
-| `EXPLICIT_UNKNOWN` | somente via fallback | busca registrada sem resultado | `Unassigned`, `Not documented` |
-| `CONFLICT` | não como verdade resolvida | fontes/autoridades divergentes | README e CI discordam; preferência exige migração |
+| Classe              | Pode materializar?              | Fonte exigida                                      | Exemplos                                              |
+| ------------------- | ------------------------------- | -------------------------------------------------- | ----------------------------------------------------- |
+| `PORTABLE_BASELINE` | sim, do template bundled        | template                                           | segurança, qualidade geral e limites operacionais     |
+| `REPO_FACT`         | sim                             | código, manifest, CI, teste ou doc vigente         | stack, versão, comando, entrypoint, fluxo, consumidor |
+| `REPO_POLICY`       | sim                             | instrução, governança, ownership ou decisão aceita | idioma obrigatório, branching, boundaries, manager    |
+| `USER_PREFERENCE`   | sim, se compatível com os fatos | declaração explícita do usuário                    | idioma de chat, ferramenta preferida, clean cutover   |
+| `USER_DECISION`     | sim                             | aprovação explícita                                | owner, status, escolha entre fontes conflitantes      |
+| `EXPLICIT_UNKNOWN`  | somente via fallback            | busca registrada sem resultado                     | `Unassigned`, `Not documented`                        |
+| `CONFLICT`          | não como verdade resolvida      | fontes/autoridades divergentes                     | README e CI discordam; preferência exige migração     |
 
 Todo comentário `AGENTS_AUTHOR` é uma instrução de geração e deve desaparecer do
 arquivo final. Os blocos já preenchidos de `Mandatory Rules` e `Execution Policy`
 são `PORTABLE_BASELINE`; podem ser fortalecidos, mas não silenciosamente
 reduzidos.
-
-## Proporcionalidade
-
-A estrutura é fixa; o **volume** não é. Este arquivo entra em contexto por
-inteiro, em toda sessão, antes de qualquer trabalho começar. Cada linha que ele
-carrega é uma linha que o agente lê para sempre. Um `AGENTS.md` grande demais
-não é mais seguro — é mais caro e mais fácil de deixar desatualizado.
-
-Meça o repositório antes de escrever e use um orçamento:
-
-| Código de produção | Orçamento típico |
-| --- | --- |
-| até ~10k linhas | 120–250 linhas |
-| ~10k a ~100k linhas | 250–450 linhas |
-| acima de ~100k, ou monorepo multi-stack | 450+, e considere arquivos locais por subárvore |
-
-O orçamento é guia, não trava: um repositório pequeno com invariantes de
-segurança densas justifica mais. Mas um documento que passa de ~8% do tamanho do
-código que ele governa quase sempre está inflado.
-
-Regra de corte, aplicada nesta ordem:
-
-1. **Se outra fonte já é dona, aponte em vez de copiar.** Versões estão no
-   manifest. Gates estão no CI. Design está no doc de arquitetura. Reproduzir
-   qualquer um desses cria duas verdades que vão divergir.
-2. **Se o tooling já garante, não vire regra.** Um formatter que roda em
-   pre-commit não precisa de bullet dizendo para formatar.
-3. **Se o agente já faz por padrão, corte.** Baseline genérico de segurança
-   operacional já existe fora deste arquivo; mantenha os controles nomeados que
-   o validador exige e o que é específico deste repositório, não um tratado.
-4. **O que sobra é o que nenhum linter, CI ou doc consegue dizer**: fronteiras de
-   camada, ownership, contrato público, idioma, invariante de dados, o que
-   exige decisão humana.
-
-Uma seção pode ser prosa curta com um ponteiro para o dono. `Technical Stack`
-em três linhas mais "o manifest é a autoridade" satisfaz o contrato melhor do
-que vinte bullets copiados do manifest.
 
 ## Resultado mínimo por seção
 
@@ -180,7 +143,9 @@ Omitir uma categoria inexistente é correto. Esconder stack confirmada atrás de
 Esta seção é a política diária de desenvolvimento. Ela contém três camadas, na
 ordem:
 
-1. todas as regras gerais já preenchidas no template;
+1. todas as regras gerais já preenchidas no template (disciplina de engenharia,
+   fatoração coesa, zero duplicação, ausência de imports circulares, escopo estrito,
+   testes com prova de comportamento, ceticismo e verificação empírica);
 2. perfil operacional resolvido do usuário e do projeto;
 3. invariantes, boundaries e rotas específicas do sistema.
 

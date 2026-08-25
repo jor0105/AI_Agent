@@ -1,27 +1,27 @@
 {
-  "schemaVersion": "2.0.0",
+  "comment": "Profiles definem apenas scope de arquivos e escalation. O que roda e definido pelo .pre-commit-config.yaml do projeto.",
   "mode": "precommit",
-  "comment": "Profiles definem apenas scope de arquivos e escalation. Os stages pre-commit e pre-push sao definidos pelo .pre-commit-config.yaml do projeto.",
   "profiles": {
-    "quick": {
-      "scope": "files",
-      "description": "Validacao rapida para mudancas simples de docs/config."
-    },
-    "standard": {
-      "scope": "files",
-      "description": "Caminho padrao do developer para codigo de baixo/medio risco."
-    },
     "high-risk": {
-      "scope": "all-files",
-      "description": "Validacao reforcada para contrato publico, store global e refactor amplo."
+      "description": "Validacao reforcada para contrato publico, store global e refactor amplo.",
+      "scope": "all-files"
     },
-    "ui-flow": {
-      "scope": "all-files",
-      "description": "Validacao para fluxos UI com browser real quando configurado."
+    "quick": {
+      "description": "Validacao rapida para mudancas simples de docs/config.",
+      "scope": "files"
     },
     "security-touch": {
-      "scope": "all-files",
-      "description": "Validacao reforcada com escalacao obrigatoria para seguranca."
+      "description": "Validacao reforcada com escalacao obrigatoria para seguranca.",
+      "scope": "all-files"
+    },
+    "standard": {
+      "description": "Caminho padrao do developer para codigo de baixo/medio risco.",
+      "scope": "files"
+    },
+    "ui-flow": {
+      "description": "Validacao para fluxos UI com browser real quando configurado.",
+      "scope": "all-files"
     }
-  }
+  },
+  "schemaVersion": "2.0.0"
 }

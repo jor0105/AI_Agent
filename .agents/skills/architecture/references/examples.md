@@ -41,7 +41,7 @@ claras, recomendar monólito modular com contratos internos antes de extrair ser
 
 ## Exemplo 5: CQRS rejeitado
 
-**Entrada:** "Quero usar CQRS porque o streaming de resposta ficou lento."
+**Entrada:** "Quero usar CQRS porque a tela de dashboard ficou lenta."
 
 **Direção esperada:** rejeitar CQRS por default se a dor puder ser resolvida com
 query otimizada, cache, read model local ou materialized view. CQRS só entra quando

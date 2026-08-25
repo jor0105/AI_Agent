@@ -1,19 +1,27 @@
 ---
-name: "OPSX: Apply"
+name: 'OPSX: Apply'
 description: Implement tasks from an OpenSpec change using Developer Engineer
 category: Workflow
-tags: [workflow, artifacts, experimental]
+tags: [workflow, openspec, apply, implementation]
 ---
 
 Implement tasks from an OpenSpec change using the **Developer Engineer** agent (`developer-engineer`).
 
-**Agent**: Always activate the **Developer Engineer** agent (`developer-engineer`) as the primary executor before proceeding with any steps below.
+**Agent**: Always activate the **Developer Engineer** agent (`developer-engineer`) as the primary executor before proceeding with any steps below. Role activation never selects, recommends, infers, ranks, or switches a model and never requires model metadata; the user-selected model remains authoritative.
 
 **Input**: Optionally specify a change name (e.g., `/opsx:apply add-auth`). If omitted, `apply` is the only OPSX workflow allowed to infer from conversation context or auto-select when there is exactly one safe active candidate. If that is not true, you MUST prompt for available changes.
 
 **Selection policy exception**: Unlike `continue`, `sync`, `archive` and `verify`, this workflow may infer or auto-select the change when it is safe to do so. Always announce the chosen change and how to override it.
 
-**Schema note**: Use `openspec status --change "<name>" --json` and `openspec instructions apply --change "<name>" --json` as the source of truth for schema, context files and task state. Do not assume `spec-driven` unless the CLI output indicates it.
+**Schema note**: Use `opsx status --change "<name>" --json` and `opsx instructions apply --change "<name>" --json` as the source of truth for schema, context files and task state. Do not assume `spec-driven` unless the CLI output indicates it.
+
+**Write boundary**: Before any implementation write, run
+`opsx preflight --change "<name>" --json`. Then run the
+bundle gate and stop on either failure. Announce the exact selected change and
+request a separate, explicit authorization for this apply invocation. Source
+confirmation, artifact-creation approval, or authorization for a sibling
+change is not apply authorization. If authorization is absent, stop before
+modifying code, tests, tasks, evidence, or canonical documentation.
 
 **Steps**
 
@@ -24,59 +32,88 @@ Implement tasks from an OpenSpec change using the **Developer Engineer** agent (
 2. **Select the change (exception policy)**
 
    If a name is provided, use it. Otherwise:
+
    - Infer from conversation context if the user mentioned a change
    - Auto-select if only one active change exists
-   - If ambiguous, run `openspec list --json` to get available changes and use the **AskUserQuestion tool** to let the user select
+   - If ambiguous, run `opsx list --json` to get available changes. Use an enumerated-selection capability when available. If it is unavailable or cannot represent every option, print every option in a numbered text list and wait for one explicit selection before continuing.
 
    Always announce: "Using change: <name>" and how to override (e.g., `/opsx:apply <other>`).
 
-2. **Check status to understand the schema**
+3. **Check status to understand the schema**
 
    ```bash
-   openspec status --change "<name>" --json
+   opsx status --change "<name>" --json
    ```
 
    Parse the JSON to understand:
+
    - `schemaName`: The workflow being used (e.g., "spec-driven")
    - Which artifact contains the tasks (typically "tasks" for spec-driven, check status for others)
 
-3. **Get apply instructions**
+4. **Get apply instructions**
+
+   Run the decision-source preflight first:
 
    ```bash
-   openspec instructions apply --change "<name>" --json
+   opsx preflight --change "<name>" --json
    ```
 
-   *(CLI Fallback: If `openspec` CLI fails or is unavailable, read the artifact files directly from `openspec/changes/<name>/`)*
+   Stop on any finding, including a tampered source, uncovered decision ID,
+   duplicate sibling ownership, unknown dependency, or dependency cycle.
+
+   First hard-block ambiguous or incomplete spec-driven documentation:
+
+   ```bash
+   opsx-handoff --mode bundle "<name>"
+   ```
+
+   Stop on any error. There is no interactive override for a red bundle gate.
+
+   ```bash
+   opsx instructions apply --change "<name>" --json
+   ```
+
+   *(CLI Fallback: If `opsx` fails, read the artifact files directly from `openspec/changes/<name>/`)*
 
    This returns:
+
    - Context file paths (varies by schema)
    - Progress (total, complete, remaining)
    - Task list with status
    - Dynamic instruction based on current state
 
+   After the bundle is green and before starting task 1, ask: **Authorize
+   apply for exactly `<name>` in this invocation?** Use a structured
+   confirmation capability when available; otherwise present numbered text
+   choices and wait. A negative or missing answer is a hard stop.
+
    **Handle states:**
+
    - If `state: "blocked"` (missing artifacts): show message, suggest using `/opsx:continue`
-   - If `state: "all_done"`: congratulate, suggest archive
+   - If `state: "all_done"`: report that implementation is already complete
    - Otherwise: proceed to implementation
 
-4. **Read context files**
+5. **Read context files**
 
    Read the files listed in `contextFiles` from the apply instructions output.
    The files depend on the schema being used:
+
    - **spec-driven**: proposal, specs, design, tasks
    - Other schemas: follow the contextFiles from CLI output
 
-5. **Show current progress**
+6. **Show current progress**
 
    Display:
+
    - Schema being used
    - Progress: "N/M tasks complete"
    - Remaining tasks overview
    - Dynamic instruction from CLI
 
-6. **Implement tasks (loop until done or blocked)**
+7. **Implement tasks (loop until done or blocked)**
 
    For each pending task:
+
    - Show which task is being worked on
    - Make the code changes required
    - Keep changes minimal and focused
@@ -85,17 +122,36 @@ Implement tasks from an OpenSpec change using the **Developer Engineer** agent (
    - Continue to next task
 
    **Pause if:**
+
    - Task is unclear → ask for clarification
    - Implementation reveals a design issue → suggest updating artifacts
    - Error or blocker encountered → report and wait for guidance
    - User interrupts
 
-7. **On completion or pause, show status**
+8. **Produce state-bound evidence and run the apply-exit gate**
+
+   After every task is implemented and its focused validation passes, run
+   the project's configured `validationCommand` (declared in
+   `openspec/handoff.json`, substituting `<change>` with `<name>` to produce
+   `openspec/changes/<name>/evidence/gate-report.json`) and then run the
+   apply-exit gate:
+
+   ```bash
+   <validationCommand>
+   opsx-handoff --mode apply "<name>"
+   ```
+
+   Report implementation success only if both commands exit zero. This gate
+   deliberately does not claim semantic verification or canonical sync; those
+   remain owned by `/opsx:verify` and `/opsx:sync` before completion/archive.
+
+9. **On completion or pause, show status**
 
    Display:
+
    - Tasks completed this session
    - Overall progress: "N/M tasks complete"
-   - If all done: suggest archive
+   - If all done: suggest `/opsx:verify`, not archive
    - If paused: explain why and wait for guidance
 
 **Output During Implementation**
@@ -126,7 +182,8 @@ Working on task 4/7: <task description>
 - [x] Task 2
 ...
 
-All tasks complete! You can archive this change with `/opsx:archive`.
+Implementation is complete. Continue with `/opsx:verify`; archive remains
+blocked until semantic verification and deterministic sync also pass.
 ```
 
 **Output On Pause (Issue Encountered)**
@@ -159,6 +216,9 @@ What would you like to do?
 - **Validate task changes using the project's native test/build command before checking the task off**
 - Update task checkbox immediately after completing and validating each task
 - Pause on errors, blockers, or unclear requirements - don't guess
+- A task that does not say which file to touch is a documentation defect, not a puzzle to solve. Stop, report it, and propose the concrete wording — do not infer the target and proceed
+- Never check off a task whose artifact does not exist on disk. `opsx-handoff --mode apply "<name>"` reports these as `phantom-completion`
+- Apply never runs or claims the archive completion gate; recommend verify next
 - Use contextFiles from CLI output, don't assume specific file names
 
 **Fluid Workflow Integration**
