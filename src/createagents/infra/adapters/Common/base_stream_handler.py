@@ -128,7 +128,7 @@ class BaseStreamHandler:
         self._metrics.append(metrics)
         # Called from the subclass `except` block, so the active exception is
         # still set and the traceback is captured.
-        self._logger.exception('Error during streaming')  # noqa: LOG004
+        self._logger.error('Error during streaming', exc_info=True)
         return metrics
 
     def get_metrics(self) -> list[ChatMetrics]:

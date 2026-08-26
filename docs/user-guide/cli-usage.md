@@ -11,10 +11,10 @@ from createagents import CreateAgent
 
 # Criar agente
 agent = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    name="Assistente",
-    instructions="Você é um assistente prestativo",
+    provider='openai',
+    model='gpt-4',
+    name='Assistente',
+    instructions='Você é um assistente prestativo',
 )
 
 # Iniciar CLI interativa
@@ -27,7 +27,7 @@ ______________________________________________________________________
 
 - **🎨 Interface Colorida**: Sintaxe highlight e formatação markdown
 - **⚡ Streaming em Tempo Real**: Respostas aparecem token por token
-- **🎯 Comandos Integrados**: 7 comandos para controle total
+- **🎯 Comandos Integrados**: 5 comandos úteis (`/help`, `/metrics`, `/configs`, `/tools`, `/clear`) mais comandos de saída
 - **🔧 Indicadores de Status**: Mostra quando o agente está pensando
 - **📊 Métricas em Tempo Real**: Visualize performance instantaneamente
 
@@ -37,7 +37,7 @@ ______________________________________________________________________
 
 ### `/help` - Ajuda
 
-Exibe lista de comandos disponíveis.
+Exibe a lista de comandos disponíveis e instruções de uso.
 
 ```
 Você: /help
@@ -45,92 +45,118 @@ Você: /help
 
 **Aliases**: `/help`, `help`
 
+**Exemplo de saída**:
+
+```text
+Available Commands:
+
+• /metrics  → Show agent performance metrics and statistics
+• /configs  → Display current agent configuration settings
+• /tools    → List all available tools and their descriptions
+• /clear    → Clear conversation history and start fresh
+• /help     → Show this help message
+
+Type 'exit' or 'quit' to close the application.
+```
+
 ### `/metrics` - Métricas
 
-Mostra estatísticas de performance do agente:
+Mostra estatísticas de performance das interações com o agente em formato tabular:
 
-- Número de chamadas
-- Tokens usados (prompt + completion)
-- Latência média
-- Taxa de sucesso
-- Métricas Ollama: load_duration, prompt_eval_duration, eval_duration
+- Modelo utilizado
+- Duração / Latência em segundos
+- Tokens de entrada (Prompt), saída (Completion) e total
 
 ```
 Você: /metrics
 ```
 
-**Aliases**: `/metrics`, `metrics`
+**Aliases**: `/metrics`, `get_metrics`
 
 **Exemplo de saída**:
 
-```
-📊 Métricas de Performance
+```text
+## Performance Metrics
 
-Chamada #1 | ✅ Sucesso
-  └─ Modelo: gpt-4
-  └─ Latência: 1,245ms
-  └─ Tokens: 150 (prompt: 45, completion: 105)
-
-Chamada #2 | ✅ Sucesso
-  └─ Modelo: gpt-4
-  └─ Latência: 982ms
-  └─ Tokens: 230 (prompt: 110, completion: 120)
-
-📈 Estatísticas Gerais
-  Total de chamadas: 2
-  Taxa de sucesso: 100%
-  Latência média: 1,113ms
-  Total de tokens: 380
+| Model | Duration | Tokens (In/Out/Total) |
+|-------|----------|-----------------------|
+| gpt-4 | 1.25s    | 45 / 105 / 150        |
+| gpt-4 | 0.98s    | 110 / 120 / 230       |
 ```
 
 ### `/configs` - Configurações
 
-Mostra configurações atuais do agente:
+Mostra as configurações atuais do agente:
 
 - Nome
 - Provider e modelo
 - Instruções
-- Parâmetros de configuração
-- Ferramentas disponíveis
-- Tamanho do histórico
+- Parâmetros extras de configuração
+- Ferramentas configuradas
+- Histórico com prévia de mensagens e contagem
 
 ```
 Você: /configs
 ```
 
-**Aliases**: `/configs`, `configs`
+**Aliases**: `/configs`, `get_configs`
+
+**Exemplo de saída**:
+
+```text
+## Agent Configuration
+
+**provider:** openai
+**model:** gpt-4
+**name:** Assistente
+**instructions:** Você é um assistente prestativo
+**config:** {'temperature': 0.7}
+**tools:** ['currentdate']
+**history:** 2 messages in history
+
+  - **user:** Olá!
+  - **assistant:** Olá! Como posso ajudar você hoje?
+
+**history_max_size:** 10
+```
 
 ### `/tools` - Ferramentas
 
-Lista todas as ferramentas disponíveis para o agente.
+Lista todas as ferramentas disponíveis (sistema e customizadas) com suas descrições.
 
 ```
 Você: /tools
 ```
 
-**Aliases**: `/tools`, `tools`
+**Aliases**: `/tools`, `get_tools`
 
 **Exemplo de saída**:
 
-```
-🛠️ Ferramentas Disponíveis
+```text
+## Available Tools
 
-• currentdate
-  └─ Retorna a data e hora atual em qualquer timezone
+**currentdate**
+Get the current date and/or time in a specific timezone. Essential for answering 'What time is it?' or 'What day is it?' questions.
 
-• readlocalfile
-  └─ Lê e extrai conteúdo de arquivos locais (PDF, Excel, CSV, etc)
+**readlocalfile**
+Use this tool to read local files from the system. Supports text files (txt, md, py, etc.), CSV, Excel, PDF and Parquet formats.
 ```
 
 ### `/clear` - Limpar Histórico
 
-Limpa todo o histórico de conversação e inicia uma nova sessão.
+Limpa todo o histórico de conversação do agente.
 
 ```
 Você: /clear
 ```
 
-**Aliases**: `/clear`, `clear`
+**Aliases**: `/clear`, `clear_history`
+
+**Exemplo de saída**:
+
+```text
+Chat history cleared successfully!
+```
 
 ### Chat Normal
 
@@ -204,10 +230,10 @@ ______________________________________________________________________
 from createagents import CreateAgent
 
 code_assistant = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    name="Code Expert",
-    instructions="Você é um especialista em Python. Sempre forneça exemplos."
+    provider='openai',
+    model='gpt-4',
+    name='Code Expert',
+    instructions='Você é um especialista em Python. Sempre forneça exemplos.',
 )
 
 # Iniciar CLI interativa
@@ -233,9 +259,9 @@ Você: /clear
 from createagents import CreateAgent
 
 agent_with_tools = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    tools=["currentdate", "readlocalfile"]
+    provider='openai',
+    model='gpt-4',
+    tools=['currentdate'],  # Para 'readlocalfile', instale: pip install createagents[file-tools]
 )
 
 # Iniciar CLI
@@ -250,9 +276,6 @@ Você: /tools
 
 Você: Que dia é hoje?
 [Agente usa CurrentDateTool automaticamente]
-
-Você: Leia o arquivo report.pdf
-[Agente usa ReadLocalFileTool]
 ```
 
 ### Exemplo 3: Ollama Local
@@ -261,9 +284,7 @@ Você: Leia o arquivo report.pdf
 from createagents import CreateAgent
 
 local_agent = CreateAgent(
-    provider="ollama",
-    model="llama3.2",
-    name="Assistente Local"
+    provider='ollama', model='llama3.2', name='Assistente Local'
 )
 
 # Iniciar CLI
@@ -281,7 +302,7 @@ A CLI é iniciada através do método `start_cli()` da facade `CreateAgent`:
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider="openai", model="gpt-4")
+agent = CreateAgent(provider='openai', model='gpt-4')
 agent.start_cli()  # Inicia loop interativo
 ```
 

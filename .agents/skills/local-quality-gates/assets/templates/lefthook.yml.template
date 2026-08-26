@@ -23,6 +23,8 @@ pre-commit:
     # =========================================================================
     # 02. AI AGENT DIFF SANITY, TEST INTEGRITY & LOCKFILE SYNC (FAIL-CLOSED)
     # =========================================================================
+    # The lockfile hook validates staged manifest/lockfile parity. Do not
+    # replace it with an install, sync, update, upgrade, or resolver command.
     diff-sanity:
       run: python scripts/check_diff_sanity.py {staged_files}
       tags: ai-guardian sanity

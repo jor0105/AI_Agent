@@ -72,7 +72,9 @@ extra_javascript:
 
 plugins:
   - search:
-      lang: pt
+      lang:
+        - pt
+        - en
 
 # Extensions
 markdown_extensions:
@@ -108,24 +110,47 @@ markdown_extensions:
 
 # Navigation
 nav:
-  - Início: index.md
-  - Guia do Usuário:
-      - Instalação: user-guide/installation-user.md
-      - Uso Básico: user-guide/basic-usage-user.md
-      - Uso da CLI: user-guide/cli-usage.md
-      - Guia de Streaming: user-guide/streaming-guide.md
-      - Exemplos: user-guide/examples-user.md
-      - FAQ: user-guide/faq-user.md
-  - Guia do Desenvolvedor:
-      - Arquitetura: dev-guide/architecture-developer.md
-      - Arquitetura CLI: dev-guide/cli-architecture.md
-      - Guia Async: dev-guide/async-guide.md
-      - Logging: dev-guide/logging_guide.md
-      - Exemplos Técnicos: dev-guide/technical-examples.md
-      - Como Contribuir: dev-guide/contribute.md
-  - Referência:
-      - API Reference: reference/api.md
-      - API de Streaming: reference/streaming-api.md
-      - API de Métricas: reference/metrics-api.md
-      - Ferramentas: reference/tools.md
-      - Comandos CLI: reference/commands.md
+  - 🇧🇷 Português:
+      - Início: index.md
+      - Guia do Usuário:
+          - Instalação: user-guide/installation-user.md
+          - Uso Básico: user-guide/basic-usage-user.md
+          - Uso da CLI: user-guide/cli-usage.md
+          - Guia de Streaming: user-guide/streaming-guide.md
+          - Exemplos: user-guide/examples-user.md
+          - FAQ: user-guide/faq-user.md
+      - Guia do Desenvolvedor:
+          - Arquitetura: dev-guide/architecture-developer.md
+          - Arquitetura CLI: dev-guide/cli-architecture.md
+          - Guia Async: dev-guide/async-guide.md
+          - Logging: dev-guide/logging_guide.md
+          - Exemplos Técnicos: dev-guide/technical-examples.md
+          - Como Contribuir: dev-guide/contribute.md
+      - Referência:
+          - API Reference: reference/api.md
+          - API de Streaming: reference/streaming-api.md
+          - API de Métricas: reference/metrics-api.md
+          - Ferramentas: reference/tools.md
+          - Comandos CLI: reference/commands.md
+  - 🇺🇸 English:
+      - Home: en/index.md
+      - User Guide:
+          - Installation: en/user-guide/installation-user.md
+          - Basic Usage: en/user-guide/basic-usage-user.md
+          - CLI Usage: en/user-guide/cli-usage.md
+          - Streaming Guide: en/user-guide/streaming-guide.md
+          - Examples: en/user-guide/examples-user.md
+          - FAQ: en/user-guide/faq-user.md
+      - Developer Guide:
+          - Architecture: en/dev-guide/architecture-developer.md
+          - CLI Architecture: en/dev-guide/cli-architecture.md
+          - Async Guide: en/dev-guide/async-guide.md
+          - Logging: en/dev-guide/logging_guide.md
+          - Technical Examples: en/dev-guide/technical-examples.md
+          - How to Contribute: en/dev-guide/contribute.md
+      - Reference:
+          - API Reference: en/reference/api.md
+          - Streaming API: en/reference/streaming-api.md
+          - Metrics API: en/reference/metrics-api.md
+          - Tools: en/reference/tools.md
+          - CLI Commands: en/reference/commands.md

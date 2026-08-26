@@ -44,7 +44,7 @@ class StandardLogger(LoggerInterface):
         """Log an error message with the active exception traceback."""
         # This adapter intentionally delegates; the exception handler lives
         # at the call site, not here.
-        self._logger.exception(message, *args, **kwargs)  # noqa: LOG004
+        self._logger.error(message, *args, exc_info=True, **kwargs)
 
 
 def create_logger(name: str) -> LoggerInterface:

@@ -40,12 +40,12 @@ CreateAgent(
 from createagents import CreateAgent
 
 agent = CreateAgent(
-    provider="openai",
-    model="gpt-4.1-mini",
-    instructions="Você é um assistente técnico",
-    config={"temperature": 0.7, "max_tokens": 2000},
-    tools=["currentdate"],
-    history_max_size=20
+    provider='openai',
+    model='gpt-4.1-mini',
+    instructions='Você é um assistente técnico',
+    config={'temperature': 0.7, 'max_tokens': 2000},
+    tools=['currentdate'],
+    history_max_size=20,
 )
 ```
 
@@ -72,9 +72,11 @@ async def chat(message: str) -> Union[str, StreamingResponseDTO]
 ```python
 import asyncio
 
+
 async def main():
-    resposta = await agent.chat("Como criar uma função em Python?")
+    resposta = await agent.chat('Como criar uma função em Python?')
     print(resposta)
+
 
 asyncio.run(main())
 ```
@@ -96,15 +98,16 @@ def get_configs() -> Dict[str, Any]
 - `provider`: Provider (openai/ollama)
 - `instructions`: Instruções
 - `history`: Lista de mensagens
-- `tools`: Ferramentas disponíveis
+- `history_max_size`: Tamanho máximo do histórico
+- `tools`: Lista com nomes das ferramentas disponíveis
 - `config`: Configurações do modelo
 
 **Exemplo:**
 
 ```python
 config = agent.get_configs()
-print(f"Modelo: {config['model']}")
-print(f"Histórico: {len(config['history'])} mensagens")
+print(f'Modelo: {config["model"]}')
+print(f'Histórico: {len(config["history"])} mensagens')
 ```
 
 ______________________________________________________________________
@@ -121,7 +124,7 @@ def clear_history() -> None
 
 ```python
 agent.clear_history()
-print("Histórico limpo!")
+print('Histórico limpo!')
 ```
 
 ______________________________________________________________________
@@ -147,48 +150,45 @@ def get_all_available_tools() -> Dict[str, str]
 ```python
 from createagents import BaseTool
 
+
 # Ferramenta customizada
 class MyTool(BaseTool):
-    name = "my_tool"
-    description = "Minha ferramenta personalizada"
+    name = 'my_tool'
+    description = 'Minha ferramenta personalizada'
 
     parameters = {
-        "type": "object",
-        "properties": {
-            "input": {
-                "type": "string",
-                "description": "Texto de entrada para a ferramenta"
+        'type': 'object',
+        'properties': {
+            'input': {
+                'type': 'string',
+                'description': 'Texto de entrada para a ferramenta',
             },
-            "limit": {
-                "type": "integer",
-                "description": "(Opcional) Limite de itens a retornar"
-            }
+            'limit': {
+                'type': 'integer',
+                'description': '(Opcional) Limite de itens a retornar',
+            },
         },
-        "required": ["input"]
+        'required': ['input'],
     }
 
     def execute(self, **kwargs) -> str:
         # Implementação da ferramenta (exemplo)
-        input_val = kwargs.get("input", "")
-        limit = kwargs.get("limit", None)
-        return f"Resultado para: {input_val}" + (f" (limit={limit})" if limit is not None else "")
+        input_val = kwargs.get('input', '')
+        limit = kwargs.get('limit', None)
+        return f'Resultado para: {input_val}' + (
+            f' (limit={limit})' if limit is not None else ''
+        )
+
 
 # Criar agente com ferramentas
 agent = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    tools=["currentdate", MyTool()]
+    provider='openai', model='gpt-4', tools=['currentdate', MyTool()]
 )
 
 # Listar todas as ferramentas
 tools = agent.get_all_available_tools()
 for name, description in tools.items():
-    print(f"- {name}: {description}")
-
-# Saída:
-# - currentdate: Get the current date and/or time...
-# - readlocalfile: Use this tool to read local files...
-# - my_tool: Minha ferramenta personalizada
+    print(f'- {name}: {description}')
 ```
 
 ______________________________________________________________________
@@ -212,24 +212,20 @@ def get_system_available_tools() -> Dict[str, str]
 **Exemplo:**
 
 ```python
-agent = CreateAgent(provider="openai", model="gpt-4")
+agent = CreateAgent(provider='openai', model='gpt-4')
 
 # Listar apenas ferramentas do sistema
 system_tools = agent.get_system_available_tools()
 
-print("Ferramentas do sistema disponíveis:")
+print('Ferramentas do sistema disponíveis:')
 for name, description in system_tools.items():
-    print(f"- {name}: {description[:50]}...")
+    print(f'- {name}: {description[:50]}...')
 
 # Verificar se ferramenta opcional está disponível
-if "readlocalfile" in system_tools:
-    print("✅ ReadLocalFileTool está instalada")
+if 'readlocalfile' in system_tools:
+    print('✅ ReadLocalFileTool está instalada')
 else:
-    print("❌ Execute: pip install createagents[file-tools]")
-
-# Saída:
-# - currentdate: Get the current date and/or time...
-# - readlocalfile: Use this tool to read local files...
+    print('❌ Execute: pip install createagents[file-tools]')
 ```
 
 **Diferença entre os métodos:**
@@ -261,7 +257,9 @@ def get_metrics() -> List[ChatMetrics]
 ```python
 metrics = agent.get_metrics()
 for m in metrics:
-    print(f"Tempo: {m.latency_ms:.2f}ms, Tokens: {m.tokens_used}, Sucesso: {m.success}")
+    print(
+        f'Tempo: {m.latency_ms:.2f}ms, Tokens: {m.tokens_used}, Sucesso: {m.success}'
+    )
 ```
 
 ______________________________________________________________________
@@ -280,16 +278,6 @@ def export_metrics_json(filepath: Optional[str] = None) -> str
 
 **Retorna:** JSON string
 
-**Exemplo:**
-
-```python
-# Salvar em arquivo
-agent.export_metrics_json("metrics.json")
-
-# Obter como string
-json_data = agent.export_metrics_json()
-```
-
 ______________________________________________________________________
 
 #### export_metrics_prometheus()
@@ -305,12 +293,6 @@ def export_metrics_prometheus(filepath: Optional[str] = None) -> str
 - `filepath` (str, opcional): Caminho para salvar
 
 **Retorna:** String formato Prometheus
-
-**Exemplo:**
-
-```python
-agent.export_metrics_prometheus("metrics.prom")
-```
 
 ______________________________________________________________________
 
@@ -334,7 +316,7 @@ Lança uma interface CLI completa com:
 **Exemplo:**
 
 ```python
-agent = CreateAgent(provider="openai", model="gpt-4")
+agent = CreateAgent(provider='openai', model='gpt-4')
 agent.start_cli()  # Inicia CLI interativa
 ```
 
@@ -357,15 +339,15 @@ Obtém data/hora em qualquer timezone.
 ```python
 import asyncio
 
+
 async def main():
     agent = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        tools=["currentdate"]
+        provider='openai', model='gpt-4', tools=['currentdate']
     )
 
-    resposta = await agent.chat("Que dia é hoje?")
+    resposta = await agent.chat('Que dia é hoje?')
     print(resposta)
+
 
 asyncio.run(main())
 ```
@@ -399,15 +381,15 @@ Lê arquivos locais em múltiplos formatos.
 ```python
 import asyncio
 
+
 async def main():
     agent = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        tools=["readlocalfile"]
+        provider='openai', model='gpt-4', tools=['readlocalfile']
     )
 
-    resposta = await agent.chat("Leia o arquivo report.pdf")
+    resposta = await agent.chat('Leia o arquivo report.pdf')
     print(resposta)
+
 
 asyncio.run(main())
 ```
@@ -425,14 +407,14 @@ Parâmetros para controlar o comportamento do modelo (OpenAI/Ollama):
 
 ```python
 config = {
-    "temperature": 0.7,   # 0.0–2.0: Criatividade
-    "max_tokens": 2000,   # >0: Limite de tokens
-    "top_p": 0.9,         # 0.0–1.0: Nucleus sampling
-    "think": True,        # Ollama: bool / OpenAI: str ["low", "medium" or "high"]
-    "top_k": 40,          # >0: (Ollama)
+    'temperature': 0.7,  # 0.0–2.0: Criatividade
+    'max_tokens': 2000,  # >0: Limite de tokens
+    'top_p': 0.9,  # 0.0–1.0: Nucleus sampling
+    'think': True,  # Ollama: bool / OpenAI: str ["low", "medium" or "high"]
+    'top_k': 40,  # >0: (Ollama)
 }
 
-agent = CreateAgent(provider="openai", model="gpt-4.1-mini", config=config)
+agent = CreateAgent(provider='openai', model='gpt-4.1-mini', config=config)
 ```
 
 **Parâmetros suportados:**
@@ -443,7 +425,8 @@ agent = CreateAgent(provider="openai", model="gpt-4.1-mini", config=config)
 | `max_tokens`  | >0 (int)    | Limite de tokens na resposta                                                                              |
 | `top_p`       | 0.0–1.0     | Nucleus sampling                                                                                          |
 | `think`       | bool ou str | Ollama: bool (ativa/desativa), OpenAI: string de opções avançadas ("low", "medium" ou "high" disponíveis) |
-| `top_k`       | >0 (int)    | Número de tokens considerados no sampling                                                                 |
+| `top_k`       | >0 (int)    | Número de tokens considerados no sampling (Ollama)                                                        |
+| `stream`      | bool        | Ativa streaming de tokens em tempo real (`StreamingResponseDTO`)                                          |
 
 ______________________________________________________________________
 
@@ -455,10 +438,12 @@ ______________________________________________________________________
 import asyncio
 from createagents import CreateAgent
 
+
 async def main():
-    agent = CreateAgent(provider="openai", model="gpt-4")
-    resposta = await agent.chat("Olá!")
+    agent = CreateAgent(provider='openai', model='gpt-4')
+    resposta = await agent.chat('Olá!')
     print(resposta)
+
 
 asyncio.run(main())
 ```
@@ -468,15 +453,17 @@ asyncio.run(main())
 ```python
 import asyncio
 
+
 async def main():
     agent = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        tools=["currentdate", "readlocalfile"]
+        provider='openai',
+        model='gpt-4',
+        tools=['currentdate', 'readlocalfile'],
     )
 
-    resposta = await agent.chat("Que dia é hoje?")
+    resposta = await agent.chat('Que dia é hoje?')
     print(resposta)
+
 
 asyncio.run(main())
 ```
@@ -486,10 +473,12 @@ asyncio.run(main())
 ```python
 import asyncio
 
+
 async def main():
-    agent = CreateAgent(provider="ollama", model="llama3.2")
-    resposta = await agent.chat("Explique IA")
+    agent = CreateAgent(provider='ollama', model='llama3.2')
+    resposta = await agent.chat('Explique IA')
     print(resposta)
+
 
 asyncio.run(main())
 ```
@@ -497,7 +486,7 @@ asyncio.run(main())
 ### CLI Interativa
 
 ```python
-agent = CreateAgent(provider="openai", model="gpt-4")
+agent = CreateAgent(provider='openai', model='gpt-4')
 agent.start_cli()  # Interface completa no terminal
 ```
 

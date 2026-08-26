@@ -246,7 +246,7 @@ def _check_single_manifest_sync(
         manifest_path,
         manifest_dir,
         candidate_locks,
-        'local' if manifest_dir != Path('.') else 'root',
+        'local' if manifest_dir != Path() else 'root',
         root,
         staged_set,
         staged_statuses,
@@ -255,13 +255,13 @@ def _check_single_manifest_sync(
     if local_result is not None:
         return local_result
 
-    if manifest_dir != Path('.'):
+    if manifest_dir != Path():
         is_member = is_manifest_member_of_workspace(
             manifest_path, manifest_name, root
         )
         root_result = _check_lockfiles_for_manifest(
             manifest_path,
-            Path('.'),
+            Path(),
             candidate_locks,
             'shared root',
             root,
@@ -364,6 +364,12 @@ def main() -> int:
             staged_statuses=staged_statuses,
             staged_changes=staged_changes,
         )
+    except lockfile_checks.LockfileInfrastructureError as err:
+        sys.stderr.write(
+            'ERROR [DEPENDENCY_SYNC]: unable to execute native lockfile '
+            f'check: {err}\n'
+        )
+        return 2
     except GitInspectionError as err:
         sys.stderr.write(
             f'ERROR [DEPENDENCY_SYNC]: unable to inspect staged Git changes: '
@@ -379,8 +385,9 @@ def main() -> int:
         for error_msg in errors:
             sys.stderr.write(f'  • {error_msg}\n')
         sys.stderr.write(
-            '\nResolution: Update lockfile (e.g. `uv lock`, `pnpm install`, '
-            '`cargo check`) and stage it before committing.\n'
+            '\nResolution: Update the lockfile deliberately outside this hook '
+            '(e.g. `uv lock`, `pnpm install`, `cargo update`, or `go mod tidy`), '
+            'then stage it before committing.\n'
         )
         return 1
     return 0

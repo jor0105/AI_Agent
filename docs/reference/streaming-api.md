@@ -37,9 +37,10 @@ Inicializa o DTO com um gerador assíncrono.
 
 ```python
 async def my_generator():
-    yield "Hello"
-    yield " "
-    yield "World"
+    yield 'Hello'
+    yield ' '
+    yield 'World'
+
 
 dto = StreamingResponseDTO(my_generator())
 ```
@@ -112,11 +113,15 @@ ______________________________________________________________________
 import asyncio
 from createagents import CreateAgent
 
+
 async def main():
-    agent = CreateAgent(provider="openai", model="gpt-4", config={"stream": True})
-    response = await agent.chat("Olá")  # StreamingResponseDTO
+    agent = CreateAgent(
+        provider='openai', model='gpt-4', config={'stream': True}
+    )
+    response = await agent.chat('Olá')  # StreamingResponseDTO
     text = await response  # String completa
     print(text)
+
 
 asyncio.run(main())
 ```
@@ -127,13 +132,17 @@ asyncio.run(main())
 import asyncio
 from createagents import CreateAgent
 
+
 async def main():
-    agent = CreateAgent(provider="openai", model="gpt-4", config={"stream": True})
-    response = await agent.chat("Conte uma história")
+    agent = CreateAgent(
+        provider='openai', model='gpt-4', config={'stream': True}
+    )
+    response = await agent.chat('Conte uma história')
 
     async for token in response:
         print(token, end='', flush=True)
     print()
+
 
 asyncio.run(main())
 ```
@@ -143,16 +152,20 @@ asyncio.run(main())
 ```python
 import asyncio
 
-async def accumulate_and_display():
-    agent = CreateAgent(provider="openai", model="gpt-4", config={"stream": True})
-    response = await agent.chat("Liste 5 dicas")
 
-    accumulated = ""
+async def accumulate_and_display():
+    agent = CreateAgent(
+        provider='openai', model='gpt-4', config={'stream': True}
+    )
+    response = await agent.chat('Liste 5 dicas')
+
+    accumulated = ''
     async for token in response:
         accumulated += token
         print(token, end='', flush=True)
 
-    print(f"\n\nTotal caracteres: {len(accumulated)}")
+    print(f'\n\nTotal caracteres: {len(accumulated)}')
+
 
 asyncio.run(accumulate_and_display())
 ```

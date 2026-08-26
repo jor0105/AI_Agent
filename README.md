@@ -7,10 +7,10 @@
 [![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![PyPI version](https://img.shields.io/pypi/v/createagents.svg)](https://pypi.org/project/createagents/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Code style: Ruff](https://img.shields.io/badge/code%20style-Ruff-D7FF64.svg)](https://docs.astral.sh/ruff/)
 [![Checked with mypy](https://img.shields.io/badge/mypy-checked-blue)](http://mypy-lang.org/)
 
-[Documentação](https://jordanestralioto.github.io/Create-Agents-AI/) • [Exemplos](#-exemplos-de-uso) • [API Reference](https://jordanestralioto.github.io/Create-Agents-AI/reference/api/) • [Contribuir](#-contribuindo)
+[Documentação](docs/index.md) • [Exemplos](#-exemplos-de-uso) • [API Reference](docs/reference/api.md) • [Contribuir](docs/dev-guide/contribute.md)
 
 </div>
 
@@ -93,11 +93,9 @@ pip install createagents[file-tools]
 ### Configuração
 
 ```bash
-# Configure sua chave de API da OpenAI
-export OPENAI_API_KEY="sk-proj-sua-chave"
-
-# Ou crie um arquivo .env no seu projeto
-echo "OPENAI_API_KEY=sk-proj-sua-chave" > .env
+# Configure OPENAI_API_KEY in the environment when using OpenAI.
+# Never include the key in code or in the repository.
+export OPENAI_API_KEY
 ```
 
 ### Instalação para Desenvolvimento (Contribuidores)
@@ -117,10 +115,10 @@ uv sync --extra file-tools
 
 # Configure o ambiente
 cp .env.example .env
-# Edite .env e adicione: OPENAI_API_KEY=sk-proj-sua-chave
+# Edit .env locally and set OPENAI_API_KEY without versioning its value
 ```
 
-📖 [Guia completo para contribuidores →](https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/contribute/)
+📖 [Guia completo para contribuidores →](docs/dev-guide/contribute.md)
 
 ______________________________________________________________________
 
@@ -132,17 +130,19 @@ ______________________________________________________________________
 import asyncio
 from createagents import CreateAgent
 
+
 async def main():
     # Criar agente
     agent = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        instructions="Você é um assistente técnico especializado em Python"
+        provider='openai',
+        model='gpt-4',
+        instructions='Você é um assistente técnico especializado em Python',
     )
 
     # Conversar
-    response = await agent.chat("Como criar uma função recursiva?")
+    response = await agent.chat('Como criar uma função recursiva?')
     print(response)
+
 
 asyncio.run(main())
 ```
@@ -153,17 +153,17 @@ asyncio.run(main())
 import asyncio
 from createagents import CreateAgent
 
+
 async def main():
     # Agente com ferramentas
     agent = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        tools=["currentdate"]
+        provider='openai', model='gpt-4', tools=['currentdate']
     )
 
     # O agente usa ferramentas automaticamente
-    response = await agent.chat("Que dia é hoje?")  # Usa CurrentDateTool
+    response = await agent.chat('Que dia é hoje?')  # Usa CurrentDateTool
     print(response)
+
 
 asyncio.run(main())
 ```
@@ -185,15 +185,17 @@ ollama serve
 import asyncio
 from createagents import CreateAgent
 
+
 async def main():
     agent = CreateAgent(
-        provider="ollama",
-        model="llama3.2",
-        instructions="Você é um assistente local"
+        provider='ollama',
+        model='llama3.2',
+        instructions='Você é um assistente local',
     )
 
-    response = await agent.chat("Explique Clean Architecture")
+    response = await agent.chat('Explique Clean Architecture')
     print(response)
+
 
 asyncio.run(main())
 ```
@@ -202,121 +204,12 @@ ______________________________________________________________________
 
 ## 📋 Exemplos de Uso
 
-### Exemplo 1: Assistente de Programação
+Os exemplos completos foram separados por cenário para manter esta página
+curta e fácil de consultar:
 
-```python
-import asyncio
-from createagents import CreateAgent
-
-async def main():
-    assistant = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        name="Code Assistant",
-        instructions="Você é um especialista em programação Python. Sempre forneça exemplos de código.",
-        config={"temperature": 0.3}  # Menos criatividade para código
-    )
-
-    # Conversar
-    resposta = await assistant.chat("Como ordenar uma lista de dicionários por chave?")
-    print(resposta)
-
-    # Ver histórico
-    config = assistant.get_configs()
-    print(f"Histórico: {len(config['history'])} mensagens")
-
-    # Limpar e começar novo diálogo
-    assistant.clear_history()
-
-asyncio.run(main())
-```
-
-### Exemplo 2: Múltiplos Agentes
-
-```python
-import asyncio
-from createagents import CreateAgent
-
-async def main():
-    # Um para análise
-    analyzer = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        instructions="Você analisa código e fornece feedback crítico",
-        config={"temperature": 0.5}
-    )
-
-    # Outro para documentação
-    documentor = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        instructions="Você escreve documentação clara e profissional",
-        config={"temperature": 0.3}
-    )
-
-    # Usar ambos
-    code = "def sum(a,b): return a+b"
-
-    analise = await analyzer.chat(f"Analise este código: {code}")
-    print("Análise:", analise)
-
-    docs = await documentor.chat(f"Documente esta função: {code}")
-    print("\nDocumentação:", docs)
-
-asyncio.run(main())
-```
-
-### Exemplo 3: Ferramenta Customizada
-
-```python
-from createagents import CreateAgent, BaseTool
-
-class CalculatorTool(BaseTool):
-    name = "calculator"
-    description = "Realiza cálculos matemáticos"
-    parameters = {
-        "type": "object",
-        "properties": {
-            "expression": {"type": "string", "description": "Expressão matemática"}
-        },
-        "required": ["expression"]
-    }
-
-    def execute(self, expression: str) -> str:
-        return str(eval(expression))
-
-# Criar agente com ferramenta customizada
-agent = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    tools=["currentdate", CalculatorTool()]
-)
-
-# Ver todas as ferramentas
-all_tools = agent.get_all_available_tools()
-print(f"Total de ferramentas: {len(all_tools)}")
-for name, description in all_tools.items():
-    print(f"  • {name}: {description[:50]}...")
-```
-
-### Exemplo 4: Métricas e Performance
-
-```python
-agent = CreateAgent(provider="openai", model="gpt-4")
-
-# Ver métricas de chamadas
-metrics = agent.get_metrics()
-
-# Exportar como JSON
-json_data = agent.export_metrics_json()
-
-# Exportar formato Prometheus
-prom_data = agent.export_metrics_prometheus()
-
-# Salvar em arquivo
-agent.export_metrics_json("metrics.json")
-agent.export_metrics_prometheus("metrics.prom")
-```
+- [Exemplos práticos para usuários](docs/user-guide/examples-user.md)
+- [API e ferramentas](docs/reference/api.md)
+- [Exemplos técnicos para contribuidores](docs/dev-guide/technical-examples.md)
 
 ______________________________________________________________________
 
@@ -326,41 +219,51 @@ Este projeto segue **Clean Architecture** e **SOLID Principles**:
 
 ```
 src/
-└─ createagents/                # Pacote principal
-    ├─ domain/                 # Regras de negócio (entidades, services, value_objects, exceptions)
-    ├─ application/            # Casos de uso e DTOs (lógica da aplicação)
-    ├─ infra/                  # Implementações externas (adapters, factories, config)
-    ├─ main/                   # Composição e injeção de dependências (composers)
-    └─ utils/                  # Utilitários (text_sanitizer, helpers)
+└─ createagents/                         # Pacote principal
+    ├─ domain/                            # Regras de negócio
+    ├─ application/                       # Casos de uso, DTOs e portas
+    ├─ infra/                             # Adapters, factories e configuração
+    ├─ main/                              # Facade e composição de dependências
+    │   ├─ facade/                        # CreateAgent
+    │   └─ composers/                     # AgentComposer
+    ├─ presentation/                     # CLI e interface de terminal
+    └─ utils/                             # Utilitários compartilhados
 ```
 
 ### Diagrama de Camadas
 
 ```
-┌─────────────────────────────────────┐
-│        PRESENTATION                 │  ← CreateAgent (interface simples)
-│     (Controllers/UI)                │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│        APPLICATION                  │  ← Use Cases & DTOs
-│    (Business Logic)                 │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│          DOMAIN                     │  ← Entities & Rules
-│    (Core Business)                  │
-└──────────────▲──────────────────────┘
-               │
-┌──────────────┴──────────────────────┐
-│      INFRASTRUCTURE                 │  ← Adapters (OpenAI, Ollama)
-│  (External Services)                │
-└─────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│ MAIN                                                        │
+│ CreateAgent: src/createagents/main/facade/client.py        │
+│ AgentComposer (composition root)                           │
+└──────────────────────────────┬─────────────────────────────┘
+                               │ compõe e injeta dependências
+        ┌──────────────────────┼──────────────────────┐
+        │                      │                      │
+        ▼                      ▼                      ▼
+┌───────────────┐   ┌────────────────┐   ┌────────────────────────┐
+│ PRESENTATION  │   │ APPLICATION    │   │ INFRA                   │
+│ CLI           │──▶│ Use Cases      │◀──│ Adapters / Factories    │
+└───────────────┘   └───────┬────────┘   └────────────────────────┘
+                            │ depende de
+                            ▼
+                    ┌────────────────┐
+                    │ DOMAIN         │
+                    │ Entities/Rules │
+                    └────────────────┘
 ```
+
+`CreateAgent` não pertence à camada Presentation: a fachada pública vive em
+`src/createagents/main/facade/`, enquanto a CLI vive em
+`src/createagents/presentation/cli/`. O composition root é
+`src/createagents/main/composers/agent_composer.py`. A aplicação depende apenas
+do domínio; infraestrutura e apresentação implementam as portas consumidas
+pelos casos de uso.
 
 **Benefícios**: Testável, Flexível, Escalável e Manutenível
 
-📖 [Documentação completa da arquitetura](https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/architecture-developer/)
+📖 [Documentação completa da arquitetura](docs/dev-guide/architecture-developer.md)
 
 ______________________________________________________________________
 
@@ -368,22 +271,22 @@ ______________________________________________________________________
 
 ### Guia do Usuário
 
-- 📖 [Instalação](https://jordanestralioto.github.io/Create-Agents-AI/user-guide/installation-user/)
-- 🚀 [Uso Básico](https://jordanestralioto.github.io/Create-Agents-AI/user-guide/basic-usage-user/)
-- 💡 [Exemplos Práticos](https://jordanestralioto.github.io/Create-Agents-AI/user-guide/examples-user/)
-- ❓ [FAQ](https://jordanestralioto.github.io/Create-Agents-AI/user-guide/faq-user/)
+- 📖 [Instalação](docs/user-guide/installation-user.md)
+- 🚀 [Uso Básico](docs/user-guide/basic-usage-user.md)
+- 💡 [Exemplos Práticos](docs/user-guide/examples-user.md)
+- ❓ [FAQ](docs/user-guide/faq-user.md)
 
 ### Guia do Desenvolvedor
 
-- 🏗️ [Arquitetura](https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/architecture-developer/)
-- 🔧 [Exemplos Técnicos](https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/technical-examples/)
-- 🤝 [Como Contribuir](https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/contribute/)
+- 🏗️ [Arquitetura](docs/dev-guide/architecture-developer.md)
+- 🔧 [Exemplos Técnicos](docs/dev-guide/technical-examples.md)
+- 🤝 [Como Contribuir](docs/dev-guide/contribute.md)
 
 ### Referência
 
-- 📚 [API Reference](https://jordanestralioto.github.io/Create-Agents-AI/reference/api/)
-- 🛠️ [Ferramentas](https://jordanestralioto.github.io/Create-Agents-AI/reference/tools/)
-- ⌨️ [Comandos](https://jordanestralioto.github.io/Create-Agents-AI/reference/commands/)
+- 📚 [API Reference](docs/reference/api.md)
+- 🛠️ [Ferramentas](docs/reference/tools.md)
+- ⌨️ [Comandos](docs/reference/commands.md)
 
 ### Build Local da Documentação
 
@@ -398,30 +301,38 @@ ______________________________________________________________________
 
 ### Variáveis de Ambiente
 
-Crie um arquivo `.env`:
+Copie `.env.example` para `.env` e preencha somente as variáveis necessárias ao
+seu ambiente. Nunca inclua valores secretos no código ou no repositório.
 
 ```bash
-# OpenAI
-OPENAI_API_KEY=sk-proj-xxx...
+# OpenAI: obrigatório somente quando o provider é "openai".
+OPENAI_API_KEY
 ```
+
+| Contexto   | Variáveis                                                                              | Comportamento                                                                                  |
+| ---------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| OpenAI     | `OPENAI_API_KEY`, `OPENAI_TIMEOUT`, `OPENAI_MAX_RETRIES`, `OPENAI_MAX_TOOL_ITERATIONS` | Requer `OPENAI_API_KEY`; as demais controlam timeout, retries e iterações de tools.            |
+| Ollama     | `OLLAMA_HOST`, `OLLAMA_MAX_RETRIES`, `OLLAMA_MAX_TOOL_ITERATIONS`                      | Não requer API key, mas requer um servidor Ollama alcançável.                                  |
+| Logging    | `LOG_LEVEL`, `LOG_TO_FILE`, `LOG_FILE_PATH`, `LOG_JSON_FORMAT`                         | A biblioteca permanece silenciosa até `LoggingConfig.configure()` ser chamado pelo consumidor. |
+| File tools | `FILE_TOOL_BASE_DIR`                                                                   | Restringe o diretório usado pela `ReadLocalFileTool`.                                          |
 
 ### Configuração do Modelo
 
 ```python
 config = {
-    "temperature": 0.7,     # Criatividade (0-1)
-    "max_tokens": 1000,     # Limite de resposta
-    "top_p": 0.9,           # Nucleus sampling
-    "think": True,          # Ollama: bool / OpenAI: "low"|"medium"|"high"
+    'temperature': 0.7,  # Criatividade (0-1)
+    'max_tokens': 1000,  # Limite de resposta
+    'top_p': 0.9,  # Nucleus sampling
+    'think': True,  # Ollama: bool / OpenAI: "low"|"medium"|"high"
 }
 
 agent = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    name="Assistente",
-    instructions="Seja conciso",
+    provider='openai',
+    model='gpt-4',
+    name='Assistente',
+    instructions='Seja conciso',
     config=config,
-    history_max_size=20
+    history_max_size=20,
 )
 ```
 
@@ -429,34 +340,8 @@ ______________________________________________________________________
 
 ## 📊 API Reference
 
-### CreateAgent
-
-```python
-CreateAgent(
-    provider: str,              # "openai" ou "ollama" (obrigatório)
-    model: str,                 # Nome do modelo (obrigatório)
-    name: str = None,           # Nome do agente (opcional)
-    instructions: str = None,   # Instruções do sistema (opcional)
-    config: dict = None,        # Configuração do modelo (opcional)
-    tools: list = None,         # Lista de ferramentas (opcional)
-    history_max_size: int = 10  # Tamanho máximo do histórico
-)
-```
-
-#### Métodos Principais
-
-| Método                                 | Retorno | Descrição                                            |
-| -------------------------------------- | ------- | ---------------------------------------------------- |
-| `chat(message)`                        | `str`   | Enviar mensagem e receber resposta                   |
-| `get_configs()`                        | `dict`  | Obter configurações e histórico                      |
-| `clear_history()`                      | `None`  | Limpar histórico de mensagens                        |
-| `get_all_available_tools()`            | `dict`  | Listar todas as ferramentas (sistema + customizadas) |
-| `get_system_available_tools()`         | `dict`  | Listar apenas ferramentas do sistema                 |
-| `get_metrics()`                        | `list`  | Obter métricas de performance                        |
-| `export_metrics_json(path=None)`       | `str`   | Exportar métricas em JSON                            |
-| `export_metrics_prometheus(path=None)` | `str`   | Exportar métricas em Prometheus                      |
-
-📖 [Documentação completa da API](https://jordanestralioto.github.io/Create-Agents-AI/reference/api/)
+A referência completa das assinaturas, métodos, ferramentas e configurações
+está em [docs/reference/api.md](docs/reference/api.md).
 
 ______________________________________________________________________
 
@@ -466,33 +351,48 @@ Contribuições são bem-vindas! Siga os passos:
 
 1. **Fork** o repositório
 
-2. **Crie uma branch**: `git checkout -b feature/nova-feature`
+2. **Crie uma branch**: `git checkout -b feature/add-provider`
 
 3. **Implemente** seguindo os padrões existentes
 
-4. **Adicione testes**: Garanta cobertura mínima de 85%
+4. **Adicione testes** que comprovem o comportamento, os casos de borda e as
+   regressões relevantes
 
 5. **Execute os checks**:
 
    ```bash
-   # Instalar pre-commit hooks
-   uv run pre-commit install --install-hooks
+   # Install pre-commit hooks from the locked environment
+   uv run --locked --no-sync pre-commit install --install-hooks
 
-   # Executar todos os checks
-   uv run pre-commit run --all-files
+   # Run pre-commit hooks
+   uv run --locked --no-sync pre-commit run --all-files
 
-   # Executar testes com cobertura
-   uv run pytest --cov=src --cov-fail-under=85
+   # Run pre-push hooks
+   uv run --locked --no-sync pre-commit run --all-files --hook-stage pre-push
+
+   # Run safe local tests (no external APIs)
+   uv run --locked --no-sync pytest -m 'not integration and not slow' -ra --cov=src --cov-fail-under=85
    ```
 
-6. **Envie um Pull Request**
+6. **Faça um commit em inglês** usando Conventional Commits, por exemplo
+   `feat: add support for provider XYZ`
+
+7. **Atualize a documentação** quando comportamento, contratos ou exemplos
+   mudarem
+
+8. **Envie um Pull Request**
 
 ### Adicionando um Novo Provedor
 
-1. Crie um novo adapter em `src/infra/adapters/NomeProvedor/`
-2. Implemente a interface `ChatRepository`
-3. Registre em `ChatAdapterFactory`
-4. Adicione testes em `tests/infra/adapters/`
+1. Crie um novo adapter em `src/createagents/infra/adapters/NomeProvedor/`
+2. Implemente a porta `ChatRepository` da aplicação
+3. Registre o provider em `src/createagents/infra/factories/chat_adapter_factory.py`
+4. Adicione testes espelhando a camada em `tests/infra/adapters/`
+
+Novos handlers da CLI ficam em `src/createagents/presentation/cli/commands/` e
+são registrados em
+`src/createagents/presentation/cli/application/chat_cli_app.py`, no método
+`_setup_commands`.
 
 Exemplo:
 
@@ -501,6 +401,7 @@ from collections.abc import AsyncGenerator
 from typing import Any
 from createagents.application.interfaces import ChatRepository
 from createagents.domain import BaseTool
+
 
 class MeuAdapter(ChatRepository):
     async def chat(
@@ -512,11 +413,11 @@ class MeuAdapter(ChatRepository):
         history: list[dict[str, str]],
         user_ask: str,
     ) -> str | AsyncGenerator[str, None]:
-        # Sua implementação
+        # Implementation
         pass
 ```
 
-📖 [Guia completo de contribuição](https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/contribute/)
+📖 [Guia completo de contribuição](docs/dev-guide/contribute.md)
 
 ______________________________________________________________________
 
@@ -535,22 +436,22 @@ Este projeto tem automação profissional com GitHub Actions:
   - ✅ Tests com cobertura mínima de 85%
   - ✅ Docstring validation (pydocstyle)
 
-### Documentation Build
+O workflow completo está em
+[`.github/workflows/pipeline.yml`](.github/workflows/pipeline.yml).
 
-- **Executa**: Manualmente via `workflow_dispatch`
-- **Ação**: Build e validação da documentação com MkDocs
+### Hooks locais
 
-### Pre-commit Hooks
-
-15+ verificadores automáticos antes de cada commit:
+O projeto configura 41 hooks: 37 na etapa `pre-commit`, 3 na etapa `pre-push`
+e 1 na etapa `commit-msg` para validar Conventional Commits.
 
 ```bash
-# Instalar
-uv run pre-commit install --install-hooks
-
-# Executar manualmente
-uv run pre-commit run --all-files
+uv sync --locked
+uv run --locked --no-sync pre-commit install --install-hooks
+uv run --locked --no-sync pre-commit run --all-files
+uv run --locked --no-sync pre-commit run --all-files --hook-stage pre-push
 ```
+
+Os hooks não sincronizam o ambiente nem reescrevem `uv.lock`; veja a política e o fluxo de atualização deliberada no [guia de contribuição](docs/dev-guide/contribute.md).
 
 ______________________________________________________________________
 
@@ -562,7 +463,7 @@ ______________________________________________________________________
 
 ## 📞 Suporte
 
-- 📖 [Documentação Completa](https://jordanestralioto.github.io/Create-Agents-AI/)
+- 📖 [Documentação Completa](docs/index.md)
 - 🐛 [Reportar Bugs](https://github.com/jordanestralioto/Create-Agents-AI/issues)
 - 💬 [Discussões](https://github.com/jordanestralioto/Create-Agents-AI/discussions)
 - 📧 Email: estraliotojordan@gmail.com

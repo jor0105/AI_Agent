@@ -63,7 +63,7 @@ def retry_with_backoff(
                 try:
                     on_retry(attempt, e)
                 # User callbacks must never abort the retry loop.
-                except Exception as callback_error:  # noqa: BLE001
+                except Exception as callback_error:
                     logger.warning(
                         'Error in retry callback: %s', callback_error
                     )

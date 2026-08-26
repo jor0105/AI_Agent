@@ -21,8 +21,11 @@ NATIVE_LOCKFILE_COMMANDS: dict[tuple[str, str], tuple[str, ...]] = {
     ('pyproject.toml', 'uv.lock'): ('uv', 'lock', '--check'),
     ('pyproject.toml', 'poetry.lock'): ('poetry', 'check', '--lock'),
     ('Cargo.toml', 'Cargo.lock'): ('cargo', 'check', '--locked'),
-    ('go.mod', 'go.sum'): ('go', 'mod', 'verify'),
 }
+
+
+class LockfileInfrastructureError(RuntimeError):
+    """Raised when a native lockfile check cannot be started or run."""
 
 
 def missing_lockfile_error(
@@ -80,14 +83,17 @@ def is_lockfile_in_sync(
 ) -> bool:
     """Return whether a native package manager confirms lockfile coherence.
 
-    No universal wall-clock budget is imposed here. A missing tool, execution
-    error, non-zero result, or unsupported manifest remains a failed check.
+    No universal wall-clock budget is imposed here. A native command that
+    returns non-zero means the existing lockfile is not confirmed as coherent.
+    A missing tool or subprocess execution error is infrastructure failure and
+    must remain distinguishable from that deterministic mismatch.
     """
     target_dir = root / manifest_dir
     for lock_name in existing_locks:
         command = NATIVE_LOCKFILE_COMMANDS.get((manifest_path.name, lock_name))
         if command is None:
             continue
+        command_text = ' '.join(command)
         try:
             result = subprocess.run(
                 list(command),
@@ -96,8 +102,11 @@ def is_lockfile_in_sync(
                 text=True,
                 check=False,
             )
-        except (subprocess.SubprocessError, FileNotFoundError, OSError):
-            continue
+        except (subprocess.SubprocessError, OSError) as err:
+            raise LockfileInfrastructureError(
+                f'Unable to execute native lockfile check "{command_text}" '
+                f'for {manifest_path.as_posix()} ({lock_name}): {err}'
+            ) from err
         if result.returncode == 0:
             return True
     return False

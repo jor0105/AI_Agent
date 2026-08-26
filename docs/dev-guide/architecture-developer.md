@@ -130,8 +130,8 @@ ______________________________________________________________________
 Cada classe tem uma única responsabilidade:
 
 ```python
-Agent          # Representa um agente
-History        # Gerencia histórico
+Agent  # Representa um agente
+History  # Gerencia histórico
 ChatWithAgentUseCase  # Orquestra conversa
 ```
 
@@ -163,7 +163,19 @@ Interfaces específicas e focadas:
 ```python
 class ChatRepository(ABC):
     @abstractmethod
-    def chat(self, ...) -> str:
+    async def chat(
+        self,
+        model: str,
+        instructions: str | None,
+        config: dict[str, Any] | None,
+        tools: list[BaseTool] | None,
+        history: list[dict[str, str]],
+        user_ask: str,
+    ) -> str | AsyncGenerator[str, None]:
+        pass
+
+    @abstractmethod
+    def get_metrics(self) -> list[ChatMetrics]:
         pass
 ```
 
@@ -176,10 +188,13 @@ class ChatWithAgentUseCase:
     def __init__(self, chat_repository: ChatRepository):  # Interface
         self.__chat_repository = chat_repository
 
+
 # Exemplo com LoggerInterface (DIP no domínio)
 class ToolExecutor:
-    def __init__(self, logger: LoggerInterface):  # Abstração
-        self._logger = logger  # Não depende de StandardLogger diretamente
+    def __init__(
+        self, tools: list[BaseTool], logger: LoggerInterface
+    ):  # Abstrações
+        self.__logger = logger  # Não depende de StandardLogger diretamente
 ```
 
 ______________________________________________________________________
@@ -191,11 +206,28 @@ ______________________________________________________________________
 ```python
 class ChatRepository(ABC):
     @abstractmethod
-    def chat(self, ...) -> str:
+    async def chat(
+        self,
+        model: str,
+        instructions: str | None,
+        config: dict[str, Any] | None,
+        tools: list[BaseTool] | None,
+        history: list[dict[str, str]],
+        user_ask: str,
+    ) -> str | AsyncGenerator[str, None]:
         pass
 
+    @abstractmethod
+    def get_metrics(self) -> list[ChatMetrics]:
+        pass
+
+
 class OpenAIChatAdapter(ChatRepository):
-    def chat(self, ...): # Implementação
+    async def chat(self, ...):  # Implementação assíncrona
+        ...
+
+    def get_metrics(self) -> list[ChatMetrics]:
+        ...
 ```
 
 ### Factory Pattern
@@ -206,18 +238,17 @@ class ChatAdapterFactory:
     def create(
         cls,
         provider: str,
-        model: str,
     ) -> ChatRepository:
 
         provider_lower = provider.lower()
         adapter: ChatRepository
 
-        if provider_lower == "openai":
+        if provider_lower == 'openai':
             adapter = OpenAIChatAdapter()
-        elif provider_lower == "ollama":
+        elif provider_lower == 'ollama':
             adapter = OllamaChatAdapter()
         else:
-            raise ValueError(f"Invalid provider: {provider}.")
+            raise ValueError(f'Invalid provider: {provider}.')
         return adapter
 ```
 
@@ -267,7 +298,7 @@ User → CreateAgent.chat()
 User → CreateAgent.chat()
     → ChatWithAgentUseCase.execute() [async]
         → ChatRepository.chat() [async]
-            → StreamHandler.handle_streaming()
+            → StreamHandler.handle_stream()
                 → async for token in api_stream:
                     → yield token  # Streaming em tempo real
             ← AsyncGenerator[str]
@@ -283,8 +314,7 @@ Terminal → ChatCLIApplication.run()
     → CommandRegistry.find_handler(user_input)
         → CommandHandler.execute()
             → CreateAgent.chat() [se ChatCommandHandler]
-                → async for token in response:
-                    → TerminalRenderer.render_token()
+                → await TerminalRenderer.render_ai_message_streaming(response)
 ```
 
 ______________________________________________________________________
@@ -303,7 +333,7 @@ use_case = ChatWithAgentUseCase(mock_repo)
 
 ```python
 # Trocar provider sem mudar código
-agent = CreateAgent(provider="ollama", model="llama2")
+agent = CreateAgent(provider='ollama', model='llama2')
 ```
 
 ### 📈 Escalabilidade
@@ -326,21 +356,26 @@ ______________________________________________________________________
 
 ```python
 # Handler retorna AsyncGenerator
-async def handle_streaming(self, ...) -> AsyncGenerator[str, None]:
+async def handle_stream(self, ...) -> AsyncGenerator[str, None]:
     async for chunk in api_response:
         yield chunk  # Stream em tempo real
+
 
 # DTO encapsula AsyncGenerator
 class StreamingResponseDTO:
     def __init__(self, generator: AsyncGenerator[str, None]):
         self._generator = generator
 
-    async def __anext__(self):  # Permite async for
+    def __aiter__(self):  # Permite async for
+        return self
+
+    async def __anext__(self):
         return await self._generator.__anext__()
 
     def __await__(self):  # Permite await
         async def _consume():
             return ''.join([token async for token in self])
+
         return _consume().__await__()
 ```
 

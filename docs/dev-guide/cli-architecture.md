@@ -81,18 +81,17 @@ class CommandHandler(ABC):
     def __init__(self, renderer: TerminalRenderer):
         self._renderer = renderer
 
-    @abstractmethod
     def can_handle(self, user_input: str) -> bool:
-        """Check if this handler can process the input."""
-        pass
+        """Check if this handler can process the input (default: alias matching)."""
+        return self._normalize_input(user_input) in self.get_aliases()
 
     @abstractmethod
-    def execute(self, agent: 'CreateAgent', user_input: str) -> None:
+    def execute(self, agent: 'AgentFacade', user_input: str) -> None:
         """Execute the command."""
         pass
 
     @abstractmethod
-    def get_aliases(self) -> List[str]:
+    def get_aliases(self) -> list[str]:
         """Get command aliases."""
         pass
 ```
@@ -114,13 +113,13 @@ class CommandRegistry:
     """
 
     def __init__(self):
-        self._handlers: List[CommandHandler] = []
+        self._handlers: list[CommandHandler] = []
 
     def register(self, handler: CommandHandler) -> None:
         """Register a command handler."""
         self._handlers.append(handler)
 
-    def find_handler(self, user_input: str) -> Optional[CommandHandler]:
+    def find_handler(self, user_input: str) -> CommandHandler | None:
         """Find the first handler that can process the input."""
         for handler in self._handlers:
             if handler.can_handle(user_input):
@@ -129,7 +128,7 @@ class CommandRegistry:
 ```
 
 **Padrão de Registro**:
-Os handlers são registrados em ordem, do mais específico ao mais genérico. O `ChatCommandHandler` deve ser sempre o último (handler padrão).
+Os handlers são registrados em ordem, do mais específico ao mais genérico. O `ChatCommandHandler` deve ser sempre o último (handler padrão de fallback).
 
 ______________________________________________________________________
 
@@ -144,12 +143,15 @@ class ChatCommandHandler(CommandHandler):
     """Handles regular chat messages (default handler)."""
 
     def can_handle(self, user_input: str) -> bool:
-        # Aceita qualquer entrada (fallback)
-        return True
+        # Aceita qualquer entrada não-vazia (fallback)
+        return bool(user_input.strip())
 
-    def execute(self, agent: 'CreateAgent', user_input: str) -> None:
-        # Processa streaming assíncrono
-        asyncio.run(self._async_execute(agent, user_input))
+    def execute(self, agent: 'AgentFacade', user_input: str) -> None:
+        # Processa chat e streaming
+        asyncio.run(self.__run_chat(agent, user_input))
+
+    def get_aliases(self) -> list[str]:
+        return []
 ```
 
 #### HelpCommandHandler
@@ -158,11 +160,10 @@ class ChatCommandHandler(CommandHandler):
 
 ```python
 class HelpCommandHandler(CommandHandler):
-    def can_handle(self, user_input: str) -> bool:
-        normalized = self._normalize_input(user_input)
-        return normalized in self.get_aliases()
+    def execute(self, agent: 'AgentFacade', user_input: str) -> None:
+        self._render_markdown(_HELP_TEXT)
 
-    def get_aliases(self) -> List[str]:
+    def get_aliases(self) -> list[str]:
         return ['/help', 'help']
 ```
 
@@ -172,12 +173,12 @@ class HelpCommandHandler(CommandHandler):
 
 ```python
 class MetricsCommandHandler(CommandHandler):
-    def execute(self, agent: 'CreateAgent', user_input: str) -> None:
+    def execute(self, agent: 'AgentFacade', user_input: str) -> None:
         metrics = agent.get_metrics()
-        # Formata e renderiza métricas
+        # Constrói tabela Markdown e exibe via self._render_markdown(...)
 ```
 
-_(Outros handlers seguem estrutura similar)_
+_(Outros handlers como ConfigsCommandHandler, ToolsCommandHandler e ClearCommandHandler seguem estrutura similar)_
 
 ______________________________________________________________________
 
@@ -189,15 +190,16 @@ ______________________________________________________________________
 
 ```python
 class TerminalRenderer:
-    """Handles terminal rendering with colors and formatting.
+    """Handles terminal rendering with colors, panels and formatting.
 
     Responsibility: Encapsulate all terminal output logic.
     This follows SRP by handling only rendering concerns.
     """
 
-    def __init__(self):
+    def __init__(self, show_timestamps: bool = False):
         self._formatter = TerminalFormatter()
-        self._colors = ColorScheme()
+        self._console = Console()
+        self._show_timestamps = show_timestamps
 
     def render_welcome_screen(self) -> None:
         """Display welcome message."""
@@ -205,8 +207,16 @@ class TerminalRenderer:
     def render_prompt(self) -> None:
         """Display user input prompt."""
 
-    def render_assistant_token(self, token: str) -> None:
-        """Render a single token from assistant."""
+    def render_user_message(self, message: str) -> None:
+        """Render a user message in a right-aligned rounded box."""
+
+    def render_ai_message(self, message: str) -> None:
+        """Render a static AI message in a left-aligned rounded box."""
+
+    async def render_ai_message_streaming(
+        self, token_generator: AsyncIterator[str]
+    ) -> None:
+        """Render AI tokens in real time inside a Rich live panel."""
 
     def render_system_message(self, message: str) -> None:
         """Render a system message."""
@@ -217,57 +227,87 @@ class TerminalRenderer:
 
 **Métodos de Renderização**:
 
-- `render_welcome_screen()` - Tela de boas-vindas
+- `render_welcome_screen()` - Tela de boas-vindas com banner ASCII
 - `render_prompt()` - Prompt de entrada
-- `render_input_indicator()` - Indicador ✎
-- `render_assistant_token(token)` - Token individual do agente
-- `render_thinking_indicator()` - Indicador "pensando..."
-- `render_system_message(msg)` - Mensagem do sistema
-- `render_error(msg)` - Mensagem de erro
-- `render_metrics(metrics)` - Exibir métricas
-- `render_configs(configs)` - Exibir configurações
-- `render_tools(tools)` - Exibir ferramentas
+- `render_input_indicator()` - Indicador de entrada `▶`
+- `render_user_message(msg)` - Balão azul alinhado à direita
+- `render_ai_message(msg)` - Balão roxo alinhado à esquerda
+- `render_ai_message_streaming(gen)` - Painel Rich Live com streaming token a token
+- `render_thinking_indicator()` - Indicador "AI is thinking..."
+- `clear_thinking_indicator()` - Limpa a linha de pensamento
+- `render_system_message(msg)` - Balão ciano do sistema
+- `render_success_message(msg)` - Balão verde de sucesso
+- `render_error(msg)` - Mensagem de erro formatada
+- `render_goodbye()` - Mensagem de despedida
+- `render_interrupt()` - Mensagem de encerramento via Ctrl+C
 
 ______________________________________________________________________
 
-### 6. TerminalFormatter
+### 6. Formatters
 
-**Responsabilidade**: Formatação de markdown para terminal.
+#### TerminalFormatter
+
+**Responsabilidade**: Formatação de balões arredondados e cálculo de largura.
 
 **Localização**: `src/createagents/presentation/cli/ui/terminal_formatter.py`
 
 ```python
 class TerminalFormatter:
-    """Formats markdown text for terminal display.
-
-    Converts markdown elements to terminal-compatible formatting.
-    """
+    """Handles terminal text formatting and display width calculations."""
 
     @staticmethod
-    def format_markdown(text: str) -> str:
-        """Convert markdown to terminal formatting."""
-        # Converte **bold**, *italic*, `code`, etc.
+    def get_display_width(text: str) -> int:
+        """Calcula largura visual considerando caracteres largos e ignorando ANSI."""
+
+    @staticmethod
+    def wrap_text(text: str, max_width: int, subsequent_indent: str = '') -> list[str]:
+        """Quebra linhas preservando indentação e largura do terminal."""
+
+    @staticmethod
+    def format_rounded_box(text: str, color: str, align: str = 'left', ...) -> str:
+        """Envolve o texto em uma caixa arredondada com timestamp e ícone."""
+```
+
+#### MarkdownTerminalFormatter
+
+**Responsabilidade**: Formatação de Markdown para saída ANSI colorida no terminal.
+
+**Localização**: `src/createagents/presentation/cli/ui/markdown_formatter.py`
+
+```python
+class MarkdownTerminalFormatter:
+    """Renders Markdown as ANSI-styled text for the interactive CLI."""
+
+    @staticmethod
+    def format(text: str) -> str:
+        """Converte headers, listas, tabelas e ênfases em estilos ANSI."""
 ```
 
 ______________________________________________________________________
 
 ### 7. ColorScheme
 
-**Responsabilidade**: Define esquema de cores do terminal.
+**Responsabilidade**: Centraliza códigos de cores ANSI (paleta 256 cores) e métodos semânticos.
 
 **Localização**: `src/createagents/presentation/cli/ui/color_scheme.py`
 
 ```python
 class ColorScheme:
-    """Defines color scheme for terminal output."""
+    """Manages ANSI color codes for terminal output."""
 
-    PRIMARY = "\033[36m"      # Cyan
-    SUCCESS = "\033[32m"      # Green
-    WARNING = "\033[33m"      # Yellow
-    ERROR = "\033[31m"        # Red
-    INFO = "\033[34m"         # Blue
-    COMMAND = "\033[35m"      # Magenta
-    RESET = "\033[0m"
+    BLUE: str = '\033[38;5;75m'  # Mensagens do usuário
+    PURPLE: str = '\033[38;5;141m'  # Mensagens da IA
+    GREEN: str = '\033[38;5;84m'  # Sucesso
+    YELLOW: str = '\033[38;5;221m'  # Avisos
+    RED: str = '\033[38;5;204m'  # Erros
+    CYAN: str = '\033[38;5;87m'  # Sistema
+    GRAY: str = '\033[38;5;245m'  # Texto sutil
+    DARK_GRAY: str = '\033[38;5;240m'  # Metadados
+    RESET: str = '\033[0m'
+
+    # Métodos semânticos
+    # get_user_color(), get_ai_color(), get_system_color(),
+    # get_success_color(), get_error_color(), get_timestamp_color()
 ```
 
 ______________________________________________________________________
@@ -359,6 +399,7 @@ class CustomCommandHandler(CommandHandler):
     def get_aliases(self):
         return ['/custom']
 
+
 # Registrar
 registry.register(CustomCommandHandler(renderer))
 ```
@@ -385,21 +426,19 @@ ______________________________________________________________________
 # src/createagents/presentation/cli/commands/my_command.py
 from .base_command import CommandHandler
 
-class MyCommandHandler(CommandHandler):
-    def can_handle(self, user_input: str) -> bool:
-        return self._normalize_input(user_input) in self.get_aliases()
 
-    def execute(self, agent: 'CreateAgent', user_input: str) -> None:
+class MyCommandHandler(CommandHandler):
+    def execute(self, agent: 'AgentFacade', user_input: str) -> None:
         # Sua lógica aqui
         result = self._my_logic(agent)
         self._renderer.render_system_message(result)
 
-    def get_aliases(self) -> List[str]:
+    def get_aliases(self) -> list[str]:
         return ['/mycommand', 'mycommand']
 
     def _my_logic(self, agent):
         # Implementação
-        return "Resultado do comando"
+        return 'Resultado do comando'
 ```
 
 ### Passo 2: Registrar Handler
@@ -435,6 +474,7 @@ A arquitetura permite fácil testabilidade:
 import pytest
 from unittest.mock import Mock
 
+
 def test_help_command_handler():
     # Mock renderer
     mock_renderer = Mock()
@@ -444,11 +484,11 @@ def test_help_command_handler():
     mock_agent = Mock()
 
     # Test can_handle
-    assert handler.can_handle("/help") == True
-    assert handler.can_handle("other") == False
+    assert handler.can_handle('/help') == True
+    assert handler.can_handle('other') == False
 
     # Test execute
-    handler.execute(mock_agent, "/help")
+    handler.execute(mock_agent, '/help')
     mock_renderer.render_system_message.assert_called_once()
 ```
 

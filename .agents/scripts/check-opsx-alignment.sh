@@ -4,13 +4,18 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 harness_root="$(cd "${script_dir}/.." && pwd)"
-repo_root="${harness_root}"
+repo_root="$(
+  git -C "${script_dir}" rev-parse --show-toplevel 2>/dev/null ||
+    printf '%s\n' "${harness_root}"
+)"
 skill_prefix="skills"
 wf_prefix="workflows"
-skill_dir="${harness_root}/${skill_prefix}/openspec-workflow"
-if [[ ! -d "${skill_dir}" && -d "${harness_root}/.agents/${skill_prefix}/openspec-workflow" ]]; then
-  skill_dir="${harness_root}/.agents/${skill_prefix}/openspec-workflow"
+content_root="${harness_root}"
+if [[ ! -d "${content_root}/${skill_prefix}/openspec-workflow" &&
+  -d "${harness_root}/.agents/${skill_prefix}/openspec-workflow" ]]; then
+  content_root="${harness_root}/.agents"
 fi
+skill_dir="${content_root}/${skill_prefix}/openspec-workflow"
 
 skill_file="${skill_dir}/SKILL.md"
 command_map="${skill_dir}/references/COMMAND_MAP.md"
@@ -82,7 +87,7 @@ for file in "${required_files[@]}"; do
 done
 
 for command in "${expected_commands[@]}"; do
-  workflow="${repo_root}/${wf_prefix}/opsx-${command}.prompt.md"
+  workflow="${content_root}/${wf_prefix}/opsx-${command}.prompt.md"
   github_mirror="${repo_root}/.github/prompts/opsx-${command}.prompt.md"
   opencode_mirror="${repo_root}/.opencode/commands/opsx-${command}.md"
   claude_mirror="${repo_root}/.claude/commands/opsx-${command}.md"
@@ -148,8 +153,8 @@ for command in "${expected_commands[@]}"; do
   fi
 done
 
-python3 - "${repo_root}/agents/developer-engineer.agent.md" \
-  "${repo_root}/${wf_prefix}/opsx-"*.prompt.md \
+python3 - "${content_root}/agents/developer-engineer.agent.md" \
+  "${content_root}/${wf_prefix}/opsx-"*.prompt.md \
   "${repo_root}/.github/prompts/opsx-"*.prompt.md \
   "${repo_root}/.opencode/commands/opsx-"*.md \
   "${repo_root}/.claude/commands/opsx-"*.md <<'PY'
@@ -204,21 +209,21 @@ require_workflow_text() {
   fi
 }
 
-require_workflow_text "${repo_root}/${wf_prefix}/opsx-continue.prompt.md" \
+require_workflow_text "${content_root}/${wf_prefix}/opsx-continue.prompt.md" \
   'Create exactly one artifact per invocation.'
-require_workflow_text "${repo_root}/${wf_prefix}/opsx-continue.prompt.md" \
+require_workflow_text "${content_root}/${wf_prefix}/opsx-continue.prompt.md" \
   'injected rules take precedence over minimal examples'
-require_workflow_text "${repo_root}/${wf_prefix}/opsx-apply.prompt.md" \
+require_workflow_text "${content_root}/${wf_prefix}/opsx-apply.prompt.md" \
   'opsx-handoff --mode bundle "<name>"'
-require_workflow_text "${repo_root}/${wf_prefix}/opsx-apply.prompt.md" \
+require_workflow_text "${content_root}/${wf_prefix}/opsx-apply.prompt.md" \
   'evidence/gate-report.json'
-require_workflow_text "${repo_root}/${wf_prefix}/opsx-apply.prompt.md" \
+require_workflow_text "${content_root}/${wf_prefix}/opsx-apply.prompt.md" \
   'opsx-handoff --mode apply "<name>"'
-require_workflow_text "${repo_root}/${wf_prefix}/opsx-sync.prompt.md" \
+require_workflow_text "${content_root}/${wf_prefix}/opsx-sync.prompt.md" \
   'opsx-sync --change "<name>" --json'
-require_workflow_text "${repo_root}/${wf_prefix}/opsx-archive.prompt.md" \
+require_workflow_text "${content_root}/${wf_prefix}/opsx-archive.prompt.md" \
   'an interactive override'
-require_workflow_text "${repo_root}/${wf_prefix}/opsx-explore.prompt.md" \
+require_workflow_text "${content_root}/${wf_prefix}/opsx-explore.prompt.md" \
   'Explore mode is read-only.'
 # Consumer-side contracts are deliberately absent here. A consuming project
 # owns its own openspec/config.yaml, its validation command and its evidence

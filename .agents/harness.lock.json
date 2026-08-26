@@ -39,7 +39,7 @@
     },
     {
       "hasScripts": true,
-      "hash": "sha256:6d2a95062e34dc39592be18f1e3b34e111221ed8f29a30c1132da8cd225a6980",
+      "hash": "sha256:5995910a4aaaa5aadd7fc33863297f76da55b832c75c90991d59f13bb070959e",
       "id": "skills/local-quality-gates",
       "selectedBy": "manifest"
     },
@@ -81,7 +81,7 @@
     },
     {
       "hasScripts": true,
-      "hash": "sha256:04ec0c94d6eae284b889ab2346ff2d5b1c67abe76e4ff6051f0fcdd897127bea",
+      "hash": "sha256:ee35e3f2a53b68db71cb9d6e9adf435ad1294ba78492957722e906e21262d4a2",
       "id": "skills/server-management",
       "selectedBy": "manifest"
     },
@@ -129,7 +129,7 @@
     },
     {
       "hasScripts": true,
-      "hash": "sha256:f5a4c9ceffc8fb526c68f1dc927788da7f70c794a67eb5e14a0e6edac8131a7b",
+      "hash": "sha256:c21d4582821b5b2eb364cc81efdfde45914ffb88e34ff455e3744262340265d0",
       "id": "tools/opsx-alignment",
       "selectedBy": "manifest"
     },

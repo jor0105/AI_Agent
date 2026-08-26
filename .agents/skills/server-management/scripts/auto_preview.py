@@ -24,7 +24,7 @@ INFO_ICON = '\N{INFORMATION SOURCE}\N{VARIATION SELECTOR-16}'
 
 
 def get_project_root() -> Path:
-    return Path('.').resolve()
+    return Path().resolve()
 
 
 def is_running(pid: int) -> bool:

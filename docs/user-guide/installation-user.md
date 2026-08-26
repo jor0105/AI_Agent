@@ -77,14 +77,16 @@ ______________________________________________________________________
 import asyncio
 from createagents import CreateAgent
 
+
 async def main():
     agent = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        instructions="Você é um assistente útil."
+        provider='openai',
+        model='gpt-4',
+        instructions='Você é um assistente útil.',
     )
-    response = await agent.chat("Olá! Teste de instalação.")
+    response = await agent.chat('Olá! Teste de instalação.')
     print(response)
+
 
 asyncio.run(main())
 ```
@@ -143,14 +145,16 @@ ollama list             # Ver modelos disponíveis
 import asyncio
 from createagents import CreateAgent
 
+
 async def main():
     agent = CreateAgent(
-        provider="ollama",
-        model="llama3.2",
-        instructions="Você é um assistente local."
+        provider='ollama',
+        model='llama3.2',
+        instructions='Você é um assistente local.',
     )
-    response = await agent.chat("Explique machine learning")
+    response = await agent.chat('Explique machine learning')
     print(response)
+
 
 asyncio.run(main())
 ```
@@ -228,10 +232,11 @@ cp .env.example .env
 
 ```bash
 # Instalar hooks de qualidade de código
-uv run pre-commit install --install-hooks
+uv sync --locked
+uv run --locked --no-sync pre-commit install --install-hooks
 
 # Executar checks manualmente
-uv run pre-commit run --all-files
+uv run --locked --no-sync pre-commit run --all-files
 ```
 
 📖 **Mais informações:** [Guia de Contribuição](../dev-guide/contribute.md)

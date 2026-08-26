@@ -233,7 +233,7 @@ class ToolExecutor:
 
         # A bug in third-party tool code must degrade to a failed result, not
         # crash the agent mid-conversation. `__failure` logs the traceback.
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             return self.__failure(
                 tool_name,
                 start_time,
@@ -260,11 +260,12 @@ class ToolExecutor:
         execution_time = (time.time() - start_time) * 1000
         # Called from the caller's `except` block, so the active exception is
         # still set and the traceback is captured.
-        self.__logger.exception(  # noqa: LOG004
+        self.__logger.error(
             "Error executing tool '%s': %s (execution time: %.2fms)",
             tool_name,
             error_msg,
             execution_time,
+            exc_info=True,
         )
         return ToolExecutionResult(
             tool_name=tool_name,

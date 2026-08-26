@@ -31,9 +31,7 @@ class Message:
             # TypeError would be more precise, but `Message` is exported from
             # `createagents.domain` and callers already catch ValueError.
             # Changing it is a breaking change, not a lint fix.
-            raise ValueError(  # noqa: TRY004
-                "The 'role' must be an instance of MessageRole."
-            )
+            raise ValueError("The 'role' must be an instance of MessageRole.")
 
         if not self.content or not self.content.strip():
             raise ValueError('The message content cannot be empty.')

@@ -302,7 +302,7 @@ class TestSensitiveDataFilter:
                 with lock:
                     results.append(result)
             # Capture worker failures for the assertion after all futures finish.
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 with lock:
                     errors.append(str(e))
 

@@ -6,6 +6,9 @@ Detects common issues introduced on added/modified lines (+):
   - Stubbed implementations / unfulfilled placeholders (TODO throws, pass stubs)
   - Newly added type/lint bypasses (@ts-ignore, type: ignore, noqa)
 
+The inline noqa form is always rejected; no allow annotation can override
+that rule.
+
 Fail-closed: Exits with code 2 on git errors, code 1 on violations, code 0 on clean pass.
 Zero external dependencies (Python 3.10+ standard library only).
 """
@@ -61,26 +64,23 @@ BYPASS_PATTERNS = [
         'Python type check bypass (# type: ignore) added',
     ),
     (
-        re.compile(r'#\s*noqa\b'),
-        'Linter bypass (# noqa) added',
-    ),
-    (
         re.compile(r'(?://|/\*)\s*eslint-disable(?:-next-line|-line)?\b'),
         'ESLint bypass comment added',
     ),
 ]
 
 # Category-specific allow comments (require explicit reason content)
-DEBUG_ALLOW_RE = re.compile(
-    r'(?:noqa:\s*intentional-debug|allow-debug:\s*\S+.*)', re.IGNORECASE
-)
+DEBUG_ALLOW_RE = re.compile(r'allow-debug:\s*\S+.*', re.IGNORECASE)
 STUB_ALLOW_RE = re.compile(
     r'(?:allow-stub|stub-reason|todo-reason):\s*\S+.*', re.IGNORECASE
 )
 BYPASS_ALLOW_RE = re.compile(
-    r'(?:allow-bypass|--\s*reason:|#\s*reason:)\s*\S+.*|noqa:\s*[a-zA-Z0-9_-]+',
+    r'(?:allow-bypass|--\s*reason:|#\s*reason:)\s*\S+.*',
     re.IGNORECASE,
 )
+NOQA_PATTERN = re.compile(r'#\s*noqa\b', re.IGNORECASE)
+NOQA_LABEL = '# ' + 'noqa'
+NOQA_DESCRIPTION = f'Linter bypass ({NOQA_LABEL}) is never permitted'
 
 NON_INSPECTABLE_EXTENSIONS = frozenset(
     {
@@ -174,6 +174,17 @@ def _check_bypass_violations(
     return errors
 
 
+def _check_noqa_violations(
+    content: str, file_path: str, line_num: int
+) -> list[str]:
+    """Reject inline noqa independently of the other bypass policies."""
+    if not NOQA_PATTERN.search(content):
+        return []
+    return [
+        f'{file_path}:{line_num}: [BYPASS] {NOQA_DESCRIPTION}',
+    ]
+
+
 def scan_diff(
     diff_text: str,
     allow_debug_in_scripts: bool = True,
@@ -212,6 +223,9 @@ def scan_diff(
         )
         errors.extend(
             _check_stub_violations(added_content, current_file, line_num)
+        )
+        errors.extend(
+            _check_noqa_violations(added_content, current_file, line_num)
         )
         if check_bypasses:
             errors.extend(
@@ -262,7 +276,10 @@ def main() -> int:
         for error_msg in errors:
             sys.stderr.write(f'  • {error_msg}\n')
         sys.stderr.write(
-            '\nResolution: Remove debug/stubs/bypasses or justify with specific annotations '
+            '\nResolution: Fix the code, use the appropriate file/scope, or '
+            'configure the lint rule explicitly for that file. '
+            f'{NOQA_LABEL} is never permitted; other annotations require a '
+            'specific reason '
             '("allow-debug", "allow-stub", or "-- reason: <why>").\n'
         )
         return 1

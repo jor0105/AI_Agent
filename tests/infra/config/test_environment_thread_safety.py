@@ -82,7 +82,7 @@ class TestEnvironmentConfigThreadSafety:
                 with lock:
                     results.append(key)
             # Capture worker failures for the assertion after all futures finish.
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 with lock:
                     results.append(str(e))
 
@@ -154,7 +154,7 @@ class TestEnvironmentConfigNewFeatures:
                 with lock:
                     results.append('success')
             # Capture worker failures for the assertion after all futures finish.
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 with lock:
                     errors.append(str(e))
 
@@ -179,7 +179,7 @@ class TestEnvironmentConfigNewFeatures:
                 with lock:
                     results.append('reload')
             # Capture worker failures for the assertion after all futures finish.
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 with lock:
                     errors.append(str(e))
 
@@ -189,7 +189,7 @@ class TestEnvironmentConfigNewFeatures:
                 with lock:
                     results.append(f'get:{value}')
             # Capture worker failures for the assertion after all futures finish.
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 with lock:
                     errors.append(str(e))
 
@@ -220,7 +220,7 @@ class TestEnvironmentConfigNewFeatures:
                 with lock:
                     errors.append('expected_error')
             # Keep unexpected worker failures distinct from the expected OSError.
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 with lock:
                     errors.append(f'unexpected:{e!s}')
 
@@ -316,7 +316,7 @@ class TestEnvironmentConfigNewFeatures:
                 with lock:
                     results.append(value)
             # Capture worker failures for the assertion after all futures finish.
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 with lock:
                     errors.append(str(e))
 

@@ -27,7 +27,7 @@ When generating broad scaffolds or completing functions hurriedly, agents may le
 To pass validation gates without fixing underlying contract issues, agents often silence compilers:
 
 - `@ts-ignore` or `@ts-nocheck` in TypeScript.
-- `# type: ignore` or `# noqa` in Python.
+- `# type: ignore` or `# noqa` in Python. The diff gate always rejects `# noqa`, including rule-specific forms and lines with a reason or `allow-bypass`.
 - `as any` casting without explanation.
 - `// eslint-disable-next-line` without a stated reason.
 
@@ -49,6 +49,7 @@ When a test fails following an implementation change, agents sometimes weaken or
 Quality gates must analyze lines starting with `+` in `git diff --cached`:
 
 1. **New violations must trigger `FAIL`**: A newly introduced `console.log` on a staged line is a hard block.
-2. **Intentional bypasses require annotations**:
-   - If a print statement is genuinely intended for a CLI, annotate with `# noqa: intentional-debug` or place inside `cli/` / `scripts/`.
+2. **Intentional exceptions require the narrowest safe scope**:
+   - Fix the code first. If a lint rule legitimately applies only to a CLI or script, use the appropriate file/scope or an explicit per-file lint configuration; never add `# noqa`.
    - If a type ignore is necessary due to a third-party untyped library, annotate with `# type: ignore[specific-code]  # reason: untyped upstream`.
+   - `# noqa`, `# noqa: <rule>`, and any `# noqa` accompanied by a reason or `allow-bypass` are always violations.

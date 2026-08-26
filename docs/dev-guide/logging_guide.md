@@ -13,6 +13,7 @@ A biblioteca define uma **`LoggerInterface`** abstrata no domínio (`src/createa
 ```python
 from abc import ABC, abstractmethod
 
+
 class LoggerInterface(ABC):
     """Interface abstrata para logging."""
 
@@ -105,7 +106,7 @@ Para controlar apenas os logs da biblioteca:
 import logging
 
 # Configura apenas o logger 'createagents'
-logger = logging.getLogger("createagents")
+logger = logging.getLogger('createagents')
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler())
 ```
@@ -122,22 +123,23 @@ Se você estiver **estendendo a biblioteca** (ex.: criando ferramentas customiza
 from createagents import BaseTool
 from createagents.domain.interfaces import LoggerInterface
 
+
 class MyCustomTool(BaseTool):
-    name = "my_tool"
-    description = "Minha ferramenta customizada"
+    name = 'my_tool'
+    description = 'Minha ferramenta customizada'
     parameters = {...}
 
     def __init__(self, logger: LoggerInterface):
         self._logger = logger
 
     def execute(self, **kwargs) -> str:
-        self._logger.info("Executando MyCustomTool com: %s", kwargs)
+        self._logger.info('Executando MyCustomTool com: %s', kwargs)
         try:
             result = self._do_something(kwargs)
-            self._logger.debug("Resultado: %s", result)
+            self._logger.debug('Resultado: %s', result)
             return result
         except Exception as e:
-            self._logger.error("Erro em MyCustomTool: %s", str(e))
+            self._logger.error('Erro em MyCustomTool: %s', str(e))
             raise
 ```
 
@@ -249,8 +251,8 @@ class OpenAIStreamHandler:
     def __init__(self, ...):
         self._logger = LoggingConfig.get_logger(__name__)
 
-    async def handle_streaming(self, ...):
-        self._logger.debug("Starting streaming response")
+    async def handle_stream(self, ...):
+        self._logger.debug('Starting streaming response')
         # ...
 ```
 
@@ -274,18 +276,18 @@ ______________________________________________________________________
 
    ```python
    # BOM - formatação lazy (não executa se log desabilitado)
-   logger.debug("Processing %s items", len(items))
+   logger.debug('Processing %s items', len(items))
 
    # RUIM - formatação eager
-   logger.debug(f"Processing {len(items)} items")
+   logger.debug(f'Processing {len(items)} items')
    ```
 
 4. **Contextualize com extra**:
 
    ```python
    logger.info(
-       "Tool executed successfully",
-       extra={"tool_name": tool.name, "duration_ms": duration}
+       'Tool executed successfully',
+       extra={'tool_name': tool.name, 'duration_ms': duration},
    )
    ```
 

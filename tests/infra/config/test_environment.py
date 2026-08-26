@@ -168,7 +168,7 @@ class TestEnvironmentConfig:
                     value = EnvironmentConfig.get_api_key('THREAD_KEY')
                     results.append(value)
                 # Capture worker failures for the assertion after join.
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     errors.append(e)
 
             threads = [Thread(target=get_key) for _ in range(20)]
@@ -308,7 +308,7 @@ class TestEnvironmentConfig:
                 try:
                     EnvironmentConfig.reload()
                 # Capture worker failures for the assertion after join.
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     errors.append(e)
 
             threads = [Thread(target=reload_env) for _ in range(10)]
@@ -375,7 +375,7 @@ class TestEnvironmentConfig:
                     key = EnvironmentConfig.get_api_key('CONCURRENT_API_KEY')
                     results.append(key)
                 # Capture worker failures for the assertion after join.
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     errors.append(str(e))
 
             threads = [Thread(target=get_key_synchronized) for _ in range(5)]

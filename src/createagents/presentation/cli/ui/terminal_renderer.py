@@ -160,7 +160,7 @@ class TerminalRenderer:
             message,
             ColorScheme.get_system_color(),
             align='left',
-            icon='ℹ️',  # noqa: RUF001 - intentional UI glyph
+            icon='ℹ️',
         )
 
     def render_success_message(self, message: str) -> None:

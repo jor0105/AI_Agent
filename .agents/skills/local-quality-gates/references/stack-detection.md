@@ -17,6 +17,33 @@
 | **Go**              | `go.mod`                              | `go.sum`            | `go`                 |
 | **PHP**             | `composer.json`                       | `composer.lock`     | `composer exec`      |
 
+## 1.1 Dependency Lifecycle Classification
+
+The manifest and lockfile table identifies the files to protect; it does not
+tell the agent to update dependencies in a hook. Classify the package-manager
+commands into three separate roles before composing a gate:
+
+| Role                       | Allowed in pre-commit?                                                                  | Examples                                                                                                                                                      |
+| :------------------------- | :-------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Lockfile validation        | Yes, when deterministic and it does not rewrite dependency declarations or the lockfile | `uv lock --check`, `poetry check --lock`, `cargo check --locked`, a project-configured `go mod tidy -diff` when supported, or staged manifest/lockfile parity |
+| Environment sync/bootstrap | No by default; run explicitly during setup                                              | `uv sync --locked`, `poetry install`, `npm ci`, `pnpm install --frozen-lockfile`, `yarn install --immutable`, `go mod download`                               |
+| Dependency update/resolve  | No; perform as a reviewed change                                                        | `uv lock --upgrade`, `poetry update`, `npm update`, `pnpm update`, `yarn up`, `bun update`, `cargo update`, `go get -u`, `composer update`                    |
+
+The execution prefix (`uv run`, `pnpm exec`, `cargo`, and so on) is not a
+lockfile policy by itself. If it implicitly synchronizes an environment, use
+it only as an existing project contract or add the manager's no-sync option
+after explicit setup. Never infer an updater from the presence of a manifest
+and lockfile. When the manager has no safe native check, use the shared
+lockfile-parity gate and document the limitation instead of inventing a
+mutating command.
+
+Go nuance: `go.sum` records module checksums, not a fully resolved lockfile.
+`go mod verify` audits downloaded module-cache contents and may add missing
+checksum entries, so it is not a read-only `go.mod`/`go.sum` coherence check.
+Prefer `go mod tidy -diff` when the project's Go version supports it and the
+observed cost is acceptable; otherwise use staged parity and keep cache
+integrity auditing in a separate gate.
+
 ## 2. Toolchain Discovery Heuristics
 
 Before selecting a tool, inspect the workspace configuration files:

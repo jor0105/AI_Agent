@@ -8,15 +8,15 @@ ______________________________________________________________________
 
 A CLI oferece **7 comandos integrados** para controle total do agente:
 
-| Comando     | Aliases           | Descrição                         |
-| ----------- | ----------------- | --------------------------------- |
-| `/help`     | `/help`, `help`   | Exibe ajuda e lista de comandos   |
-| `/metrics`  | `/metrics`        | Mostra métricas de performance    |
-| `/configs`  | `/configs`        | Exibe configurações do agente     |
-| `/tools`    | `/tools`          | Lista ferramentas disponíveis     |
-| `/clear`    | `/clear`, `clear` | Limpa histórico de conversação    |
-| **Chat**    | (qualquer texto)  | Envia mensagem ao agente (padrão) |
-| `exit/quit` | `exit`, `quit`    | Encerra a aplicação               |
+| Comando     | Aliases                   | Descrição                         |
+| ----------- | ------------------------- | --------------------------------- |
+| `/help`     | `/help`, `help`           | Exibe ajuda e lista de comandos   |
+| `/metrics`  | `/metrics`, `get_metrics` | Mostra métricas de performance    |
+| `/configs`  | `/configs`, `get_configs` | Exibe configurações do agente     |
+| `/tools`    | `/tools`, `get_tools`     | Lista ferramentas disponíveis     |
+| `/clear`    | `/clear`, `clear_history` | Limpa histórico de conversação    |
+| **Chat**    | (qualquer texto)          | Envia mensagem ao agente (padrão) |
+| `exit/quit` | `exit`, `quit`            | Encerra a aplicação               |
 
 ______________________________________________________________________
 
@@ -36,25 +36,24 @@ Você: /help
 
 **Saída**:
 
-```
-Available Commands:
+```markdown
+## Available Commands
 
-• /metrics  → Show agent performance metrics and statistics
-• /configs  → Display current agent configuration settings
-• /tools    → List all available tools and their descriptions
-• /clear    → Clear conversation history and start fresh
-• /help     → Show this help message
-
-Type 'exit' or 'quit' to close the application.
+- **/help** - Display available commands and system information
+- **/metrics** - View performance and usage metrics
+- **/configs** - Display current agent configurations
+- **/tools** - View available agent tools
+- **/clear** - Clear current conversation history
+- **exit/quit** - Exit the interactive chat CLI
 ```
 
 ______________________________________________________________________
 
 ### `/metrics` - Métricas de Performance
 
-**Descrição**: Mostra estatísticas detalhadas de todas as chamadas realizadas.
+**Descrição**: Mostra estatísticas detalhadas de todas as chamadas realizadas em tabela Markdown.
 
-**Aliases**: `/metrics`, `metrics`
+**Aliases**: `/metrics`, `get_metrics`
 
 **Uso**:
 
@@ -62,65 +61,30 @@ ______________________________________________________________________
 Você: /metrics
 ```
 
-**Saída OpenAI**:
+**Saída**:
 
-```
-📊 Métricas de Performance
+```markdown
+## Performance Metrics
 
-Chamada #1 | ✅ Sucesso
-  └─ Modelo: gpt-4
-  └─ Latência: 1,234ms
-  └─ Tokens: 250 (prompt: 100, completion: 150)
-
-Chamada #2 | ✅ Sucesso
-  └─ Modelo: gpt-4
-  └─ Latência: 987ms
-  └─ Tokens: 180 (prompt: 80, completion: 100)
-
-📈 Estatísticas Gerais
-  Total de chamadas: 2
-  Taxa de sucesso: 100%
-  Latência média: 1,110ms
-  Total de tokens: 430
-```
-
-**Saída Ollama** (métricas adicionais):
-
-```
-📊 Métricas de Performance
-
-Chamada #1 | ✅ Sucesso
-  └─ Modelo: llama3.2:latest
-  └─ Latência: 2,345ms
-  └─ Tokens: 150 (prompt: 50, completion: 100)
-  └─ Load duration: 145ms
-  └─ Prompt eval duration: 234ms
-  └─ Eval duration: 1,966ms
-
-📈 Estatísticas Gerais
-  Total de chamadas: 1
-  Taxa de sucesso: 100%
-  Latência média: 2,345ms
-  Total de tokens: 150
+| Model | Duration | Tokens (In/Out/Total) |
+|-------|----------|-----------------------|
+| gpt-4 | 1.23s | 100 / 150 / 250 |
+| gpt-4 | 0.98s | 80 / 100 / 180 |
 ```
 
 **Informações Exibidas**:
 
-- Número da chamada
-- Status (✅ Sucesso / ❌ Erro)
 - Modelo usado
-- Latência em milissegundos
-- Tokens (total, prompt, completion)
-- **Ollama**: Durations (load, prompt_eval, eval)
-- Estatísticas agregadas
+- Duração/latência da chamada (em segundos)
+- Tokens consumidos: Prompt (In) / Completion (Out) / Total
 
 ______________________________________________________________________
 
 ### `/configs` - Configurações do Agente
 
-**Descrição**: Exibe todas as configurações atuais do agente.
+**Descrição**: Exibe todas as configurações atuais do agente formatadas em Markdown.
 
-**Aliases**: `/configs`, `configs`
+**Aliases**: `/configs`, `get_configs`
 
 **Uso**:
 
@@ -130,26 +94,19 @@ Você: /configs
 
 **Saída**:
 
-```
-⚙️ Configurações do Agente
+```markdown
+## Agent Configuration
 
-Nome: Code Assistant
-Provider: openai
-Modelo: gpt-4
-
-📝 Instruções:
-Você é um especialista em Python. Sempre forneça exemplos de código.
-
-🔧 Parâmetros:
-  • temperature: 0.7
-  • max_tokens: 2000
-  • top_p: 0.9
-
-🛠️ Ferramentas: 2 disponíveis
-  • currentdate
-  • readlocalfile
-
-💬 Histórico: 5 mensagens (máximo: 20)
+**provider:** openai
+**model:** gpt-4
+**name:** Code Assistant
+**instructions:** Você é um especialista em Python.
+**config:** {'temperature': 0.7, 'max_tokens': 2000}
+**tools:** ['currentdate', 'readlocalfile']
+**history:** 2 messages in history
+  - **user**: Olá
+  - **assistant**: Olá! Como posso ajudar?
+**history_max_size:** 10
 ```
 
 **Informações Exibidas**:
@@ -159,7 +116,8 @@ Você é um especialista em Python. Sempre forneça exemplos de código.
 - Instruções do sistema
 - Parâmetros de configuração (temperature, max_tokens, etc.)
 - Ferramentas disponíveis
-- Tamanho do histórico
+- Resumo do histórico e mensagens
+- Tamanho máximo do histórico
 
 ______________________________________________________________________
 
@@ -167,7 +125,7 @@ ______________________________________________________________________
 
 **Descrição**: Lista todas as ferramentas que o agente pode usar.
 
-**Aliases**: `/tools`, `tools`
+**Aliases**: `/tools`, `get_tools`
 
 **Uso**:
 
@@ -177,28 +135,28 @@ Você: /tools
 
 **Saída**:
 
-```
-🛠️ Ferramentas Disponíveis
+```markdown
+## Available Tools
 
-• currentdate
-  └─ Retorna a data e hora atual em qualquer timezone. Suporta offsets UTC e nomes de timezone.
+**currentdate**
+Get the current date and/or time in a specific timezone. Essential for answering 'What time is it?' or 'What day is it?' questions.
 
-• readlocalfile
-  └─ Lê e extrai conteúdo de arquivos locais incluindo PDF, Excel (xlsx), CSV, Parquet, JSON, YAML e TXT.
+**readlocalfile**
+Use this tool to read local files from the system. Supports text files (txt, md, py, etc.), CSV, Excel, PDF and Parquet formats.
 ```
 
 **Informações Exibidas**:
 
-- Nome da ferramenta
-- Descrição detalhada do que ela faz
+- Nome da ferramenta em destaque
+- Descrição completa da ferramenta
 
 ______________________________________________________________________
 
 ### `/clear` - Limpar Histórico
 
-**Descrição**: Remove todo o histórico de conversação e inicia uma nova sessão.
+**Descrição**: Remove todo o histórico de conversação e inicia uma nova sessão limpa.
 
-**Aliases**: `/clear`, `clear`
+**Aliases**: `/clear`, `clear_history`
 
 **Uso**:
 
@@ -209,14 +167,14 @@ Você: /clear
 **Saída**:
 
 ```
-🗑️ Histórico limpo! Iniciando nova conversa.
+Chat history cleared successfully!
 ```
 
 **Efeito**:
 
 - Remove todas as mensagens do histórico
-- Preserva configurações do agente
-- Próxima mensagem não terá contexto anterior
+- Preserva configurações e ferramentas do agente
+- Próxima mensagem iniciará um novo contexto limpo
 
 **Quando Usar**:
 

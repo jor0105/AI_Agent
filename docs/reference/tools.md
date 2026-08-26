@@ -24,15 +24,15 @@ Obtém data e hora atuais em qualquer timezone.
 import asyncio
 from createagents import CreateAgent
 
+
 async def main():
     agent = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        tools=["currentdate"]
+        provider='openai', model='gpt-4', tools=['currentdate']
     )
 
-    resposta = await agent.chat("Que dia é hoje?")
+    resposta = await agent.chat('Que dia é hoje?')
     print(resposta)
+
 
 asyncio.run(main())
 ```
@@ -67,27 +67,29 @@ pip install createagents[file-tools]
 import asyncio
 from createagents import CreateAgent
 
+
 async def main():
     agent = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        tools=["readlocalfile"]
+        provider='openai', model='gpt-4', tools=['readlocalfile']
     )
 
-    resposta = await agent.chat("Leia o arquivo report.pdf e resuma")
+    resposta = await agent.chat('Leia o arquivo report.pdf e resuma')
     print(resposta)
+
 
 asyncio.run(main())
 ```
 
-**Limites:**
+**Limites e Segurança:**
 
-- Tamanho máximo: 100MB
-- Tokens máximos: Depende da AI utilizada
+- Tamanho máximo de arquivo: 100MB (configurável)
+- Limite padrão de tokens: 30.000 tokens (parâmetro `max_tokens`)
+- Diretório seguro (sandbox): controlado pela variável de ambiente `FILE_TOOL_BASE_DIR` (padrão: diretório atual `.`)
 
 **Funcionalidades:**
 
-- ✅ Validação de tamanho
+- ✅ Validação de tamanho e limite de tokens
+- ✅ Sandbox de diretório seguro contra path traversal
 - ✅ Detecção automática de encoding
 - ✅ Suporte a múltiplos formatos
 - ✅ Tratamento robusto de erros
@@ -101,17 +103,19 @@ ______________________________________________________________________
 ```python
 import asyncio
 
+
 async def main():
     agent = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        instructions="Você pode verificar data/hora quando necessário",
-        tools=["currentdate"]
+        provider='openai',
+        model='gpt-4',
+        instructions='Você pode verificar data/hora quando necessário',
+        tools=['currentdate'],
     )
 
     # O agente usa a ferramenta automaticamente
-    resposta = await agent.chat("Que dia da semana é hoje?")
+    resposta = await agent.chat('Que dia da semana é hoje?')
     print(resposta)
+
 
 asyncio.run(main())
 ```
@@ -121,17 +125,19 @@ asyncio.run(main())
 ```python
 import asyncio
 
+
 async def main():
     # Certifique-se que instalou: pip install createagents[file-tools]
     agent = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        instructions="Você pode ler arquivos locais",
-        tools=["readlocalfile"]
+        provider='openai',
+        model='gpt-4',
+        instructions='Você pode ler arquivos locais',
+        tools=['readlocalfile'],
     )
 
-    resposta = await agent.chat("Resuma o documento relatorio.pdf")
+    resposta = await agent.chat('Resuma o documento relatorio.pdf')
     print(resposta)
+
 
 asyncio.run(main())
 ```
@@ -141,19 +147,21 @@ asyncio.run(main())
 ```python
 import asyncio
 
+
 async def main():
     agent = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        tools=["currentdate", "readlocalfile"]
+        provider='openai',
+        model='gpt-4',
+        tools=['currentdate', 'readlocalfile'],
     )
 
     # O agente escolhe qual ferramenta usar
-    resposta1 = await agent.chat("Que dia é hoje?")  # Usa currentdate
+    resposta1 = await agent.chat('Que dia é hoje?')  # Usa currentdate
     print(resposta1)
 
-    resposta2 = await agent.chat("Leia notas.txt")   # Usa readlocalfile
+    resposta2 = await agent.chat('Leia notas.txt')  # Usa readlocalfile
     print(resposta2)
+
 
 asyncio.run(main())
 ```
@@ -198,32 +206,37 @@ Use `get_all_available_tools()` para ver todas as ferramentas disponíveis para 
 ```python
 from createagents import CreateAgent, BaseTool
 
+
 class CustomTool(BaseTool):
-    name = "custom_tool"
-    description = "Minha ferramenta customizada"
+    name = 'custom_tool'
+    description = 'Minha ferramenta customizada'
     parameters = {
-        "type": "object",
-        "properties": {
-            "input": {"type": "string", "description": "Texto de entrada para a ferramenta"}
+        'type': 'object',
+        'properties': {
+            'input': {
+                'type': 'string',
+                'description': 'Texto de entrada para a ferramenta',
+            }
         },
-        "required": ["input"]
+        'required': ['input'],
     }
 
     def execute(self, input: str) -> str:
-        return f"Resultado para: {input}"
+        return f'Resultado para: {input}'
+
 
 agent = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    tools=["currentdate", CustomTool()]  # Ferramenta do sistema + customizada
+    provider='openai',
+    model='gpt-4',
+    tools=['currentdate', CustomTool()],  # Ferramenta do sistema + customizada
 )
 
 # Obter todas as ferramentas deste agente
 tools = agent.get_all_available_tools()
 
-print("Ferramentas disponíveis neste agente:")
+print('Ferramentas disponíveis neste agente:')
 for name, description in tools.items():
-    print(f"  - {name}: {description[:50]}...")
+    print(f'  - {name}: {description[:50]}...')
 
 # Exemplo de saída:
 # - currentdate: Get the current date and/or time...
@@ -238,20 +251,20 @@ Use `get_system_available_tools()` para ver apenas as ferramentas built-in dispo
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider="openai", model="gpt-4")
+agent = CreateAgent(provider='openai', model='gpt-4')
 
 # Obter apenas ferramentas do sistema
 system_tools = agent.get_system_available_tools()
 
-print("Ferramentas do sistema disponíveis:")
+print('Ferramentas do sistema disponíveis:')
 for name, description in system_tools.items():
-    print(f"  - {name}: {description[:50]}...")
+    print(f'  - {name}: {description[:50]}...')
 
 # Verificar se uma ferramenta específica está disponível
-if "readlocalfile" in system_tools:
-    print("✅ ReadLocalFileTool disponível!")
+if 'readlocalfile' in system_tools:
+    print('✅ ReadLocalFileTool disponível!')
 else:
-    print("⚠️ Instale com: pip install createagents[file-tools]")
+    print('⚠️ Instale com: pip install createagents[file-tools]')
 ```
 
 ### Diferença Entre os Métodos
@@ -266,37 +279,40 @@ else:
 ```python
 from createagents import CreateAgent, BaseTool
 
+
 # Ferramenta customizada
 class WeatherTool(BaseTool):
-    name = "weather"
-    description = "Consulta previsão do tempo"
+    name = 'weather'
+    description = 'Consulta previsão do tempo'
     parameters = {
-        "type": "object",
-        "properties": {
-            "city": {"type": "string", "description": "Nome da cidade para consulta"}
+        'type': 'object',
+        'properties': {
+            'city': {
+                'type': 'string',
+                'description': 'Nome da cidade para consulta',
+            }
         },
-        "required": ["city"]
+        'required': ['city'],
     }
 
     def execute(self, city: str) -> str:
-        return f"Previsão para {city}: Ensolarado"
+        return f'Previsão para {city}: Ensolarado'
+
 
 # Agente sem ferramentas customizadas
-agent1 = CreateAgent(provider="openai", model="gpt-4")
-print("Agente 1:", agent1.get_all_available_tools().keys())
+agent1 = CreateAgent(provider='openai', model='gpt-4')
+print('Agente 1:', agent1.get_all_available_tools().keys())
 # Saída: dict_keys(['currentdate', 'readlocalfile'])
 
 # Agente com ferramentas customizadas
 agent2 = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    tools=["currentdate", WeatherTool()]
+    provider='openai', model='gpt-4', tools=['currentdate', WeatherTool()]
 )
-print("Agente 2:", agent2.get_all_available_tools().keys())
+print('Agente 2:', agent2.get_all_available_tools().keys())
 # Saída: dict_keys(['currentdate', 'readlocalfile', 'weather'])
 
 # Ferramentas do sistema (sempre igual para todos os agentes)
-print("Sistema:", agent1.get_system_available_tools().keys())
+print('Sistema:', agent1.get_system_available_tools().keys())
 # Saída: dict_keys(['currentdate', 'readlocalfile'])
 ```
 
@@ -307,9 +323,9 @@ O sistema automaticamente evita duplicatas de ferramentas. Se você adicionar um
 ```python
 # Ferramenta do sistema adicionada explicitamente
 agent = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    tools=["currentdate"]  # Adiciona explicitamente uma ferramenta do sistema
+    provider='openai',
+    model='gpt-4',
+    tools=['currentdate'],  # Adiciona explicitamente uma ferramenta do sistema
 )
 
 # Não haverá duplicatas
@@ -338,15 +354,19 @@ ______________________________________________________________________
 ```python
 from createagents import BaseTool
 
+
 class CalculatorTool(BaseTool):
-    name = "calculator"
-    description = "Realiza cálculos matemáticos"
+    name = 'calculator'
+    description = 'Realiza cálculos matemáticos'
     parameters = {
-        "type": "object",
-        "properties": {
-            "expression": {"type": "string", "description": "Expressão matemática"}
+        'type': 'object',
+        'properties': {
+            'expression': {
+                'type': 'string',
+                'description': 'Expressão matemática',
+            }
         },
-        "required": ["expression"]
+        'required': ['expression'],
     }
 
     def execute(self, expression: str) -> str:

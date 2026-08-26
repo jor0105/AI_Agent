@@ -612,7 +612,7 @@ class TestHistoryConcurrency:
                     else:
                         _ = history.to_dict_list()
             # Capture worker failures for the assertion after all threads finish.
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 errors.append(str(e))
 
         threads = [

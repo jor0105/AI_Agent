@@ -53,7 +53,7 @@ Basta chamar o método `start_cli()` do agente:
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider="openai", model="gpt-4")
+agent = CreateAgent(provider='openai', model='gpt-4')
 agent.start_cli()  # Inicia CLI interativa
 ```
 
@@ -61,37 +61,53 @@ agent.start_cli()  # Inicia CLI interativa
 
 ## 12. Como funciona o streaming?
 
-O método `chat()` retorna um `StreamingResponseDTO` que pode ser:
+O comportamento do método `chat()` depende do parâmetro `stream` em `config`:
 
-- **Awaited**: `response_text = await agent.chat("mensagem")`
-- **Iterado**: `async for token in await agent.chat("mensagem"): ...`
+- **Com streaming (`config={"stream": True}`)**: O método retorna um `StreamingResponseDTO`. Você pode:
+  - **Iterar token a token**: `async for token in response:`
+  - **Aguardar resposta completa**: `texto_completo = await response`
+- **Sem streaming (`stream=False`, padrão)**: O método retorna diretamente uma string (`str`) com a resposta completa.
 
-O streaming é controlado pelo parâmetro `stream` na configuração:
+Exemplo de configuração:
 
 ```python
-# Habilitar streaming
-agent = CreateAgent(provider="openai", model="gpt-4", config={"stream": True})
+from createagents import CreateAgent
 
-# Desabilitar streaming
-agent = CreateAgent(provider="openai", model="gpt-4", config={"stream": False})
+# Habilitar streaming
+agent_stream = CreateAgent(
+    provider='openai', model='gpt-4', config={'stream': True}
+)
+
+# Desabilitar streaming (padrão)
+agent_sync = CreateAgent(
+    provider='openai', model='gpt-4', config={'stream': False}
+)
 ```
 
 ℹ️ [Guia de Streaming](streaming-guide.md)
 
 ## 13. Posso desabilitar o streaming?
 
-Sim! Configure `stream: False` ao criar o agente:
+Sim! Por padrão o streaming já é desativado (`stream: False`), mas você também pode defini-lo explicitamente:
 
 ```python
-agent = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    config={"stream": False}  # Desabilita streaming
-)
+import asyncio
+from createagents import CreateAgent
 
-# Resposta completa sem streaming token-por-token
-response = await agent.chat("mensagem")
-print(response)
+
+async def main():
+    agent = CreateAgent(
+        provider='openai',
+        model='gpt-4',
+        config={'stream': False},  # Desabilita streaming
+    )
+
+    # Resposta direta em string (str)
+    response = await agent.chat('mensagem')
+    print(response)
+
+
+asyncio.run(main())
 ```
 
 ## 14. Quais comandos estão disponíveis na CLI?
