@@ -25,7 +25,7 @@ class ReadLocalFileTool(BaseTool):
     - File type validation
     - Comprehensive error handling
 
-    Supports formats: txt, csv, excel (xls/xlsx), pdf, parquet,
+    Supports formats: txt, csv, excel (xls/xlsx/xlsm), pdf, parquet,
     and common text files.
     """
 
@@ -53,7 +53,7 @@ class ReadLocalFileTool(BaseTool):
                 'default': 30000,
             },
         },
-        'required': ['path', 'max_tokens'],
+        'required': ['path'],
     }
 
     MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_BYTES
@@ -75,7 +75,7 @@ class ReadLocalFileTool(BaseTool):
             raise RuntimeError(
                 'ReadLocalFileTool requires optional dependencies. '
                 'Optional dependencies for ReadLocalFileTool are not installed.\n'
-                'Install them using: uv sync --extra file-tools or uv pip install -e ".[file-tools]"\n'
+                'Install them using: uv sync --locked --extra file-tools or pip install "createagents[file-tools]"\n'
                 f'Missing dependencies error: {IMPORT_ERROR}'
             )
 

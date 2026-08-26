@@ -23,23 +23,22 @@ class BaseTool(ABC):
 
     Example:
         ```python
-        class CalculatorTool(BaseTool):
-            name = "calculator"
-            description = "Performs mathematical calculations"
+        class WordCountTool(BaseTool):
+            name = "word_count"
+            description = "Counts the number of words in a text"
             parameters = {
                 "type": "object",
                 "properties": {
-                    "expression": {
+                    "text": {
                         "type": "string",
-                        "description": "Mathematical expression to evaluate"
+                        "description": "Text to count words from",
                     }
                 },
-                "required": ["expression"]
+                "required": ["text"],
             }
 
-            def execute(self, expression: str) -> str:
-                import ast
-                return str(ast.literal_eval(expression))
+            def execute(self, text: str) -> str:
+                return str(len(text.split()))
         ```
     """
 

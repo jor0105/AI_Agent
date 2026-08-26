@@ -18,7 +18,10 @@ ______________________________________________________________________
 ### 1. Criar Ambiente Virtual (Recomendado)
 
 ```bash
-# Criar ambiente virtual
+# Opção 1: Usando o módulo venv padrão do Python
+python3 -m venv .venv
+
+# Opção 2: Usando uv (caso utilize uv no seu ambiente)
 uv venv
 
 # Ativar ambiente virtual
@@ -45,14 +48,15 @@ ______________________________________________________________________
 
 ### 3. Configurar Variáveis de Ambiente
 
-```bash
-cp .env.example .env
-# Edite o arquivo .env e adicione sua chave OPENAI_API_KEY
+Crie um arquivo `.env` na raiz do seu projeto com as suas credenciais:
+
+```env
+OPENAI_API_KEY=sk-proj-sua-chave
 ```
 
-Todas as variáveis reconhecidas estão listadas em `.env.example`. Apenas
-`OPENAI_API_KEY` é obrigatória, e somente para o provider `openai`; as demais
-têm padrão e podem ficar em branco:
+> **Dica:** Se estiver utilizando o repositório clonado do código-fonte, você pode copiar o arquivo modelo: `cp .env.example .env`.
+
+Todas as variáveis reconhecidas pelo pacote são:
 
 | Variável                     | Efeito                                              | Padrão                   |
 | ---------------------------- | --------------------------------------------------- | ------------------------ |
@@ -65,7 +69,7 @@ têm padrão e podem ficar em branco:
 | `OLLAMA_MAX_TOOL_ITERATIONS` | Rodadas de tool calling por turno                   | `100`                    |
 | `LOG_LEVEL`                  | Nível de log após `LoggingConfig.configure()`       | `INFO`                   |
 | `LOG_TO_FILE`                | `true` grava em arquivo rotativo                    | `false`                  |
-| `LOG_FILE_PATH`              | Destino quando `LOG_TO_FILE` está ativo             | —                        |
+| `LOG_FILE_PATH`              | Destino quando `LOG_TO_FILE` está ativo             | `logs/app.log`           |
 | `LOG_JSON_FORMAT`            | `true` emite logs em JSON                           | `false`                  |
 | `FILE_TOOL_BASE_DIR`         | Diretório ao qual `ReadLocalFileTool` fica restrito | diretório atual          |
 
@@ -111,25 +115,13 @@ ______________________________________________________________________
 
 ## 🤖 Configuração Ollama (Opcional)
 
-Permite rodar modelos de IA **localmente** (privacidade total, sem custos de API).
+Permite rodar modelos de IA **localmente** (processamento em `localhost` sem custos de API; se `OLLAMA_HOST` for configurado para um servidor remoto, as requisições seguirão para o host apontado).
 
 ### Instalar Ollama
 
-**Linux:**
-
-```bash
-curl -fsSL https://ollama.ai/install.sh | sh
-```
-
-**macOS:**
-
-```bash
-brew install ollama
-```
-
-**Windows:**
-
-Baixe em: [ollama.ai/download/windows](https://ollama.ai/download/windows)
+- **Linux:** `curl -fsSL https://ollama.com/install.sh | sh` (ou baixe em [ollama.com/download/linux](https://ollama.com/download/linux))
+- **macOS:** Baixe o instalador em [ollama.com/download/mac](https://ollama.com/download/mac) (ou execute `brew install ollama`)
+- **Windows:** Baixe o instalador oficial em [ollama.com/download/windows](https://ollama.com/download/windows)
 
 ### Baixar Modelos
 
@@ -208,11 +200,11 @@ cd Create-Agents-AI
 # Instale o uv se necessário
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Instalação básica
-uv sync
+# Instalação básica respeitando o lockfile
+uv sync --locked
 
 # OU com suporte a file-tools
-uv sync --extra file-tools
+uv sync --locked --extra file-tools
 
 # Ativar ambiente virtual
 source .venv/bin/activate
@@ -253,4 +245,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Versão:** 0.2.0 | **Atualização:** 07/08/2026
+**Versão:** 0.2.0 | **Atualização:** 2026-08-25

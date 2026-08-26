@@ -43,7 +43,7 @@ class ChatCLIApplication:
     - OCP: New commands can be added by registering new handlers
     """
 
-    def __init__(self, agent: 'CreateAgent'):
+    def __init__(self, agent: 'AgentFacade'):
         self._agent = agent
         self._renderer = TerminalRenderer()
         self._input_reader = InputReader()
@@ -190,56 +190,26 @@ ______________________________________________________________________
 
 ```python
 class TerminalRenderer:
-    """Handles terminal rendering with colors, panels and formatting.
-
-    Responsibility: Encapsulate all terminal output logic.
-    This follows SRP by handling only rendering concerns.
-    """
+    """Handles terminal rendering with colors, panels and formatting."""
 
     def __init__(self, show_timestamps: bool = False):
         self._formatter = TerminalFormatter()
         self._console = Console()
         self._show_timestamps = show_timestamps
 
-    def render_welcome_screen(self) -> None:
-        """Display welcome message."""
-
-    def render_prompt(self) -> None:
-        """Display user input prompt."""
-
-    def render_user_message(self, message: str) -> None:
-        """Render a user message in a right-aligned rounded box."""
-
-    def render_ai_message(self, message: str) -> None:
-        """Render a static AI message in a left-aligned rounded box."""
-
+    def render_welcome_screen(self) -> None: ...
+    def render_prompt(self) -> None: ...
+    def render_user_message(self, message: str) -> None: ...
+    def render_ai_message(self, message: str) -> None: ...
     async def render_ai_message_streaming(
         self, token_generator: AsyncIterator[str]
-    ) -> None:
-        """Render AI tokens in real time inside a Rich live panel."""
-
-    def render_system_message(self, message: str) -> None:
-        """Render a system message."""
-
-    def render_error(self, message: str) -> None:
-        """Render an error message."""
+    ) -> None: ...
+    def render_thinking_indicator(self) -> None: ...
+    def clear_thinking_indicator(self) -> None: ...
+    def render_system_message(self, message: str) -> None: ...
+    def render_success_message(self, message: str) -> None: ...
+    def render_error(self, message: str) -> None: ...
 ```
-
-**Métodos de Renderização**:
-
-- `render_welcome_screen()` - Tela de boas-vindas com banner ASCII
-- `render_prompt()` - Prompt de entrada
-- `render_input_indicator()` - Indicador de entrada `▶`
-- `render_user_message(msg)` - Balão azul alinhado à direita
-- `render_ai_message(msg)` - Balão roxo alinhado à esquerda
-- `render_ai_message_streaming(gen)` - Painel Rich Live com streaming token a token
-- `render_thinking_indicator()` - Indicador "AI is thinking..."
-- `clear_thinking_indicator()` - Limpa a linha de pensamento
-- `render_system_message(msg)` - Balão ciano do sistema
-- `render_success_message(msg)` - Balão verde de sucesso
-- `render_error(msg)` - Mensagem de erro formatada
-- `render_goodbye()` - Mensagem de despedida
-- `render_interrupt()` - Mensagem de encerramento via Ctrl+C
 
 ______________________________________________________________________
 
@@ -251,6 +221,8 @@ ______________________________________________________________________
 
 **Localização**: `src/createagents/presentation/cli/ui/terminal_formatter.py`
 
+> **Nota:** As assinaturas abaixo ilustram a interface conceitual do `TerminalFormatter`. A implementação completa no repositório realiza a remoção de sequências ANSI via regex, quebra de linha inteligente e molduras Unicode.
+
 ```python
 class TerminalFormatter:
     """Handles terminal text formatting and display width calculations."""
@@ -258,14 +230,25 @@ class TerminalFormatter:
     @staticmethod
     def get_display_width(text: str) -> int:
         """Calcula largura visual considerando caracteres largos e ignorando ANSI."""
+        return len(text)
 
     @staticmethod
-    def wrap_text(text: str, max_width: int, subsequent_indent: str = '') -> list[str]:
+    def wrap_text(
+        text: str, max_width: int, subsequent_indent: str = ''
+    ) -> list[str]:
         """Quebra linhas preservando indentação e largura do terminal."""
+        return [text]
 
     @staticmethod
-    def format_rounded_box(text: str, color: str, align: str = 'left', ...) -> str:
+    def format_rounded_box(
+        text: str,
+        color: str,
+        align: str = 'left',
+        icon: str = '',
+        timestamp: str = '',
+    ) -> str:
         """Envolve o texto em uma caixa arredondada com timestamp e ícone."""
+        return text
 ```
 
 #### MarkdownTerminalFormatter
@@ -281,6 +264,7 @@ class MarkdownTerminalFormatter:
     @staticmethod
     def format(text: str) -> str:
         """Converte headers, listas, tabelas e ênfases em estilos ANSI."""
+        return text
 ```
 
 ______________________________________________________________________
@@ -357,16 +341,21 @@ MetricsCommandHandler.execute(agent, "/metrics")
   → renderer.render_metrics(metrics)
 ```
 
-### 4. Processamento de Chat (Streaming)
+### 4. Processamento de Chat
 
 ```
 ChatCommandHandler.execute(agent, "Olá")
-  → asyncio.run(_async_execute(agent, "Olá"))
+  → asyncio.run(__run_chat(agent, "Olá"))
+      → renderer.render_user_message("Olá")
+      → renderer.render_spacer()
       → renderer.render_thinking_indicator()
       → response = await agent.chat("Olá")
-      → async for token in response:
-          → renderer.render_assistant_token(token)
-      → renderer.clear_thinking_indicator()
+      → if isinstance(response, StreamingResponseDTO):
+            await renderer.render_ai_message_streaming(response)
+        else:
+            renderer.clear_thinking_indicator()
+            renderer.render_ai_message(MarkdownTerminalFormatter.format(response))
+      → renderer.render_spacer()
 ```
 
 ______________________________________________________________________
@@ -420,7 +409,9 @@ ______________________________________________________________________
 
 ## 🛠️ Adicionando Novos Comandos
 
-### Passo 1: Criar Handler
+Para estender a CLI com um novo comando:
+
+1. **Crie o Handler** herdando de `CommandHandler`:
 
 ```python
 # src/createagents/presentation/cli/commands/my_command.py
@@ -429,66 +420,40 @@ from .base_command import CommandHandler
 
 class MyCommandHandler(CommandHandler):
     def execute(self, agent: 'AgentFacade', user_input: str) -> None:
-        # Sua lógica aqui
-        result = self._my_logic(agent)
-        self._renderer.render_system_message(result)
+        self._renderer.render_system_message('Resultado do comando')
 
     def get_aliases(self) -> list[str]:
         return ['/mycommand', 'mycommand']
-
-    def _my_logic(self, agent):
-        # Implementação
-        return 'Resultado do comando'
 ```
 
-### Passo 2: Registrar Handler
+2. **Registre o Handler** em `ChatCLIApplication._setup_commands`:
 
 ```python
 # src/createagents/presentation/cli/application/chat_cli_app.py
 def _setup_commands(self) -> None:
-    # ...outros comandos...
     self._registry.register(MyCommandHandler(self._renderer))
-    # ChatCommandHandler deve ser sempre último
+    # ChatCommandHandler é sempre registrado por último (fallback padrão)
     self._registry.register(ChatCommandHandler(self._renderer))
-```
-
-### Passo 3: Exportar (Opcional)
-
-```python
-# src/createagents/presentation/cli/commands/__init__.py
-from .my_command import MyCommandHandler
-
-__all__ = [
-    # ...outros...
-    'MyCommandHandler',
-]
 ```
 
 ______________________________________________________________________
 
 ## 📊 Testabilidade
 
-A arquitetura permite fácil testabilidade:
-
 ```python
-import pytest
 from unittest.mock import Mock
+
+from createagents.presentation.cli.commands import HelpCommandHandler
 
 
 def test_help_command_handler():
-    # Mock renderer
     mock_renderer = Mock()
     handler = HelpCommandHandler(mock_renderer)
 
-    # Mock agent
-    mock_agent = Mock()
+    assert handler.can_handle('/help') is True
+    assert handler.can_handle('other') is False
 
-    # Test can_handle
-    assert handler.can_handle('/help') == True
-    assert handler.can_handle('other') == False
-
-    # Test execute
-    handler.execute(mock_agent, '/help')
+    handler.execute(Mock(), '/help')
     mock_renderer.render_system_message.assert_called_once()
 ```
 
@@ -512,4 +477,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Versão:** 0.1.3 | **Atualização:** 01/12/2025
+**Versão:** 0.2.0 | **Atualização:** 2026-08-25

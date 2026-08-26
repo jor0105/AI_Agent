@@ -6,10 +6,10 @@ ______________________________________________________________________
 
 ## 💡 O que é Streaming?
 
-Streaming permite que você veja a resposta aparecendo **palavra por palavra** em tempo real, como se o agente estivesse digitando. Isso deixa a experiência mais natural e interativa.
+Streaming permite que você veja a resposta aparecendo **token por token (em fragmentos de texto)** em tempo real, conforme o agente gera a resposta. Isso deixa a experiência mais natural e interativa.
 
-**Sem streaming**: Você espera 5 segundos e recebe a resposta completa de uma vez.
-**Com streaming**: As palavras aparecem imediatamente, conforme o agente gera a resposta.
+**Sem streaming**: Você aguarda o processamento e recebe a resposta completa de uma vez.
+**Com streaming**: Os fragmentos de texto aparecem progressivamente no terminal ou na interface.
 
 ______________________________________________________________________
 
@@ -37,9 +37,9 @@ async def main():
 asyncio.run(main())
 ```
 
-### 2️⃣ Ver Palavra por Palavra (Streaming em Tempo Real)
+### 2️⃣ Ver Token por Token (Streaming em Tempo Real)
 
-Use `async for` para ver cada palavra aparecer (requer `config={'stream': True}`):
+Use `async for` para processar cada token gerado (requer `config={'stream': True}`):
 
 ```python
 import asyncio
@@ -55,9 +55,9 @@ async def main():
 
     resposta = await agent.chat('Conte uma história')
 
-    # Mostra palavra por palavra
-    async for palavra in resposta:
-        print(palavra, end='', flush=True)
+    # Mostra token por token
+    async for token in resposta:
+        print(token, end='', flush=True)
     print()  # Nova linha no final
 
 
@@ -72,7 +72,7 @@ ______________________________________________________________________
 
 ### Exemplo 1: Chatbot Interativo
 
-Crie um chatbot que mostra as palavras aparecendo:
+Crie um chatbot que mostra os tokens aparecendo em tempo real:
 
 ```python
 import asyncio
@@ -94,9 +94,9 @@ async def chat_interface():
         print('Agente: ', end='', flush=True)
         resposta = await agent.chat(user_input)
 
-        # Mostra palavra por palavra
-        async for palavra in resposta:
-            print(palavra, end='', flush=True)
+        # Mostra token por token
+        async for token in resposta:
+            print(token, end='', flush=True)
         print('\n')
 
 
@@ -142,8 +142,8 @@ async def main():
     )
 
     resposta = await agent.chat('Conte uma história')
-    async for palavra in resposta:
-        print(palavra, end='', flush=True)
+    async for token in resposta:
+        print(token, end='', flush=True)
 
 
 asyncio.run(main())
@@ -189,8 +189,8 @@ async def ollama_streaming():
     )
 
     resposta = await agent.chat('Explique machine learning')
-    async for palavra in resposta:
-        print(palavra, end='', flush=True)
+    async for token in resposta:
+        print(token, end='', flush=True)
     print()
 
 
@@ -222,8 +222,8 @@ async def exemplo_com_ferramentas():
     resposta = await agent.chat('Que dia é hoje?')
 
     # O agente usa a ferramenta e responde em streaming
-    async for palavra in resposta:
-        print(palavra, end='', flush=True)
+    async for token in resposta:
+        print(token, end='', flush=True)
     print()
 
 
@@ -234,7 +234,7 @@ ______________________________________________________________________
 
 ## 📊 Streaming e Métricas
 
-Métricas são coletadas automaticamente, independentemente do modo de consumo:
+As métricas de execução e a gravação da resposta no histórico de conversação são consolidadas automaticamente assim que o fluxo de streaming é totalmente consumido (após o término do `async for` ou ao executar `await response`):
 
 ```python
 import asyncio
@@ -248,13 +248,13 @@ async def streaming_with_metrics():
         config={'stream': True},
     )
 
-    # Streaming
+    # Streaming em tempo real
     response = await agent.chat('Conte uma piada')
     async for token in response:
-        print(token, end='')
+        print(token, end='', flush=True)
     print('\n')
 
-    # Métricas ainda são gravadas
+    # Métricas consolidadas após consumo total do stream
     metrics = agent.get_metrics()
     if metrics:
         print(f'\nLatência: {metrics[-1].latency_ms}ms')
@@ -296,4 +296,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Versão:** 0.2.0 | **Atualização:** 07/08/2026
+**Versão:** 0.2.0 | **Atualização:** 2026-08-25

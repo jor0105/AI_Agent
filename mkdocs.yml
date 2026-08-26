@@ -12,7 +12,7 @@ repo_url: https://github.com/jordanestralioto/Create-Agents-AI
 edit_uri: edit/main/docs/
 
 # Copyright
-copyright: Copyright &copy; 2025 Jordan Estralioto
+copyright: Copyright &copy; 2026 Jordan Estralioto
 
 # Configuration
 theme:
@@ -60,7 +60,7 @@ extra:
       link: https://github.com/jordanestralioto/Create-Agents-AI
       name: Código-fonte
     - icon: material/email
-      link: mailto:contato@exemplo.com
+      link: mailto:estraliotojordan@gmail.com
       name: Contato
 
 extra_css:

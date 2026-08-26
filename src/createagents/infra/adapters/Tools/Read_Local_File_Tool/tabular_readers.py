@@ -118,9 +118,9 @@ def read_excel_file(file_path: Path) -> str:
     extension = file_path.suffix.lower()
     engines_to_try = []
 
-    if extension == '.xlsx':
+    if extension in ['.xlsx', '.xlsm']:
         engines_to_try = ['openpyxl', 'xlrd']
-    elif extension in ['.xls', '.xlsm']:
+    elif extension == '.xls':
         engines_to_try = ['xlrd', 'openpyxl']
     else:
         engines_to_try = ['openpyxl', 'xlrd']
@@ -135,7 +135,7 @@ def read_excel_file(file_path: Path) -> str:
             )
             result: str = df.to_string(index=False)
             return result
-        except (ValueError, OSError) as e:
+        except (ValueError, OSError, ImportError) as e:
             last_error = e
             logger.debug('Failed to read Excel with engine %s: %s', engine, e)
             continue

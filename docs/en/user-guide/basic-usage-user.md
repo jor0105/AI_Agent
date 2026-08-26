@@ -8,7 +8,9 @@ Learn how to quickly create and interact with AI agents.
 from createagents import CreateAgent
 
 agent = CreateAgent(
-    provider='openai', model='gpt-4', instructions='You are a helpful assistant'
+    provider='openai',
+    model='gpt-4',
+    instructions='You are a helpful assistant',
 )
 ```
 
@@ -162,26 +164,25 @@ for name, description in all_tools.items():
 ## Creating Custom Tools
 
 ```python
-import ast
 from createagents import BaseTool
 
 
-class CalculatorTool(BaseTool):
-    name = 'calculator'
-    description = 'Performs mathematical calculations'
+class WordCountTool(BaseTool):
+    name = 'word_count'
+    description = 'Counts the number of words in a text'
     parameters = {
         'type': 'object',
         'properties': {
-            'expression': {
+            'text': {
                 'type': 'string',
-                'description': 'Mathematical expression',
+                'description': 'Text to count words from',
             }
         },
-        'required': ['expression'],
+        'required': ['text'],
     }
 
-    def execute(self, expression: str) -> str:
-        return str(ast.literal_eval(expression))
+    def execute(self, text: str) -> str:
+        return str(len(text.split()))
 ```
 
 ## Metrics

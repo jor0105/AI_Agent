@@ -13,18 +13,23 @@ ______________________________________________________________________
 └──────────────┬──────────────────────┘
                │
 ┌──────────────▼──────────────────────┐
-│        APPLICATION                  │  Facade (CreateAgent)
-│     (Application Logic)             │  Use Cases, DTOs, Services
+│           MAIN                      │  Facade (CreateAgent),
+│    (Composition Root)               │  AgentComposer, Factories
 └──────────────┬──────────────────────┘
                │
 ┌──────────────▼──────────────────────┐
-│          DOMAIN                     │  Entities, Rules, Interfaces
-│     (Business Rules)                │  Agent, ToolExecutor, LoggerInterface
-└──────────────▲──────────────────────┘
+│        APPLICATION                  │  Use Cases, DTOs,
+│     (Application Logic)             │  Ports/Interfaces (ChatRepository)
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│          DOMAIN                     │  Entities (Agent, History),
+│     (Business Rules)                │  Value Objects (ChatMetrics, Message),
+└──────────────▲──────────────────────┘  Domain Services, LoggerInterface
                │
 ┌──────────────┴──────────────────────┐
-│      INFRASTRUCTURE                 │  Adapters, Handlers, Config
-│     (Technical Details)             │  OpenAI, Ollama, Tools, Metrics
+│      INFRASTRUCTURE                 │  Adapters, Clients, Handlers,
+│     (Technical Details)             │  OpenAI, Ollama, Tools, Config
 └─────────────────────────────────────┘
 ```
 
@@ -54,30 +59,42 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-### 2. Application
+### 2. Main (Composition Root & Facade)
 
-**Location:** `src/createagents/application/`
+**Location:** `src/createagents/main/`
 
-**Responsibility:** Orchestrating use cases and enforcing application flow.
+**Responsibility:** Composition root that wires dependencies together and provides the public facade.
 
 **Components:**
 
-- **Facade / Controller:** `CreateAgent` — lives in `main/facade/`, exposes `chat` (async), `get_configs`, `get_all_available_tools`, `clear_history`, `export_metrics_*`.
+- **Facade (`main/facade/`):** `CreateAgent` — developer-facing entrypoint exposing `chat` (async), `get_configs`, `get_all_available_tools`, `clear_history`, `export_metrics_*`, and `start_cli`.
+- **Composer (`main/composers/`):** `AgentComposer` — wires application use cases with infrastructure adapters and dependencies.
+
+______________________________________________________________________
+
+### 3. Application
+
+**Location:** `src/createagents/application/`
+
+**Responsibility:** Orchestrating use cases and enforcing application flow, depending only on the domain layer.
+
+**Components:**
+
 - **Use Cases (`application/use_cases`):**
-  - `CreateAgentUseCase` — creates and validates agents, resolving tool names via the `ToolRegistry` port (invoked by `AgentComposer`).
-  - `ChatWithAgentUseCase` — orchestrates **asynchronous** messages between `Agent` and `ChatRepository` (adapters).
+  - `CreateAgentUseCase` — creates and validates agents, resolving tool names via the `ToolRegistry` port.
+  - `ChatWithAgentUseCase` — orchestrates **asynchronous** messages between `Agent` and the `ChatRepository` port.
   - `GetAgentConfigUseCase` — retrieves agent configuration.
   - `GetSystemAvailableToolsUseCase` — lists built-in framework tools.
 - **DTOs (`application/dtos`):** Data transfer objects:
-  - `CreateAgentInputDTO`, `ChatInputDTO`, `AgentConfigOutputDTO` — data transfer between facade and use cases.
-  - **`StreamingResponseDTO`** — wrapper for `AsyncGenerator` allowing both async iteration and await of streaming responses.
+  - `CreateAgentInputDTO`, `ChatInputDTO`, `AgentConfigOutputDTO`
+  - **`StreamingResponseDTO`** — wrapper for `AsyncGenerator` allowing both async iteration (`async for`) and `await` with cached response.
 - **Interfaces (`application/interfaces`):** Ports implemented by infrastructure:
-  - `ChatRepository` — contract for chat adapters, with **asynchronous** support.
+  - `ChatRepository` — contract for chat provider adapters.
   - `ToolRegistry` — tool catalog queries without coupling application to infrastructure.
 
 ______________________________________________________________________
 
-### 3. Domain
+### 4. Domain
 
 **Location:** `src/createagents/domain/`
 
@@ -85,15 +102,15 @@ ______________________________________________________________________
 
 **Components:**
 
-- **Entities:** `Agent` (core entity)
-- **Value Objects:** `Message`, `MessageRole`, `History`, `SupportedConfigs`, `SupportedProviders`, `BaseTool` (tools contract), `ChatMetrics`
-- **Domain Services:** `ToolExecutor` (**asynchronous** tool execution), `ToolExecutionResult`
-- **Interfaces (`domain/interfaces`):** **`LoggerInterface`** — logging abstraction in the domain (DIP - Dependency Inversion Principle)
-- **Exceptions:** `domain.exceptions` (e.g. `AgentException`, `InvalidAgentConfigException`, `UnsupportedConfigException`)
+- **Entities:** `Agent` (core entity), `History` (conversation history entity)
+- **Value Objects:** `Message`, `MessageRole`, `ChatMetrics`, `SupportedConfigs`, `SupportedProviders`, `BaseTool`
+- **Domain Services:** `ToolExecutor` (asynchronous/synchronous tool execution), `ToolExecutionResult`
+- **Interfaces (`domain/interfaces`):** `LoggerInterface` — logging abstraction in the domain
+- **Exceptions:** `domain.exceptions` (`AgentException`, `InvalidAgentConfigException`, etc.)
 
 ______________________________________________________________________
 
-### 4. Infrastructure
+### 5. Infrastructure
 
 **Location:** `src/createagents/infra/`
 
@@ -119,7 +136,7 @@ ______________________________________________________________________
   - `CurrentDateTool` — date/time tool
   - `ReadLocalFileTool` — multi-format file reader (PDF, Excel, CSV, Parquet, JSON, YAML, TXT)
 - **Factory:** `ChatAdapterFactory` — instantiates provider adapters. Each call creates a fresh adapter instance so metrics remain isolated per agent.
-- **Config:** `EnvironmentConfig`, `LoggingConfig`, `StandardLogger` (implements `LoggerInterface`), `ChatMetrics`
+- **Config:** `EnvironmentConfig`, `LoggingConfig`, `StandardLogger` (implements `LoggerInterface`)
 
 ______________________________________________________________________
 
@@ -142,8 +159,11 @@ Open for extension, closed for modification:
 ```python
 # Add a new provider without modifying existing code
 class ClaudeAdapter(ChatRepository):
-    async def chat(self, ...):
+    async def chat(self, *args, **kwargs):
         pass
+
+    def get_metrics(self) -> list[ChatMetrics]:
+        return []
 ```
 
 ### Liskov Substitution (LSP)
@@ -224,11 +244,11 @@ class ChatRepository(ABC):
 
 
 class OpenAIChatAdapter(ChatRepository):
-    async def chat(self, ...):  # Async implementation
+    async def chat(self, *args, **kwargs):  # Async implementation
         ...
 
     def get_metrics(self) -> list[ChatMetrics]:
-        ...
+        return []
 ```
 
 ### Factory Pattern
@@ -257,9 +277,8 @@ class ChatAdapterFactory:
 ```python
 # CreateAgent provides a unified, developer-friendly facade
 class CreateAgent:
-    def __init__(self, provider, model, ...):
-        self.__agent = AgentComposer.create_agent(...)
-        self.__chat_use_case = AgentComposer.create_chat_use_case(...)
+    def __init__(self, provider: str, model: str, *args, **kwargs):
+        pass
 ```
 
 ### Value Object Pattern
@@ -275,38 +294,54 @@ ______________________________________________________________________
 
 ## 🔄 Data Flows
 
-### Synchronous Consumption Flow (`await response`)
+### 1. Default Non-Streaming Flow (`config={'stream': False}`)
 
 ```
 User → CreateAgent.chat()
     → ChatWithAgentUseCase.execute() [async]
         → ChatRepository.chat() [async]
-            → OpenAIHandler / OllamaHandler
-                → StreamHandler (handles streaming)
+            → OpenAIChatAdapter / OllamaChatAdapter
+                → OpenAIHandler / OllamaHandler (direct HTTP call)
                     → External API (OpenAI / Ollama)
-                    ← Stream tokens
-                ← Complete response string
-            ← AsyncGenerator
-        ← StreamingResponseDTO
-    ← await response (complete string)
+                    ← Complete response from API
+                ← Generated message + recorded metrics
+            ← str (final response)
+        ← str
+    ← str
 ```
 
-### Asynchronous Streaming Flow (`async for`)
+### 2. Streaming Flow with Complete Consumption (`await response`)
 
 ```
-User → CreateAgent.chat()
+User → CreateAgent.chat() (with config={'stream': True})
     → ChatWithAgentUseCase.execute() [async]
         → ChatRepository.chat() [async]
-            → StreamHandler.handle_stream()
-                → async for token in api_stream:
-                    → yield token  # Real-time streaming
+            → OpenAIStreamHandler / OllamaStreamHandler
+                → External API (OpenAI / Ollama)
+                ← Stream chunks
             ← AsyncGenerator[str]
-        ← StreamingResponseDTO
-    → async for token in response:
-        → print(token, end='')  # Output token by token
+        ← StreamingResponseDTO(generator)
+    ← await response
+        → _consume() drains the generator, populates _full_response in cache
+        ← str (complete cached string)
 ```
 
-### CLI Flow
+### 3. Streaming Flow with Progressive Iteration (`async for`)
+
+```
+User → CreateAgent.chat() (with config={'stream': True})
+    → ChatWithAgentUseCase.execute() [async]
+        → ChatRepository.chat() [async]
+            → OpenAIStreamHandler / OllamaStreamHandler
+                → External API (OpenAI / Ollama)
+                ← Stream chunks
+            ← AsyncGenerator[str]
+        ← StreamingResponseDTO(generator)
+    → async for token in response:
+        → print(token, end='', flush=True)  # Output token by token
+```
+
+### 4. CLI Flow
 
 ```
 Terminal → ChatCLIApplication.run()
@@ -332,6 +367,8 @@ use_case = ChatWithAgentUseCase(mock_repo)
 
 ```python
 # Seamless provider switching without code changes
+from createagents import CreateAgent
+
 agent = CreateAgent(provider='ollama', model='llama3.2')
 ```
 
@@ -341,6 +378,12 @@ agent = CreateAgent(provider='ollama', model='llama3.2')
 - Tool contracts isolated from transport layers
 - Production-ready metrics and logging hooks
 
+### 🛡️ Maintainability
+
+- Code cleanly segregated into independent layers
+- Clear single responsibilities
+- Straightforward to isolate and fix bugs
+
 ______________________________________________________________________
 
 ## 🔄 Asynchronous Patterns
@@ -348,26 +391,38 @@ ______________________________________________________________________
 ### Streaming with `StreamingResponseDTO`
 
 ```python
-# Handlers yield tokens as an AsyncGenerator
-async def handle_stream(self, ...) -> AsyncGenerator[str, None]:
-    async for chunk in api_response:
-        yield chunk
+from collections.abc import AsyncGenerator, Generator
 
 
-# DTO encapsulates the generator for flexible consumption
 class StreamingResponseDTO:
-    def __init__(self, generator: AsyncGenerator[str, None]):
-        self._generator = generator
+    """DTO wrapping an AsyncGenerator with caching and await support."""
 
-    def __aiter__(self):  # Allows async for
+    def __init__(self, generator: AsyncGenerator[str, None]) -> None:
+        self._generator = generator
+        self._consumed: bool = False
+        self._full_response: str = ''
+
+    def __aiter__(self) -> 'StreamingResponseDTO':
         return self
 
-    async def __anext__(self):
-        return await self._generator.__anext__()
+    async def __anext__(self) -> str:
+        if self._consumed:
+            raise StopAsyncIteration
+        try:
+            token = await self._generator.__anext__()
+        except StopAsyncIteration:
+            self._consumed = True
+            raise
+        self._full_response += token
+        return token
 
-    def __await__(self):  # Allows direct await
-        async def _consume():
-            return ''.join([token async for token in self])
+    def __await__(self) -> Generator[object, None, str]:
+        async def _consume() -> str:
+            if self._consumed:
+                return self._full_response
+            async for _ in self:
+                pass
+            return self._full_response
 
         return _consume().__await__()
 ```

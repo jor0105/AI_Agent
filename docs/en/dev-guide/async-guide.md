@@ -202,7 +202,8 @@ asyncio.run(concurrent_chats())
 ### Pattern 4: Asynchronous Custom Tools
 
 ```python
-import aiohttp
+import asyncio
+import aiohttp  # Requires: pip install aiohttp
 from createagents import BaseTool, CreateAgent
 
 
@@ -218,20 +219,264 @@ class AsyncWebTool(BaseTool):
     }
 
     async def execute(self, url: str) -> str:
-        async with (
-            aiohttp.ClientSession() as session,
-            session.get(url) as response,
-        ):
-            return await response.text()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                return await response.text()
+
+
+# Usage
+async def main():
+    agent = CreateAgent(
+        provider='openai', model='gpt-4', tools=[AsyncWebTool()]
+    )
+
+    response = await agent.chat('Fetch data from https://api.example.com')
+    print(response)
+
+
+asyncio.run(main())
+```
+
+______________________________________________________________________
+
+## 🔧 Handler Implementations
+
+### Non-Streaming Handler (Tool Calling Loop)
+
+## 🔧 Internal Handler Architecture (Conceptual)
+
+> **Architectural Note:** The snippets below illustrate the conceptual internal design used by infrastructure adapters (`OpenAIHandler`, `OpenAIStreamHandler`) to orchestrate multi-turn tool loops and streaming metrics recording.
+
+### Non-Streaming Pattern (Tool Calling Loop)
+
+```python
+# Conceptual execution loop in non-streaming handlers
+class OpenAIHandlerConceptual:
+    def __init__(self, client: Any, logger: Any) -> None:
+        self._client = client
+        self._logger = logger
+
+    async def execute_tool_loop(
+        self,
+        model: str,
+        instructions: str | None,
+        messages: list[dict[str, str]],
+        config: dict[str, Any] | None,
+        tools: list[BaseTool] | None,
+    ) -> str:
+        response_api = await self._client.call_api(
+            model, instructions, messages, config, tools
+        )
+        if getattr(response_api, 'tool_calls', None):
+            # Executes tools and loops until the final text response
+            pass
+        return getattr(response_api, 'output_text', '')
+```
+
+### Streaming Pattern with Metrics
+
+```python
+# Conceptual streaming pattern with metrics recording
+class OpenAIStreamHandlerConceptual:
+    def __init__(self, client: Any, recorder: Any) -> None:
+        self._client = client
+        self._recorder = recorder
+
+    async def handle_stream(
+        self,
+        model: str,
+        instructions: str | None,
+        messages: list[dict[str, str]],
+        config: dict[str, Any] | None,
+        tools: list[BaseTool] | None,
+    ) -> AsyncGenerator[str, None]:
+        start_time = time.time()
+        try:
+            stream_response = await self._client.call_stream(...)
+            async for chunk in stream_response:
+                yield chunk
+            # Accumulate token metrics and record success
+            self._recorder.record_success(model, start_time)
+        except Exception as e:
+            self._recorder.record_error(model, start_time, e)
+            raise
 ```
 
 ______________________________________________________________________
 
 ## 🐛 Common Pitfalls
 
-1. **Forgetting `await` on `chat()`**: Calling `agent.chat(...)` returns a coroutine. You must `await` it.
-2. **Blocking the Event Loop**: Never use `time.sleep()` in async functions; use `await asyncio.sleep()`.
-3. **Double-Consuming `StreamingResponseDTO`**: The response generator is single-use.
+### 1. Forgetting `await` on `chat()`
+
+```python
+# ❌ INCORRECT
+async def incorrect():
+    response = agent.chat('message')  # Returns coroutine without awaiting
+    print(response)  # <coroutine object...>
+
+
+# ✅ CORRECT
+async def correct():
+    response = await agent.chat('message')  # Awaits and returns result
+    print(response)
+```
+
+### 2. Blocking the Event Loop
+
+```python
+# ❌ INCORRECT (blocking I/O)
+async def bad_function():
+    time.sleep(10)  # Blocks the entire event loop!
+
+
+# ✅ CORRECT (non-blocking)
+async def good_function():
+    await asyncio.sleep(10)  # Yields control back to the event loop
+```
+
+### 3. Not using `asyncio.run()`
+
+```python
+# ❌ INCORRECT
+async def main():
+    response = await agent.chat('message')
+    print(response)
+
+
+main()  # RuntimeWarning / Error: coroutine was never awaited
+
+# ✅ CORRECT
+asyncio.run(main())
+```
+
+### 4. Double-Consuming `StreamingResponseDTO`
+
+When `config={'stream': True}` is active, `await agent.chat()` returns a [`StreamingResponseDTO`](../reference/streaming-api.md).
+
+- **`await response`:** drains the underlying generator and caches the complete string in `_full_response`. Subsequent calls to `await response` return the cached full string.
+- **`async for token in response:`** consumes tokens in real-time. A second `async for` on an already exhausted stream terminates immediately without yielding tokens (since `async for` catches `StopAsyncIteration` internally).
+- Direct calls to `response.__anext__()` on an exhausted generator explicitly raise `StopAsyncIteration`.
+
+```python
+from createagents import CreateAgent
+
+
+async def demo_streaming():
+    agent = CreateAgent(
+        provider='openai', model='gpt-4', config={'stream': True}
+    )
+    response = await agent.chat('message')  # Returns StreamingResponseDTO
+
+    # 1. Consumption via await:
+    text1 = await response  # Consumes stream and caches result
+    text2 = await response  # Returns cached string (text2 == text1)
+
+    # 2. Consumption via async for:
+    stream_resp = await agent.chat('another message')
+    async for token in stream_resp:
+        print(token, end='')  # Consumes tokens
+
+    # A second immediate iteration on the same stream_resp terminates cleanly:
+    async for token in stream_resp:
+        pass  # Exits immediately with 0 iterations
+```
+
+______________________________________________________________________
+
+## 📊 Performance
+
+### Sequential vs Concurrent Execution
+
+**Sequential**:
+
+```python
+async def sequential():
+    r1 = await agent.chat('Q1')  # ~2s
+    r2 = await agent.chat('Q2')  # ~2s
+    r3 = await agent.chat('Q3')  # ~2s
+    # Total: ~6s
+```
+
+**Concurrent**:
+
+```python
+async def concurrent():
+    results = await asyncio.gather(
+        agent.chat('Q1'),  # ~2s
+        agent.chat('Q2'),  # ~2s
+        agent.chat('Q3'),  # ~2s
+    )
+    # Total: ~2s (executed in parallel)
+```
+
+______________________________________________________________________
+
+## 🧪 Testing Asynchronous Code
+
+### Unit Tests with Mocks (Fast and Free)
+
+```python
+from unittest.mock import AsyncMock, patch
+import pytest
+from createagents import CreateAgent
+from createagents.application.dtos import ChatOutputDTO
+
+
+@pytest.mark.asyncio
+async def test_chat_with_mock():
+    mock_use_case = AsyncMock()
+    mock_use_case.execute.return_value = ChatOutputDTO(
+        response='Mocked Response'
+    )
+
+    with patch(
+        'createagents.main.composers.AgentComposer.create_chat_use_case',
+        return_value=mock_use_case,
+    ):
+        agent = CreateAgent(provider='ollama', model='llama3.2')
+        response = await agent.chat('Test message')
+        assert response == 'Mocked Response'
+```
+
+### Integration Tests with Real Providers
+
+> **Warning:** Real provider tests consume API quota and require `OPENAI_API_KEY`. They must be marked with `@pytest.mark.integration`.
+
+```python
+import os
+import pytest
+from createagents import CreateAgent
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_real_openai_integration():
+    if not os.getenv('OPENAI_API_KEY'):
+        pytest.skip('OPENAI_API_KEY not configured')
+
+    agent = CreateAgent(provider='openai', model='gpt-4o-mini')
+    response = await agent.chat('Reply with: OK')
+    assert 'OK' in response
+```
+
+______________________________________________________________________
+
+## 💡 Best Practices
+
+1. **Always use await**: To execute coroutines properly.
+2. **Use `asyncio.gather`**: For concurrent agent calls.
+3. **Do not block**: Use async libraries (`aiohttp`, `aiofiles`) for I/O.
+4. **Handle exceptions**: Wrap async calls in `try/except`.
+5. **Proper logging**: Use loggers instead of print statements in async functions.
+6. **Test with `pytest-asyncio`**: Mark async test functions with `@pytest.mark.asyncio`.
+
+______________________________________________________________________
+
+## 📚 References
+
+- [Python asyncio](https://docs.python.org/3/library/asyncio.html)
+- [Async Generators](https://peps.python.org/pep-0525/)
+- [Streaming API Reference](../reference/streaming-api.md)
 
 ______________________________________________________________________
 

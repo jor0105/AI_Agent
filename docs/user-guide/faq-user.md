@@ -18,7 +18,7 @@ Sim! Basta estender `BaseTool` e seguir o padrão dos exemplos.
 
 ## 5. Como garantir privacidade dos meus dados?
 
-Use modelos locais (Ollama) para que nada saia da sua máquina.
+Use modelos locais com o provedor Ollama executando em `localhost` (ou na sua rede privada). Quando o servidor Ollama está local, as requisições não saem da sua máquina para APIs na nuvem. Vale lembrar que se você configurar a variável `OLLAMA_HOST` para um endereço remoto, as chamadas serão roteadas para aquele servidor específico.
 
 ## 6. Como exportar métricas?
 

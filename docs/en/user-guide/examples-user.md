@@ -141,8 +141,8 @@ The CLI features:
 
 - Formatted colored terminal interface
 - Commands: `/help`, `/metrics`, `/configs`, `/tools`, `/clear`
-- Real-time streaming
-- Status and thinking indicators
+- Real-time streaming support (when initialized with `config={'stream': True}`)
+- Status indicators (`🤖 AI is thinking...`)
 
 📖 [Full CLI Guide](cli-usage.md)
 
@@ -178,7 +178,7 @@ async def main():
 asyncio.run(main())
 ```
 
-## Local Private Agent with Ollama
+## Local Agent with Ollama (Processing on localhost)
 
 ```python
 import asyncio
@@ -189,8 +189,8 @@ async def main():
     local_agent = CreateAgent(
         provider='ollama',
         model='llama3.2',
-        name='Private Assistant',
-        instructions='You are a privacy-first local assistant.',
+        name='Local Assistant',
+        instructions='You are a local assistant.',
     )
 
     response = await local_agent.chat(

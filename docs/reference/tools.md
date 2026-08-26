@@ -51,7 +51,13 @@ ______________________________________________________________________
 
 Lê arquivos locais em múltiplos formatos.
 
-**Formatos:** TXT, MD, CSV, Excel (XLS/XLSX), PDF, Parquet, JSON, YAML
+**Formatos suportados:**
+
+- **Texto e código:** TXT, LOG, MD, PY, JS, HTML, CSS, JSON, XML, YAML, YML, RST, INI, CFG, CONF, SH, BASH, ZSH
+- **Tabelas e dados:** CSV, Excel (XLSX, XLSM, e legado XLS\*), Parquet
+- **Documentos (via unstructured):** PDF, Word (DOC, DOCX), PowerPoint (PPT, PPTX), OpenDocument (ODT), EPUB, MSG, RTF
+
+\* *Nota sobre Excel*: Arquivos OpenXML (`.xlsx`, `.xlsm`) usam o motor `openpyxl` incluído no extra `[file-tools]`. O formato legado Excel 97-2004 (`.xls`) requer a biblioteca opcional `xlrd` (`pip install xlrd`).
 
 **Dependências:** `tiktoken`, `unstructured`, `pandas`, `openpyxl`, `pyarrow`, `chardet`
 
@@ -77,14 +83,18 @@ async def main():
     print(resposta)
 
 
-asyncio.run(main())
+async def main_run():
+    await main()
+
+
+asyncio.run(main_run())
 ```
 
 **Limites e Segurança:**
 
-- Tamanho máximo de arquivo: 100MB (configurável)
+- Tamanho máximo de arquivo: 100 MiB (limite fixo de segurança: 104.857.600 bytes)
 - Limite padrão de tokens: 30.000 tokens (parâmetro `max_tokens`)
-- Diretório seguro (sandbox): controlado pela variável de ambiente `FILE_TOOL_BASE_DIR` (padrão: diretório atual `.`)
+- Diretório seguro (sandbox): controlado pela variável de ambiente `FILE_TOOL_BASE_DIR` (padrão: diretório atual `.`). Caminhos fora do diretório base são bloqueados contra path traversal.
 
 **Funcionalidades:**
 
@@ -102,6 +112,7 @@ ______________________________________________________________________
 
 ```python
 import asyncio
+from createagents import CreateAgent
 
 
 async def main():
@@ -124,6 +135,7 @@ asyncio.run(main())
 
 ```python
 import asyncio
+from createagents import CreateAgent
 
 
 async def main():
@@ -146,6 +158,7 @@ asyncio.run(main())
 
 ```python
 import asyncio
+from createagents import CreateAgent
 
 
 async def main():
@@ -238,10 +251,11 @@ print('Ferramentas disponíveis neste agente:')
 for name, description in tools.items():
     print(f'  - {name}: {description[:50]}...')
 
-# Exemplo de saída:
+# Exemplo de saída (instalação básica):
 # - currentdate: Get the current date and/or time...
-# - readlocalfile: Use this tool to read local files...
 # - custom_tool: Minha ferramenta customizada
+#
+# (Com o extra [file-tools] instalado, 'readlocalfile' também é listado)
 ```
 
 ### Verificar Apenas Ferramentas do Sistema
@@ -301,19 +315,22 @@ class WeatherTool(BaseTool):
 
 # Agente sem ferramentas customizadas
 agent1 = CreateAgent(provider='openai', model='gpt-4')
-print('Agente 1:', agent1.get_all_available_tools().keys())
-# Saída: dict_keys(['currentdate', 'readlocalfile'])
+print('Agente 1:', list(agent1.get_all_available_tools().keys()))
+# Saída básica: ['currentdate']
+# Saída com extra [file-tools]: ['currentdate', 'readlocalfile']
 
 # Agente com ferramentas customizadas
 agent2 = CreateAgent(
     provider='openai', model='gpt-4', tools=['currentdate', WeatherTool()]
 )
-print('Agente 2:', agent2.get_all_available_tools().keys())
-# Saída: dict_keys(['currentdate', 'readlocalfile', 'weather'])
+print('Agente 2:', list(agent2.get_all_available_tools().keys()))
+# Saída básica: ['currentdate', 'weather']
+# Saída com extra [file-tools]: ['currentdate', 'readlocalfile', 'weather']
 
-# Ferramentas do sistema (sempre igual para todos os agentes)
-print('Sistema:', agent1.get_system_available_tools().keys())
-# Saída: dict_keys(['currentdate', 'readlocalfile'])
+# Ferramentas do sistema (global para o ambiente)
+print('Sistema:', list(agent1.get_system_available_tools().keys()))
+# Saída básica: ['currentdate']
+# Saída com extra [file-tools]: ['currentdate', 'readlocalfile']
 ```
 
 ### Evitando Duplicatas
@@ -321,6 +338,8 @@ print('Sistema:', agent1.get_system_available_tools().keys())
 O sistema automaticamente evita duplicatas de ferramentas. Se você adicionar uma ferramenta do sistema à lista de tools do agente, ela aparecerá apenas uma vez:
 
 ```python
+from createagents import CreateAgent
+
 # Ferramenta do sistema adicionada explicitamente
 agent = CreateAgent(
     provider='openai',
@@ -331,19 +350,17 @@ agent = CreateAgent(
 # Não haverá duplicatas
 tools = agent.get_all_available_tools()
 # 'currentdate' aparece apenas UMA vez
-print(list(tools.keys()))  # ['currentdate', 'readlocalfile']
+print(list(tools.keys()))
+# Saída básica: ['currentdate']
+# Saída com extra [file-tools]: ['currentdate', 'readlocalfile']
 ```
 
 ______________________________________________________________________
 
-## ⚡ Performance
+## ⚡ Impacto de Dependências
 
-### Uso de Memória
-
-| Instalação     | Memória Base | Com ReadLocalFileTool |
-| -------------- | ------------ | --------------------- |
-| Básica         | ~50MB        | N/A                   |
-| Com file-tools | ~50MB        | ~200MB (quando usada) |
+- **Instalação básica (`pip install createagents`):** Apenas dependências essenciais do framework (`openai`, `ollama`, `python-dotenv`, `defusedxml`, `rich`).
+- **Instalação com ferramentas de arquivo (`pip install createagents[file-tools]`):** Inclui bibliotecas adicionais (`tiktoken`, `unstructured`, `pandas`, `openpyxl`, `pyarrow`, `chardet`), importadas sob demanda apenas quando ferramentas de arquivo são utilizadas.
 
 ______________________________________________________________________
 
@@ -352,25 +369,48 @@ ______________________________________________________________________
 ### Ferramenta Própria
 
 ```python
+import ast
+import operator
 from createagents import BaseTool
+
+_OPERATORS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.USub: operator.neg,
+}
+
+
+def _safe_eval(node: ast.AST) -> float:
+    if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+        return float(node.value)
+    if isinstance(node, ast.BinOp) and type(node.op) in _OPERATORS:
+        return _OPERATORS[type(node.op)](
+            _safe_eval(node.left), _safe_eval(node.right)
+        )
+    if isinstance(node, ast.UnaryOp) and type(node.op) in _OPERATORS:
+        return _OPERATORS[type(node.op)](_safe_eval(node.operand))
+    raise ValueError('Operação não suportada')
 
 
 class CalculatorTool(BaseTool):
     name = 'calculator'
-    description = 'Realiza cálculos matemáticos'
+    description = 'Realiza cálculos matemáticos básicos (+, -, *, /)'
     parameters = {
         'type': 'object',
         'properties': {
             'expression': {
                 'type': 'string',
-                'description': 'Expressão matemática',
+                'description': 'Expressão matemática segura (ex.: "2 + 2 * 3")',
             }
         },
         'required': ['expression'],
     }
 
     def execute(self, expression: str) -> str:
-        return str(eval(expression))
+        parsed = ast.parse(expression.strip(), mode='eval')
+        return str(_safe_eval(parsed.body))
 ```
 
 ______________________________________________________________________
@@ -381,7 +421,7 @@ ______________________________________________________________________
 R: Para manter o sistema leve. Se você não precisa ler PDFs/Excel, não precisa instalar pandas, unstructured, etc.
 
 **P: Como sei quais ferramentas estão disponíveis?**
-R: Use `agent.get_all_available_tools()` para listar.
+R: Use `agent.get_all_available_tools()` para listar o catálogo disponível. Para ver as ferramentas configuradas no agente, use `agent.get_configs()['tools']`.
 
 **P: O que acontece se eu tentar usar uma ferramenta não instalada?**
 R: Você receberá erro claro: `pip install createagents[file-tools]`
@@ -391,4 +431,4 @@ R: Sim! Siga o padrão de ferramentas próprias e estenda `BaseTool`.
 
 ______________________________________________________________________
 
-**Última atualização:** 02/12/2025
+**Versão:** 0.2.0 | **Atualização:** 2026-08-25

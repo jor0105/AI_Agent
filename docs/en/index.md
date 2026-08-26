@@ -34,16 +34,17 @@ pip install createagents[file-tools]
 
 ### Configuration
 
-```bash
-# Copy the variable-name template
-cp .env.example .env
+**PyPI Installation:**
 
-# Set OPENAI_API_KEY only in your local environment when using OpenAI.
-# Never publish secret values.
-export OPENAI_API_KEY
+Create a `.env` file in your project root:
+
+```env
+OPENAI_API_KEY=sk-proj-your-api-key-here
 ```
 
-OpenAI requires `OPENAI_API_KEY`. Ollama does not require an API key, but requires a reachable Ollama server; refer to the [installation guide](user-guide/installation-user.md) for provider-specific setup.
+*(If working from a repository clone, copy the template with `cp .env.example .env`).*
+
+> **Note:** OpenAI requires `OPENAI_API_KEY`. Ollama requires no API key when running on `localhost` (refer to the [installation guide](user-guide/installation-user.md) for details).
 
 ### First Agent in 3 Lines
 
@@ -78,7 +79,7 @@ from createagents import CreateAgent
 # OpenAI (GPT-4, GPT-4o, GPT-4o-mini)
 agent_openai = CreateAgent(provider='openai', model='gpt-4')
 
-# Ollama (llama3.2, mistral, deepseek - 100% local and private)
+# Ollama (llama3.2, mistral - local processing on localhost)
 agent_local = CreateAgent(provider='ollama', model='llama3.2')
 ```
 
@@ -95,7 +96,7 @@ async def main():
     agent = CreateAgent(
         provider='openai',
         model='gpt-4',
-        tools=['currentdate'],  # For 'readlocalfile', install: pip install createagents[file-tools]
+        tools=['currentdate'],  # 'readlocalfile' requires [file-tools]
     )
 
     # The agent automatically invokes tools when necessary
@@ -123,36 +124,35 @@ asyncio.run(main())
 **Creating Custom Tools:**
 
 ```python
-import ast
 from createagents import BaseTool, CreateAgent
 
 
-class CalculatorTool(BaseTool):
-    name = 'calculator'
-    description = 'Performs mathematical calculations'
+class WordCountTool(BaseTool):
+    name = 'word_count'
+    description = 'Counts the number of words in a text'
     parameters = {
         'type': 'object',
         'properties': {
-            'expression': {
+            'text': {
                 'type': 'string',
-                'description': 'Mathematical expression to evaluate',
+                'description': 'Text to count words from',
             }
         },
-        'required': ['expression'],
+        'required': ['text'],
     }
 
-    def execute(self, expression: str) -> str:
-        return str(ast.literal_eval(expression))
+    def execute(self, text: str) -> str:
+        return str(len(text.split()))
 
 
-# Use custom tool
+# Use custom tool alongside built-ins
 agent = CreateAgent(
     provider='openai',
     model='gpt-4',
-    tools=['currentdate', CalculatorTool()],  # System + custom
+    tools=['currentdate', WordCountTool()],
 )
 
-# Inspect all available tools (system + custom)
+# Inspect all available tools
 print(agent.get_all_available_tools().keys())
 ```
 
@@ -221,6 +221,8 @@ ______________________________________________________________________
 
 - **[Installation](user-guide/installation-user.md)** - Step-by-step environment setup
 - **[Basic Usage](user-guide/basic-usage-user.md)** - Learn the fundamentals
+- **[CLI Usage](user-guide/cli-usage.md)** - Interactive terminal interface
+- **[Streaming Guide](user-guide/streaming-guide.md)** - Real-time responses and async streaming
 - **[Practical Examples](user-guide/examples-user.md)** - Real-world use cases
 - **[FAQ](user-guide/faq-user.md)** - Frequently Asked Questions
 
@@ -242,7 +244,7 @@ ______________________________________________________________________
 
 ### For Organizations
 
-- ✅ **Privacy**: Option for 100% local models with Ollama
+- ✅ **Privacy**: Option for local models on localhost with Ollama (zero API costs and local data retention when `OLLAMA_HOST` is not pointed to an external server)
 - ✅ **Security**: Automatic sanitization of sensitive data in logs
 - ✅ **Monitoring**: Real-time production-ready metrics
 - ✅ **Scalability**: Architecture designed for extensibility

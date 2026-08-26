@@ -25,11 +25,11 @@ ______________________________________________________________________
 
 ## ✨ Recursos
 
-- **🎨 Interface Colorida**: Sintaxe highlight e formatação markdown
-- **⚡ Streaming em Tempo Real**: Respostas aparecem token por token
-- **🎯 Comandos Integrados**: 5 comandos úteis (`/help`, `/metrics`, `/configs`, `/tools`, `/clear`) mais comandos de saída
-- **🔧 Indicadores de Status**: Mostra quando o agente está pensando
-- **📊 Métricas em Tempo Real**: Visualize performance instantaneamente
+- **🎨 Interface Formatada**: Renderização ANSI de elementos Markdown (cabeçalhos, negrito, itálico, listas e tabelas)
+- **⚡ Suporte a Streaming**: Respostas exibidas token a token quando `config={'stream': True}` está ativo
+- **🎯 Comandos Integrados**: 5 comandos úteis (`/help`, `/metrics`, `/configs`, `/tools`, `/clear`) e comandos de saída (`exit`/`quit`)
+- **🔧 Indicadores de Status**: Exibe `🤖 AI is thinking...` durante chamadas e processamento
+- **📊 Métricas da Sessão**: Visualize a tabela de métricas acumuladas via `/metrics`
 
 ______________________________________________________________________
 
@@ -92,7 +92,7 @@ Mostra as configurações atuais do agente:
 - Provider e modelo
 - Instruções
 - Parâmetros extras de configuração
-- Ferramentas configuradas
+- Ferramentas configuradas na instância
 - Histórico com prévia de mensagens e contagem
 
 ```
@@ -108,10 +108,10 @@ Você: /configs
 
 **provider:** openai
 **model:** gpt-4
-**name:** Assistente
-**instructions:** Você é um assistente prestativo
-**config:** {'temperature': 0.7}
-**tools:** ['currentdate']
+**name:** None
+**instructions:** None
+**config:** {}
+**tools:** None
 **history:** 2 messages in history
 
   - **user:** Olá!
@@ -120,9 +120,11 @@ Você: /configs
 **history_max_size:** 10
 ```
 
+> 💡 **Nota**: `/configs` exibe as ferramentas **configuradas na instância atual** (`tools: None` por padrão). Se você instanciar o agente com `tools=['currentdate']`, elas serão listadas ali. Para consultar o **catálogo de ferramentas disponíveis no ambiente**, utilize o comando `/tools`.
+
 ### `/tools` - Ferramentas
 
-Lista todas as ferramentas disponíveis (sistema e customizadas) com suas descrições.
+Lista todas as ferramentas disponíveis no ambiente (sistema e customizadas) com suas descrições.
 
 ```
 Você: /tools
@@ -130,7 +132,16 @@ Você: /tools
 
 **Aliases**: `/tools`, `get_tools`
 
-**Exemplo de saída**:
+**Exemplo de saída (Instalação básica):**
+
+```text
+## Available Tools
+
+**currentdate**
+Get the current date and/or time in a specific timezone. Essential for answering 'What time is it?' or 'What day is it?' questions.
+```
+
+**Exemplo de saída (Com o extra `[file-tools]` instalado):**
 
 ```text
 ## Available Tools
@@ -139,7 +150,7 @@ Você: /tools
 Get the current date and/or time in a specific timezone. Essential for answering 'What time is it?' or 'What day is it?' questions.
 
 **readlocalfile**
-Use this tool to read local files from the system. Supports text files (txt, md, py, etc.), CSV, Excel, PDF and Parquet formats.
+Use this tool to read local files from the system. Supports text files (txt, md, py, etc.), CSV, Excel, PDF and Parquet formats. The tool validates file size in tokens to prevent overload. Input must include the absolute or relative file path and optionally the maximum number of tokens allowed (default: 30000).
 ```
 
 ### `/clear` - Limpar Histórico
@@ -166,7 +177,7 @@ Qualquer texto que não seja um comando é enviado como mensagem ao agente.
 Você: Explique Clean Architecture
 ```
 
-O agente responderá com streaming em tempo real.
+Se o agente for configurado com `config={'stream': True}`, a resposta é transmitida em tempo real (token a token). Sem a opção de streaming, a resposta completa é renderizada após o término do processamento.
 
 ### `exit` / `quit` - Sair
 
@@ -188,37 +199,36 @@ ______________________________________________________________________
 
 ### Cores e Destaque
 
-A CLI usa um esquema de cores profissional:
+A CLI usa o seguinte esquema de cores ANSI no terminal:
 
-- **Prompts**: Cor primária (cyan)
-- **Respostas do Agente**: Verde
-- **Mensagens do Sistema**: Amarelo
-- **Erros**: Vermelho
-- **Comandos**: Magenta
+- **Mensagens do Usuário**: Caixa alinhada à direita em Azul (`ColorScheme.BLUE`)
+- **Respostas e Indicador de Processamento da IA**: Caixa alinhada à esquerda e texto de thinking em Roxo (`ColorScheme.PURPLE`)
+- **Mensagens de Sistema, Menus e Comandos**: Cyan (`ColorScheme.CYAN`)
+- **Marcadores de Sucesso**: Verde (`ColorScheme.GREEN`)
+- **Avisos e Interrupções de Sessão**: Amarelo (`ColorScheme.YELLOW`)
+- **Erros do Sistema**: Vermelho (`ColorScheme.RED`)
 
-### Formatação Markdown
+### Formatação Markdown no Terminal
 
-A renderização suporta:
+O `MarkdownTerminalFormatter` converte elementos Markdown para visualização no terminal (não inclui syntax highlighting de código):
 
-- **Negrito**: `**texto**`
-- _Itálico_: `*texto*`
-- `Código inline`: `` `código` ``
-- Blocos de código com syntax highlighting
-- Listas e cabeçalhos
+- **Cabeçalhos**: Níveis `#` e `##` em azul com barra de destaque; `###` e `####` em roxo; `#####` e `######` em cyan
+- **Negrito**: `**texto**` ou `__texto__` com estilo ANSI bold
+- **Itálico**: `*texto*` ou `_texto_` com estilo ANSI italic
+- **Listas não-ordenadas**: Marcadores `•` em verde
+- **Listas ordenadas**: Setas `→` em azul
+- **Tabelas Markdown**: Formatadas automaticamente como pares rótulo-valor ou colunas com separadores
+- **Sanitização de texto**: Sanitização automática de caracteres especiais para evitar travamento de renderização
 
 ### Indicadores de Status
 
-Durante o processamento:
+Durante o processamento inicial e execução de ferramentas:
 
-```
-⏳ Processando...
+```text
+🤖 AI is thinking...
 ```
 
-Durante streaming:
-
-```
-✨ [Agente está digitando...]
-```
+Se o streaming estiver ativo (`config={'stream': True}`), o indicador é limpo assim que o primeiro token chega e os fragmentos de texto fluem na tela.
 
 ______________________________________________________________________
 
@@ -234,6 +244,7 @@ code_assistant = CreateAgent(
     model='gpt-4',
     name='Code Expert',
     instructions='Você é um especialista em Python. Sempre forneça exemplos.',
+    config={'stream': True},  # Habilita streaming no chat
 )
 
 # Iniciar CLI interativa
@@ -247,7 +258,7 @@ Você: Como criar um decorator em Python?
 [Resposta em streaming...]
 
 Você: /metrics
-[Exibe estatísticas da chamada]
+[Exibe tabela com estatísticas acumuladas até o momento]
 
 Você: /clear
 [Limpa histórico para novo tópico]
@@ -261,7 +272,7 @@ from createagents import CreateAgent
 agent_with_tools = CreateAgent(
     provider='openai',
     model='gpt-4',
-    tools=['currentdate'],  # Para 'readlocalfile', instale: pip install createagents[file-tools]
+    tools=['currentdate'],  # 'readlocalfile' requer [file-tools]
 )
 
 # Iniciar CLI
@@ -352,4 +363,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Versão:** 0.2.0 | **Atualização:** 07/08/2026
+**Versão:** 0.2.0 | **Atualização:** 2026-08-25

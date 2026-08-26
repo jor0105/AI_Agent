@@ -23,7 +23,7 @@ ______________________________________________________________________
 ### Por que usar?
 
 - ✅ **Arquitetura Limpa**: Código testável, manutenível e escalável
-- ✅ **Múltiplos Provedores**: OpenAI e Ollama (local/privado)
+- ✅ **Múltiplos Provedores**: OpenAI e Ollama (local e privado quando em localhost)
 - ✅ **Ferramentas Extensíveis**: Sistema de tools com suporte a customização
 - ✅ **Histórico Contextual**: Gerenciamento automático de conversas
 - ✅ **Métricas Integradas**: Monitoramento em JSON e Prometheus
@@ -43,10 +43,10 @@ ______________________________________________________________________
 
 ### 🔧 Ferramentas Built-in
 
-| Ferramenta            | Descrição                                    | Instalação                   |
-| --------------------- | -------------------------------------------- | ---------------------------- |
-| **CurrentDateTool**   | Data/hora em qualquer timezone               | Padrão                       |
-| **ReadLocalFileTool** | Lê PDF, Excel, CSV, Parquet, JSON, YAML, TXT | `uv sync --extra file-tools` |
+| Ferramenta            | Descrição                                    | Instalação                             |
+| --------------------- | -------------------------------------------- | -------------------------------------- |
+| **CurrentDateTool**   | Data/hora em qualquer timezone               | Padrão                                 |
+| **ReadLocalFileTool** | Lê PDF, Excel, CSV, Parquet, JSON, YAML, TXT | `pip install createagents[file-tools]` |
 
 ### 📊 Recursos Avançados
 
@@ -78,7 +78,7 @@ ______________________________________________________________________
 ### Pré-requisitos
 
 - Python 3.12 ou superior
-- pip (geralmente incluído com Python)
+- pip (geralmente incluído com Python) ou uv
 
 ### Instalação via PyPI (Usuários)
 
@@ -90,32 +90,34 @@ pip install createagents
 pip install createagents[file-tools]
 ```
 
-### Configuração
+#### Configuração para Usuários PyPI
 
-```bash
-# Configure OPENAI_API_KEY in the environment when using OpenAI.
-# Never include the key in code or in the repository.
-export OPENAI_API_KEY
+Crie um arquivo `.env` na raiz do seu projeto (ou configure as variáveis no seu ambiente):
+
+```env
+OPENAI_API_KEY=sk-proj-sua-chave-aqui
 ```
+
+*Nota: Para Ollama rodando localmente em `localhost`, nenhuma chave de API é necessária.*
 
 ### Instalação para Desenvolvimento (Contribuidores)
 
-Se você deseja contribuir com o projeto:
+Se você deseja contribuir com o projeto a partir do código-fonte:
 
 ```bash
 # Clone o repositório
 git clone https://github.com/jordanestralioto/Create-Agents-AI.git
 cd Create-Agents-AI
 
-# Instale com uv
-uv sync
+# Instale com uv respeitando o lockfile
+uv sync --locked
 
 # OU com suporte a file-tools
-uv sync --extra file-tools
+uv sync --locked --extra file-tools
 
-# Configure o ambiente
+# Configure o ambiente copiando o template do repositório
 cp .env.example .env
-# Edit .env locally and set OPENAI_API_KEY without versioning its value
+# Edite .env localmente com a sua chave sem versionar seu valor
 ```
 
 📖 [Guia completo para contribuidores →](docs/dev-guide/contribute.md)
@@ -172,9 +174,12 @@ asyncio.run(main())
 
 ```bash
 # Instalar Ollama
-curl -fsSL https://ollama.ai/install.sh | sh
+curl -fsSL https://ollama.com/install.sh | sh
+# Links diretos: Linux (https://ollama.com/download/linux)
+# macOS (https://ollama.com/download/mac) ou brew install ollama
+# Windows (https://ollama.com/download/windows)
 
-# Baixar modelo
+# Baixar modelo e executar
 ollama pull llama3.2:latest
 ollama serve
 ```
@@ -267,31 +272,14 @@ pelos casos de uso.
 
 ______________________________________________________________________
 
-## 📚 Documentação
-
-### Guia do Usuário
-
-- 📖 [Instalação](docs/user-guide/installation-user.md)
-- 🚀 [Uso Básico](docs/user-guide/basic-usage-user.md)
-- 💡 [Exemplos Práticos](docs/user-guide/examples-user.md)
-- ❓ [FAQ](docs/user-guide/faq-user.md)
-
-### Guia do Desenvolvedor
-
-- 🏗️ [Arquitetura](docs/dev-guide/architecture-developer.md)
-- 🔧 [Exemplos Técnicos](docs/dev-guide/technical-examples.md)
-- 🤝 [Como Contribuir](docs/dev-guide/contribute.md)
-
-### Referência
-
-- 📚 [API Reference](docs/reference/api.md)
-- 🛠️ [Ferramentas](docs/reference/tools.md)
-- ⌨️ [Comandos](docs/reference/commands.md)
+- 📖 **Para Usuários**: [Instalação](docs/user-guide/installation-user.md) • [Uso Básico](docs/user-guide/basic-usage-user.md) • [Exemplos Práticos](docs/user-guide/examples-user.md) • [FAQ](docs/user-guide/faq-user.md)
+- 🏗️ **Para Desenvolvedores**: [Arquitetura](docs/dev-guide/architecture-developer.md) • [Exemplos Técnicos](docs/dev-guide/technical-examples.md) • [Contribuir](docs/dev-guide/contribute.md)
+- 📚 **Referência**: [API Reference](docs/reference/api.md) • [Ferramentas](docs/reference/tools.md) • [Comandos](docs/reference/commands.md)
 
 ### Build Local da Documentação
 
 ```bash
-uv run mkdocs serve
+uv run --locked --no-sync mkdocs serve
 # Acesse: http://localhost:8000
 ```
 
@@ -301,12 +289,11 @@ ______________________________________________________________________
 
 ### Variáveis de Ambiente
 
-Copie `.env.example` para `.env` e preencha somente as variáveis necessárias ao
-seu ambiente. Nunca inclua valores secretos no código ou no repositório.
+No clone do repositório, copie `.env.example` para `.env`. Na instalação via PyPI, configure as variáveis diretamente no seu ambiente ou em um arquivo `.env` local. Nunca inclua valores secretos no código ou no repositório.
 
 ```bash
 # OpenAI: obrigatório somente quando o provider é "openai".
-OPENAI_API_KEY
+export OPENAI_API_KEY
 ```
 
 | Contexto   | Variáveis                                                                              | Comportamento                                                                                  |
@@ -319,6 +306,8 @@ OPENAI_API_KEY
 ### Configuração do Modelo
 
 ```python
+from createagents import CreateAgent
+
 config = {
     'temperature': 0.7,  # Criatividade (0-1)
     'max_tokens': 1000,  # Limite de resposta
@@ -490,9 +479,7 @@ ______________________________________________________________________
 
 <div align="center">
 
-**Versão:** 0.2.0
-**Última atualização:** 07/08/2026
-**Status:** 🚀 Projeto publicado! Aberto para contribuições e sugestões.
+**Versão:** 0.2.0 • **Última atualização:** 2026-08-25 • **Status:** 🚀 Projeto publicado!
 
 ⭐ Se este projeto foi útil, considere dar uma estrela no GitHub!
 

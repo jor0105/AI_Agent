@@ -139,10 +139,10 @@ agent.start_cli()
 
 A CLI oferece:
 
-- Interface colorida e formatada
+- Interface colorida e formatada no terminal
 - Comandos `/help`, `/metrics`, `/configs`, `/tools`, `/clear`
-- Streaming em tempo real
-- Indicadores de status
+- Suporte a streaming em tempo real (quando configurado com `config={'stream': True}`)
+- Indicadores de status (`🤖 AI is thinking...`)
 
 📖 [Guia completo da CLI](cli-usage.md)
 
@@ -178,7 +178,7 @@ async def main():
 asyncio.run(main())
 ```
 
-## Agente Local com Ollama
+## Agente Local com Ollama (Processamento em localhost)
 
 ```python
 import asyncio
@@ -189,8 +189,8 @@ async def main():
     agente_local = CreateAgent(
         provider='ollama',
         model='llama3.2',
-        name='Assistente Privado',
-        instructions='Você é um assistente local.',
+        name='Assistente Local',
+        instructions='Você é um assistente que executa localmente.',
     )
 
     resposta = await agente_local.chat(

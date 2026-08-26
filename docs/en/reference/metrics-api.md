@@ -52,8 +52,8 @@ ______________________________________________________________________
 
 Abstract base for metrics aggregation across provider handlers:
 
-- `OpenAIMetricsRecorder` — parses OpenAI `response.usage` (OpenAI does not report load durations)
-- `OllamaMetricsRecorder` — parses Ollama usage and converts nanosecond durations to milliseconds
+- `OpenAIMetricsRecorder` — parses OpenAI `response.usage` (extracts `input_tokens`/`output_tokens` or `prompt_tokens`/`completion_tokens`, plus `total_tokens`; OpenAI does not report load durations)
+- `OllamaMetricsRecorder` — parses Ollama usage (`prompt_eval_count`, `eval_count`) and converts nanosecond durations to milliseconds
 
 ### Methods
 
@@ -78,13 +78,21 @@ Returns a shallow copy of the collected metrics list.
 Metrics are scoped to the individual adapter instance assigned to each `CreateAgent`. Two distinct agent instances never share or overwrite each other's metrics:
 
 ```python
-agent_a = CreateAgent(provider='ollama', model='llama3')
-agent_b = CreateAgent(provider='ollama', model='llama3')
+import asyncio
+from createagents import CreateAgent
 
-await agent_a.chat('Hello')
 
-len(agent_a.get_metrics())  # 1
-len(agent_b.get_metrics())  # 0
+async def main():
+    agent_a = CreateAgent(provider='ollama', model='llama3')
+    agent_b = CreateAgent(provider='ollama', model='llama3')
+
+    await agent_a.chat('Hello')
+
+    print(len(agent_a.get_metrics()))  # 1
+    print(len(agent_b.get_metrics()))  # 0
+
+
+asyncio.run(main())
 ```
 
 ______________________________________________________________________

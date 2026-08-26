@@ -20,7 +20,6 @@ class ColorScheme:
     BOLD: str = '\033[1m'
     DIM: str = '\033[2m'
     ITALIC: str = '\033[3m'
-    UNDERLINE: str = '\033[4m'
 
     # Control sequences
     CLEAR_SCREEN: str = '\033[2J\033[H'

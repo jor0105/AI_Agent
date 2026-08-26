@@ -103,10 +103,26 @@ class OpenAIMetricsRecorder(MetricsRecorder):
         if usage is None:
             return ProviderUsage()
 
+        total_tokens = getattr(usage, 'total_tokens', None)
+        prompt_tokens = getattr(usage, 'input_tokens', None)
+        if prompt_tokens is None:
+            prompt_tokens = getattr(usage, 'prompt_tokens', None)
+
+        completion_tokens = getattr(usage, 'output_tokens', None)
+        if completion_tokens is None:
+            completion_tokens = getattr(usage, 'completion_tokens', None)
+
+        if (
+            total_tokens is None
+            and prompt_tokens is not None
+            and completion_tokens is not None
+        ):
+            total_tokens = prompt_tokens + completion_tokens
+
         return ProviderUsage(
-            tokens_used=getattr(usage, 'total_tokens', None),
-            prompt_tokens=getattr(usage, 'prompt_tokens', None),
-            completion_tokens=getattr(usage, 'completion_tokens', None),
+            tokens_used=total_tokens,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
         )
 
 

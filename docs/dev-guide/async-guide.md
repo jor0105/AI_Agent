@@ -66,47 +66,7 @@ class OpenAIChatAdapter(ChatRepository):
 
 ### Stream Handlers
 
-#### OpenAIStreamHandler
-
-```python
-class OpenAIStreamHandler(BaseStreamHandler):
-    async def handle_stream(
-        self,
-        model: str,
-        instructions: str | None,
-        messages: list[dict[str, str]],
-        config: dict[str, Any] | None,
-        tools: list[BaseTool] | None,
-    ) -> AsyncGenerator[str, None]:
-        # Comunicação assíncrona via Responses API com suporte a tool calls
-        stream_response = await self.__client.call_api(...)
-
-        async for event in stream_response:
-            if event.type == 'response.output_text.delta':
-                yield event.delta
-```
-
-#### OllamaStreamHandler
-
-```python
-class OllamaStreamHandler(BaseStreamHandler):
-    async def handle_stream(
-        self,
-        model: str,
-        instructions: str | None,
-        messages: list[dict[str, str]],
-        config: dict[str, Any] | None,
-        tools: list[BaseTool] | None,
-    ) -> AsyncGenerator[str, None]:
-        async for chunk in client.chat(
-            model=model,
-            messages=messages,
-            stream=True,
-            ...
-        ):
-            if chunk.get('message', {}).get('content'):
-                yield chunk['message']['content']
-```
+Os adaptadores de infraestrutura delegam chamadas com streaming para handlers especializados (`OpenAIStreamHandler`, `OllamaStreamHandler`), que retornam um gerador assíncrono `AsyncGenerator[str, None]` emitindo tokens em tempo real.
 
 ______________________________________________________________________
 
@@ -204,12 +164,13 @@ asyncio.run(simple_chat())
 
 ```python
 import asyncio
+from createagents import CreateAgent
 
 
 async def streaming_chat():
-    from createagents import CreateAgent
-
-    agent = CreateAgent(provider='openai', model='gpt-4')
+    agent = CreateAgent(
+        provider='openai', model='gpt-4', config={'stream': True}
+    )
     response = await agent.chat('Conte uma história')
 
     async for token in response:
@@ -224,11 +185,10 @@ asyncio.run(streaming_chat())
 
 ```python
 import asyncio
+from createagents import CreateAgent
 
 
 async def concurrent_chats():
-    from createagents import CreateAgent
-
     agent1 = CreateAgent(provider='openai', model='gpt-4')
     agent2 = CreateAgent(provider='openai', model='gpt-4')
 
@@ -248,9 +208,9 @@ asyncio.run(concurrent_chats())
 ### Padrão 4: Ferramentas Assíncronas
 
 ```python
-from createagents import BaseTool
 import asyncio
-import aiohttp
+import aiohttp  # Requer instalação: pip install aiohttp
+from createagents import BaseTool, CreateAgent
 
 
 class AsyncWebTool(BaseTool):
@@ -285,12 +245,19 @@ asyncio.run(main())
 
 ______________________________________________________________________
 
-## 🔧 Implementação de Handlers
+## 🔧 Arquitetura Interna de Handlers (Conceitual)
 
-### Handler Não-Streaming (Tool Calling Loop)
+> **Nota de Arquitetura:** Os exemplos abaixo ilustram o padrão arquitetural interno implementado pelos adaptadores de infraestrutura (`OpenAIHandler`, `OpenAIStreamHandler`) para orquestrar chamadas e acumulação de métricas.
+
+### Padrão Não-Streaming (Loop de Tool Calling)
 
 ```python
-class OpenAIHandler:
+# Arquitetura conceitual do loop de execução em handlers não-streaming
+class OpenAIHandlerConceptual:
+    def __init__(self, client: Any, logger: Any) -> None:
+        self._client = client
+        self._logger = logger
+
     async def execute_tool_loop(
         self,
         model: str,
@@ -300,19 +267,24 @@ class OpenAIHandler:
         tools: list[BaseTool] | None,
     ) -> str:
         # Loop de chamadas e execução de ferramentas
-        response_api = await self.__client.call_api(
-            model, instructions, messages, config, session.schemas
+        response_api = await self._client.call_api(
+            model, instructions, messages, config, tools
         )
-        if ToolCallParser.has_tool_calls(response_api):
-            await run_tool_calls(response_api, messages, session.executor, self.__logger)
-            # Continua o loop até resposta final...
-        return response_api.output_text
+        if getattr(response_api, 'tool_calls', None):
+            # Executa chamadas de ferramentas e reitera até resposta final
+            pass
+        return getattr(response_api, 'output_text', '')
 ```
 
-### Handler de Streaming com Métricas
+### Padrão de Streaming com Métricas
 
 ```python
-class OpenAIStreamHandler(BaseStreamHandler):
+# Arquitetura conceitual de streaming com gravação de métricas
+class OpenAIStreamHandlerConceptual:
+    def __init__(self, client: Any, recorder: Any) -> None:
+        self._client = client
+        self._recorder = recorder
+
     async def handle_stream(
         self,
         model: str,
@@ -322,18 +294,14 @@ class OpenAIStreamHandler(BaseStreamHandler):
         tools: list[BaseTool] | None,
     ) -> AsyncGenerator[str, None]:
         start_time = time.time()
-        totals = StreamUsageTotals()
-
         try:
-            stream_response = await self.__client.call_api(...)
-            async for event in stream_response:
-                if event.type == 'response.output_text.delta':
-                    yield event.delta
-
+            stream_response = await self._client.call_stream(...)
+            async for chunk in stream_response:
+                yield chunk
             # Acumula uso de tokens e grava métricas de sucesso
-            self.record_stream_success(model, start_time, totals, iteration)
+            self._recorder.record_success(model, start_time)
         except Exception as e:
-            self.record_stream_error(model, start_time, e)
+            self._recorder.record_error(model, start_time, e)
             raise
 ```
 
@@ -345,14 +313,15 @@ ______________________________________________________________________
 
 ```python
 # ❌ ERRADO
-response = agent.chat('mensagem')  # Retorna coroutine sem await
-print(response)  # <coroutine object...>
+async def incorreto():
+    response = agent.chat('mensagem')  # Retorna coroutine sem await
+    print(response)  # <coroutine object...>
+
 
 # ✅ CORRETO
-response = await agent.chat(
-    'mensagem'
-)  # Aguarda a coroutine e retorna o resultado
-print(response)
+async def correto():
+    response = await agent.chat('mensagem')  # Aguarda a coroutine e retorna
+    print(response)
 ```
 
 ### 2. Bloquear Loop de Eventos
@@ -383,80 +352,107 @@ main()  # Erro! Coroutine não executada
 asyncio.run(main())
 ```
 
-### 4. Consumir StreamingResponseDTO Duas Vezes
+### 4. Consumo Duplo de StreamingResponseDTO
 
-Quando `config={'stream': True}` está ativado, `await agent.chat()` retorna um [`StreamingResponseDTO`](../reference/streaming-api.md). Ele é um gerador de uso único:
+Quando `config={'stream': True}` está ativo, `await agent.chat()` retorna um [`StreamingResponseDTO`](../reference/streaming-api.md).
+
+- **`await response`:** consome o gerador subjacente e armazena o texto completo em cache (`_full_response`). Chamadas subsequentes de `await response` retornam a mesma string já em cache.
+- **`async for token in response:`** consome os tokens em tempo real. Uma segunda tentativa de iterar com `async for` termina imediatamente com 0 itens gerados (pois o loop trata o esgotamento internamente).
+- Uma chamada manual direta a `await response.__anext__()` após o término do gerador lança `StopAsyncIteration`.
 
 ```python
-agent = CreateAgent(
-    provider='openai', model='gpt-4', config={'stream': True}
-)
-response = await agent.chat('mensagem')  # Retorna StreamingResponseDTO
+from createagents import CreateAgent
 
-# ❌ ERRADO: consumir o generator duas vezes
-text1 = await response  # Consome stream completamente
-text2 = await response  # Já consumido! text2 = ""
 
-# ✅ CORRETO: consumir uma vez ou iterar com async for
-text = await response  # Consumir apenas uma vez
+async def demo_streaming():
+    agent = CreateAgent(
+        provider='openai', model='gpt-4', config={'stream': True}
+    )
+    response = await agent.chat('mensagem')  # Retorna StreamingResponseDTO
+
+    # 1. Consumo via await (cache):
+    text1 = await response  # Consome o stream e armazena no cache
+    text2 = await response  # Retorna o mesmo texto em cache (text2 == text1)
+
+    # 2. Consumo via async for:
+    stream_resp = await agent.chat('outra mensagem')
+    async for token in stream_resp:
+        print(token, end='')
+
+    # Segunda iteração termina imediatamente sem produzir novos tokens:
+    async for token in stream_resp:
+        pass  # Conclui imediatamente com 0 itens
 ```
 
 ______________________________________________________________________
 
-## 📊 Performance
+## 📊 Performance: Concorrência com asyncio.gather
 
-### Concorrência vs Sequencial
-
-**Sequencial**:
+Compare chamadas sequenciais versus concorrentes:
 
 ```python
+# Sequencial (~6s para 3 chamadas de 2s)
 async def sequential():
-    r1 = await agent.chat('Q1')  # 2s
-    r2 = await agent.chat('Q2')  # 2s
-    r3 = await agent.chat('Q3')  # 2s
-    # Total: 6s
-```
+    r1 = await agent.chat('Q1')
+    r2 = await agent.chat('Q2')
+    r3 = await agent.chat('Q3')
 
-**Concorrente**:
 
-```python
+# Concorrente (~2s paralelizado)
 async def concurrent():
-    results = await asyncio.gather(
-        agent.chat('Q1'),  # 2s
-        agent.chat('Q2'),  # 2s
-        agent.chat('Q3'),  # 2s
+    r1, r2, r3 = await asyncio.gather(
+        agent.chat('Q1'), agent.chat('Q2'), agent.chat('Q3')
     )
-    # Total: ~2s (paralelizado)
 ```
 
 ______________________________________________________________________
 
 ## 🧪 Testando Código Assíncrono
 
+### Testes Unitários com Mock (Sem Custos de API)
+
 ```python
+from unittest.mock import AsyncMock, patch
 import pytest
+from createagents import CreateAgent
+from createagents.application.dtos import ChatOutputDTO
 
 
 @pytest.mark.asyncio
-async def test_chat():
-    agent = CreateAgent(provider='openai', model='gpt-4')
-    response = await agent.chat('Test message')
-    assert isinstance(response, str)
-    assert len(response) > 0
-
-
-@pytest.mark.asyncio
-async def test_streaming():
-    agent = CreateAgent(
-        provider='openai', model='gpt-4', config={'stream': True}
+async def test_chat_with_mock():
+    mock_use_case = AsyncMock()
+    mock_use_case.execute.return_value = ChatOutputDTO(
+        response='Resposta simulada'
     )
-    response = await agent.chat('Test')
 
-    tokens = []
-    async for token in response:
-        tokens.append(token)
+    with patch(
+        'createagents.main.composers.AgentComposer.create_chat_use_case',
+        return_value=mock_use_case,
+    ):
+        agent = CreateAgent(provider='ollama', model='llama3.2')
+        response = await agent.chat('Mensagem de teste')
+        assert response == 'Resposta simulada'
+```
 
-    assert len(tokens) > 0
+### Testes de Integração com Provedor Real
+
+> **Atenção:** Testes de integração gastam quota externa e requerem `OPENAI_API_KEY`. Devem ser marcados com `@pytest.mark.integration`.
+
+```python
+import os
+import pytest
+from createagents import CreateAgent
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_real_openai_integration():
+    if not os.getenv('OPENAI_API_KEY'):
+        pytest.skip('OPENAI_API_KEY não definida')
+
+    agent = CreateAgent(provider='openai', model='gpt-4o-mini')
+    response = await agent.chat('Responda OK')
+    assert 'OK' in response
 ```
 
 ______________________________________________________________________
@@ -480,4 +476,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Versão:** 0.2.0 | **Atualização:** 07/08/2026
+**Versão:** 0.2.0 | **Atualização:** 2026-08-25

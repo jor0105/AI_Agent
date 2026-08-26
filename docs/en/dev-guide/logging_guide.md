@@ -82,7 +82,7 @@ LoggingConfig.configure_for_development(level=logging.INFO)
 LoggingConfig.configure_for_development(level=logging.DEBUG)
 ```
 
-This configures colored console output and automatic sensitive data sanitization.
+This configures readable console output (via `StreamHandler`) and automatic sensitive data sanitization.
 
 ### Option 2: Standard Python Logging
 
@@ -169,12 +169,12 @@ ______________________________________________________________________
 
 Configure logging behavior declaratively via environment variables:
 
-| Variable          | Description                                     | Default        |
-| ----------------- | ----------------------------------------------- | -------------- |
-| `LOG_LEVEL`       | Log level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) | `INFO`         |
-| `LOG_TO_FILE`     | Save logs to disk (`true` / `false`)            | `false`        |
-| `LOG_FILE_PATH`   | File path when `LOG_TO_FILE` is active          | `logs/app.log` |
-| `LOG_JSON_FORMAT` | Emit structured JSON logs                       | `false`        |
+| Variable          | Description                                                 | Default        |
+| ----------------- | ----------------------------------------------------------- | -------------- |
+| `LOG_LEVEL`       | Log level (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`) | `INFO`         |
+| `LOG_TO_FILE`     | Save logs to disk (`true` / `false`)                        | `false`        |
+| `LOG_FILE_PATH`   | File path when `LOG_TO_FILE` is active                      | `logs/app.log` |
+| `LOG_JSON_FORMAT` | Emit structured JSON logs                                   | `false`        |
 
 ______________________________________________________________________
 
@@ -200,12 +200,15 @@ Output format example:
 {
   "timestamp": "2026-08-25 10:00:00,000",
   "level": "INFO",
-  "logger": "createagents.service",
-  "message": "Agent initialized",
-  "module": "service",
-  "line": 42
+  "logger": "createagents.infra.adapters.OpenAI.adapter",
+  "message": "Chat request completed successfully",
+  "module": "chat_adapter",
+  "function": "chat",
+  "line": 85
 }
 ```
+
+When an exception is logged with `exc_info=True`, the sanitized `"exception"` traceback string is automatically included in the JSON object.
 
 ______________________________________________________________________
 
@@ -216,14 +219,13 @@ ______________________________________________________________________
 Use cases receive `LoggerInterface` injected by `AgentComposer` and fall back to `NullLogger` when omitted — allowing the application layer to log without importing `infra`:
 
 ```python
-class CreateAgentUseCase:
+class ChatWithAgentUseCase:
     def __init__(
         self,
-        tool_registry: ToolRegistry,
+        chat_repository: ChatRepository,
         logger: LoggerInterface | None = None,
-    ) -> None:
-        self.__tool_registry = tool_registry
-        self.__logger = logger or NullLogger()
+    ):
+        self._logger = logger or NullLogger()
 ```
 
 ### `ToolExecutor`
@@ -246,10 +248,10 @@ Streaming handlers log connection events, chunk statistics, and errors:
 
 ```python
 class OpenAIStreamHandler:
-    def __init__(self, ...):
+    def __init__(self, *args, **kwargs):
         self._logger = LoggingConfig.get_logger(__name__)
 
-    async def handle_stream(self, ...):
+    async def handle_stream(self, *args, **kwargs):
         self._logger.debug('Starting streaming response')
         # ...
 ```
@@ -258,15 +260,16 @@ ______________________________________________________________________
 
 ## 💡 Best Practices
 
-1. **Appropriate Log Levels**:
+1. **Keep Disabled by Default**: Never enable global logging inside library components; let the consumer application configure logging.
+2. **Appropriate Log Levels**:
    - `DEBUG`: Detailed execution trace and internal variables
    - `INFO`: Normal operational events (agent initialized, tool executed)
    - `WARNING`: Recoverable anomalies
    - `ERROR`: Operations that failed to complete
    - `CRITICAL`: Severe unrecoverable system failures
-2. **Never Log Secrets Explicitly**: Avoid logging passwords or raw tokens.
-3. **Lazy String Formatting**: Use `%s` interpolation (`logger.debug('Processing %s items', len(items))`) instead of eager f-strings to save computation when logging is disabled.
-4. **Structured Context**: Use `extra={...}` dictionaries for queryable metadata in JSON logs.
+3. **Never Log Secrets Explicitly**: Avoid logging passwords or raw tokens.
+4. **Lazy String Formatting**: Use `%s` interpolation (`logger.debug('Processing %s items in %sms', len(items), duration_ms)`) instead of eager f-strings to avoid string interpolation overhead when log level is disabled.
+5. **Identify Call Sites**: Always instantiate loggers with `LoggingConfig.get_logger(__name__)` to ensure accurate `module`, `function`, and `line` information in structured logs.
 
 ______________________________________________________________________
 

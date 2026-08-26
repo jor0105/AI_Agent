@@ -51,7 +51,13 @@ ______________________________________________________________________
 
 Reads local files across multiple structured and unstructured formats.
 
-**Formats:** TXT, MD, CSV, Excel (`.xls`, `.xlsx`), PDF, Parquet, JSON, YAML
+**Supported Formats:**
+
+- **Text & Source Code:** TXT, LOG, MD, PY, JS, HTML, CSS, JSON, XML, YAML, YML, RST, INI, CFG, CONF, SH, BASH, ZSH
+- **Tables and data:** CSV, Excel (XLSX, XLSM, and legacy XLS\*), Parquet
+- **Documents (via unstructured):** PDF, Word (DOC, DOCX), PowerPoint (PPT, PPTX), OpenDocument (ODT), EPUB, MSG, RTF
+
+\* *Note on Excel*: Modern OpenXML spreadsheets (`.xlsx`, `.xlsm`) use the `openpyxl` engine bundled with `[file-tools]`. The legacy Excel 97-2004 binary format (`.xls`) requires installing `xlrd` (`pip install xlrd`).
 
 **Dependencies:** `tiktoken`, `unstructured`, `pandas`, `openpyxl`, `pyarrow`, `chardet`
 
@@ -77,14 +83,18 @@ async def main():
     print(response)
 
 
-asyncio.run(main())
+async def main_run():
+    await main()
+
+
+asyncio.run(main_run())
 ```
 
 **Limits and Security:**
 
-- Maximum file size: 100MB (configurable)
+- Maximum file size: 100 MiB (fixed security limit: 104,857,600 bytes)
 - Default token limit: 30,000 tokens (parameter `max_tokens`)
-- Secure sandbox directory: controlled by the `FILE_TOOL_BASE_DIR` environment variable (default: current directory `.`)
+- Secure sandbox directory: controlled by the `FILE_TOOL_BASE_DIR` environment variable (default: current directory `.`). Paths outside the base directory are blocked against path traversal.
 
 **Features:**
 
@@ -240,6 +250,12 @@ tools = agent.get_all_available_tools()
 print('Tools available for this agent:')
 for name, description in tools.items():
     print(f'  - {name}: {description[:50]}...')
+
+# Output example (basic installation):
+# - currentdate: Get the current date and/or time...
+# - custom_tool: My custom tool
+#
+# (With [file-tools] extra installed, 'readlocalfile' is also listed)
 ```
 
 ### Inspecting System-Only Tools
@@ -271,32 +287,79 @@ else:
 | `get_all_available_tools()`    | System tools + agent custom tools | To inspect all tools this agent can execute          |
 | `get_system_available_tools()` | System built-in tools only        | To check which optional built-in tools are installed |
 
+### Practical Example
+
+```python
+from createagents import BaseTool, CreateAgent
+
+
+# Custom tool
+class WeatherTool(BaseTool):
+    name = 'weather'
+    description = 'Fetches weather forecasts'
+    parameters = {
+        'type': 'object',
+        'properties': {
+            'city': {
+                'type': 'string',
+                'description': 'City name',
+            }
+        },
+        'required': ['city'],
+    }
+
+    def execute(self, city: str) -> str:
+        return f'Forecast for {city}: Sunny'
+
+
+# Agent without custom tools
+agent1 = CreateAgent(provider='openai', model='gpt-4')
+print('Agent 1:', list(agent1.get_all_available_tools().keys()))
+# Basic installation output: ['currentdate']
+# With [file-tools] extra: ['currentdate', 'readlocalfile']
+
+# Agent with custom tool
+agent2 = CreateAgent(
+    provider='openai', model='gpt-4', tools=['currentdate', WeatherTool()]
+)
+print('Agent 2:', list(agent2.get_all_available_tools().keys()))
+# Basic installation output: ['currentdate', 'weather']
+# With [file-tools] extra: ['currentdate', 'readlocalfile', 'weather']
+
+# System tools (environment-wide)
+print('System:', list(agent1.get_system_available_tools().keys()))
+# Basic installation output: ['currentdate']
+# With [file-tools] extra: ['currentdate', 'readlocalfile']
+```
+
 ### Deduplication
 
 The system automatically deduplicates tools. If a system tool is explicitly provided in the `tools` list, it appears only once:
 
 ```python
+from createagents import CreateAgent
+
+# System tool explicitly passed in tools list
 agent = CreateAgent(
     provider='openai',
     model='gpt-4',
     tools=['currentdate'],  # Explicitly added system tool
 )
 
+# No duplicates occur
 tools = agent.get_all_available_tools()
 # 'currentdate' appears only ONCE
-print(list(tools.keys()))  # ['currentdate', 'readlocalfile']
+print(list(tools.keys()))
+# Basic installation output: ['currentdate']
+# With [file-tools] extra: ['currentdate', 'readlocalfile']
 ```
 
 ______________________________________________________________________
 
-## ⚡ Performance
+## ⚡ Dependencies Impact
 
-### Memory Usage
-
-| Installation        | Base Memory | With ReadLocalFileTool |
-| ------------------- | ----------- | ---------------------- |
-| Basic               | ~50MB       | N/A                    |
-| With `[file-tools]` | ~50MB       | ~200MB (when active)   |
+- **Basic Installation (`pip install createagents`):** Installs only essential framework dependencies (`openai`, `ollama`, `python-dotenv`, `defusedxml`, `rich`).
+- **File Tools Installation (`pip install createagents[file-tools]`):** Includes additional libraries (`tiktoken`, `unstructured`, `pandas`, `openpyxl`, `pyarrow`, `chardet`), imported dynamically only when file tools are used.
 
 ______________________________________________________________________
 
@@ -304,25 +367,49 @@ ______________________________________________________________________
 
 ```python
 import ast
+import operator
 from createagents import BaseTool
+
+_OPERATORS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.USub: operator.neg,
+}
+
+
+def _safe_eval(node: ast.AST) -> float:
+    if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+        return float(node.value)
+    if isinstance(node, ast.BinOp) and type(node.op) in _OPERATORS:
+        return _OPERATORS[type(node.op)](
+            _safe_eval(node.left), _safe_eval(node.right)
+        )
+    if isinstance(node, ast.UnaryOp) and type(node.op) in _OPERATORS:
+        return _OPERATORS[type(node.op)](_safe_eval(node.operand))
+    raise ValueError('Unsupported operation')
 
 
 class CalculatorTool(BaseTool):
     name = 'calculator'
-    description = 'Performs mathematical calculations'
+    description = (
+        'Performs basic mathematical calculations safely (+, -, *, /)'
+    )
     parameters = {
         'type': 'object',
         'properties': {
             'expression': {
                 'type': 'string',
-                'description': 'Mathematical expression',
+                'description': 'Safe mathematical expression (e.g. "2 + 2 * 3")',
             }
         },
         'required': ['expression'],
     }
 
     def execute(self, expression: str) -> str:
-        return str(ast.literal_eval(expression))
+        parsed = ast.parse(expression.strip(), mode='eval')
+        return str(_safe_eval(parsed.body))
 ```
 
 ______________________________________________________________________
@@ -333,7 +420,7 @@ ______________________________________________________________________
 A: To keep the base library lightweight. If your agent does not need document parsing, you don't need heavy dependencies like pandas or unstructured.
 
 **Q: How do I know which tools are available?**\
-A: Use `agent.get_all_available_tools()` to list available tools.
+A: Use `agent.get_all_available_tools()` to list available system and custom tools. To view active tools configured on the agent, inspect `agent.get_configs()['tools']`.
 
 **Q: What happens if I invoke an uninstalled tool?**\
 A: You will receive an informative error directing you to install the corresponding extra: `pip install createagents[file-tools]`.

@@ -34,19 +34,17 @@ pip install createagents[file-tools]
 
 ### Configuração
 
-```bash
-# Copy the variable-name template
-cp .env.example .env
+**Instalação via PyPI:**
 
-# Set OPENAI_API_KEY only in the local environment when using OpenAI.
-# Never publish secret values.
-export OPENAI_API_KEY
+Crie um arquivo `.env` na raiz do seu projeto:
+
+```env
+OPENAI_API_KEY=sk-proj-sua-chave-aqui
 ```
 
-OpenAI exige `OPENAI_API_KEY`. Ollama não exige API key, mas exige um servidor
-Ollama alcançável; consulte o
-[guia de instalação](user-guide/installation-user.md) para a configuração de
-cada provider.
+*(Se estiver utilizando um clone do repositório, você pode copiar o modelo com `cp .env.example .env`).*
+
+> **Nota:** OpenAI exige `OPENAI_API_KEY`. O Ollama não exige API key ao executar em `localhost` (consulte o [guia de instalação](user-guide/installation-user.md) para detalhes de ambiente).
 
 ### Primeiro Agente em 3 Linhas
 
@@ -81,7 +79,7 @@ from createagents import CreateAgent
 # OpenAI (GPT-4, GPT-4o, GPT-4o-mini)
 agent_openai = CreateAgent(provider='openai', model='gpt-4')
 
-# Ollama (llama3.2, mistral, deepseek - 100% local e privado)
+# Ollama (llama3.2, mistral - processamento local em localhost)
 agent_local = CreateAgent(provider='ollama', model='llama3.2')
 ```
 
@@ -98,7 +96,7 @@ async def main():
     agent = CreateAgent(
         provider='openai',
         model='gpt-4',
-        tools=['currentdate'],  # Para 'readlocalfile', instale: pip install createagents[file-tools]
+        tools=['currentdate'],  # 'readlocalfile' requer [file-tools]
     )
 
     # O agente usa automaticamente as ferramentas quando necessário
@@ -127,33 +125,32 @@ asyncio.run(main())
 **Criar ferramentas customizadas:**
 
 ```python
-import ast
 from createagents import BaseTool, CreateAgent
 
 
-class CalculatorTool(BaseTool):
-    name = 'calculator'
-    description = 'Performs mathematical calculations'
+class WordCountTool(BaseTool):
+    name = 'word_count'
+    description = 'Conta o número de palavras em um texto'
     parameters = {
         'type': 'object',
         'properties': {
-            'expression': {
+            'text': {
                 'type': 'string',
-                'description': 'Mathematical expression to evaluate',
+                'description': 'Texto a ser analisado',
             }
         },
-        'required': ['expression'],
+        'required': ['text'],
     }
 
-    def execute(self, expression: str) -> str:
-        return str(ast.literal_eval(expression))
+    def execute(self, text: str) -> str:
+        return str(len(text.split()))
 
 
 # Usar ferramenta customizada
 agent = CreateAgent(
     provider='openai',
     model='gpt-4',
-    tools=['currentdate', CalculatorTool()],  # Sistema + customizada
+    tools=['currentdate', WordCountTool()],  # Sistema + customizada
 )
 
 # Ver todas as ferramentas disponíveis (sistema + customizadas)
@@ -225,6 +222,8 @@ ______________________________________________________________________
 
 - **[Instalação](user-guide/installation-user.md)** - Configure seu ambiente passo a passo
 - **[Uso Básico](user-guide/basic-usage-user.md)** - Aprenda os fundamentos
+- **[Uso da CLI](user-guide/cli-usage.md)** - Interface interativa de terminal
+- **[Guia de Streaming](user-guide/streaming-guide.md)** - Respostas em tempo real e consumo assíncrono
 - **[Exemplos Práticos](user-guide/examples-user.md)** - Casos de uso reais
 - **[FAQ](user-guide/faq-user.md)** - Perguntas frequentes
 
@@ -246,7 +245,7 @@ ______________________________________________________________________
 
 ### Para Empresas
 
-- ✅ **Privacidade**: Opção de modelos 100% locais com Ollama
+- ✅ **Privacidade**: Opção de modelos locais em localhost com Ollama (sem custos de API e com dados retidos no ambiente local caso `OLLAMA_HOST` não aponte para um host externo)
 - ✅ **Segurança**: Sanitização automática de dados sensíveis nos logs
 - ✅ **Monitoramento**: Métricas em tempo real para produção
 - ✅ **Escalabilidade**: Arquitetura preparada para crescimento
@@ -348,5 +347,5 @@ ______________________________________________________________________
 ______________________________________________________________________
 
 **Versão:** 0.2.0
-**Última atualização:** 07/08/2026
+**Última atualização:** 2026-08-25
 **Status:** 🚀 Projeto publicado! Aberto para contribuições e sugestões.

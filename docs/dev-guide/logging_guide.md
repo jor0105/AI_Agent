@@ -82,7 +82,7 @@ LoggingConfig.configure_for_development(level=logging.INFO)
 LoggingConfig.configure_for_development(level=logging.DEBUG)
 ```
 
-Isso configurará logs coloridos no console e filtragem automática de dados sensíveis.
+Isso configurará a saída de logs legíveis no console (via `StreamHandler`) com sanitização automática de dados sensíveis.
 
 ### Opção 2: Configuração Padrão do Python
 
@@ -171,12 +171,12 @@ ______________________________________________________________________
 
 Você pode controlar o logging através de variáveis de ambiente:
 
-| Variável          | Descrição                                  | Padrão       |
-| ----------------- | ------------------------------------------ | ------------ |
-| `LOG_LEVEL`       | Nível de log (DEBUG, INFO, WARNING, ERROR) | INFO         |
-| `LOG_TO_FILE`     | Salvar logs em arquivo (true/false)        | false        |
-| `LOG_FILE_PATH`   | Caminho do arquivo de log                  | logs/app.log |
-| `LOG_JSON_FORMAT` | Usar formato JSON estruturado              | false        |
+| Variável          | Descrição                                            | Padrão       |
+| ----------------- | ---------------------------------------------------- | ------------ |
+| `LOG_LEVEL`       | Nível de log (DEBUG, INFO, WARNING, ERROR, CRITICAL) | INFO         |
+| `LOG_TO_FILE`     | Salvar logs em arquivo (true/false)                  | false        |
+| `LOG_FILE_PATH`   | Caminho do arquivo de log                            | logs/app.log |
+| `LOG_JSON_FORMAT` | Usar formato JSON estruturado                        | false        |
 
 ______________________________________________________________________
 
@@ -198,14 +198,17 @@ Isso gerará logs estruturados fáceis de indexar:
 
 ```json
 {
-  "timestamp": "2024-03-20 10:00:00,000",
+  "timestamp": "2026-08-25 10:00:00,000",
   "level": "INFO",
-  "logger": "createagents.service",
-  "message": "Agent initialized",
-  "module": "service",
-  "line": 42
+  "logger": "createagents.infra.adapters.OpenAI.adapter",
+  "message": "Chat request completed successfully",
+  "module": "chat_adapter",
+  "function": "chat",
+  "line": 85
 }
 ```
+
+Quando houver uma exceção tratada via `exc_info=True`, o campo `"exception"` com o traceback completo sanitizado é adicionado ao JSON.
 
 ______________________________________________________________________
 
@@ -218,14 +221,13 @@ caem em `NullLogger` quando nenhum é fornecido — é assim que a camada de
 aplicação registra logs sem nunca importar `infra`:
 
 ```python
-class CreateAgentUseCase:
+class ChatWithAgentUseCase:
     def __init__(
         self,
-        tool_registry: ToolRegistry,
+        chat_repository: ChatRepository,
         logger: LoggerInterface | None = None,
-    ) -> None:
-        self.__tool_registry = tool_registry
-        self.__logger = logger or NullLogger()
+    ):
+        self._logger = logger or NullLogger()
 ```
 
 ### ToolExecutor
@@ -248,10 +250,10 @@ Os handlers de streaming usam logging para métricas e debugging:
 
 ```python
 class OpenAIStreamHandler:
-    def __init__(self, ...):
+    def __init__(self, *args, **kwargs):
         self._logger = LoggingConfig.get_logger(__name__)
 
-    async def handle_stream(self, ...):
+    async def handle_stream(self, *args, **kwargs):
         self._logger.debug('Starting streaming response')
         # ...
 ```
@@ -275,22 +277,17 @@ ______________________________________________________________________
 3. **Use formatação lazy**:
 
    ```python
-   # BOM - formatação lazy (não executa se log desabilitado)
-   logger.debug('Processing %s items', len(items))
+   # BOM - formatação lazy (não computa string se o nível estiver inativo)
+   logger.debug('Processing %s items in %sms', len(items), duration_ms)
 
-   # RUIM - formatação eager
-   logger.debug(f'Processing {len(items)} items')
+   # RUIM - concatenação direta / f-strings eager
+   logger.debug(f'Processing {len(items)} items in {duration_ms}ms')
    ```
 
-4. **Contextualize com extra**:
+4. **Identifique a origem**:
 
-   ```python
-   logger.info(
-       'Tool executed successfully',
-       extra={'tool_name': tool.name, 'duration_ms': duration},
-   )
-   ```
+   Use sempre `LoggingConfig.get_logger(__name__)` em vez de loggers genéricos para preservar módulo, função e linha exatos nos logs estruturados.
 
 ______________________________________________________________________
 
-**Versão:** 0.1.3 | **Atualização:** 01/12/2025
+**Versão:** 0.2.0 | **Atualização:** 2026-08-25

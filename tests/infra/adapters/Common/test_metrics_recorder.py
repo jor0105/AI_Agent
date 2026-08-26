@@ -79,7 +79,10 @@ class TestOpenAIMetricsRecorder:
     def test_reads_token_counts_from_usage(self):
         response = Mock()
         response.usage = Mock(
-            total_tokens=100, prompt_tokens=50, completion_tokens=50
+            spec=['total_tokens', 'prompt_tokens', 'completion_tokens'],
+            total_tokens=100,
+            prompt_tokens=50,
+            completion_tokens=50,
         )
         recorder = OpenAIMetricsRecorder()
 
@@ -91,6 +94,40 @@ class TestOpenAIMetricsRecorder:
         assert metrics.prompt_tokens == 50
         assert metrics.completion_tokens == 50
         assert metrics.success is True
+
+    def test_reads_token_counts_from_responses_api_usage(self):
+        response = Mock()
+        response.usage = Mock(
+            spec=['total_tokens', 'input_tokens', 'output_tokens'],
+            total_tokens=75,
+            input_tokens=40,
+            output_tokens=35,
+        )
+        recorder = OpenAIMetricsRecorder()
+
+        recorder.record_success_metrics('gpt-4', time.time(), response)
+
+        metrics = recorder.get_metrics()[0]
+        assert metrics.model == 'gpt-4'
+        assert metrics.tokens_used == 75
+        assert metrics.prompt_tokens == 40
+        assert metrics.completion_tokens == 35
+        assert metrics.success is True
+
+    def test_calculates_total_tokens_when_missing(self):
+        response = Mock()
+        response.usage = Mock(
+            spec=['input_tokens', 'output_tokens'],
+            input_tokens=25,
+            output_tokens=15,
+        )
+        recorder = OpenAIMetricsRecorder()
+
+        usage = recorder._extract_usage(response)
+
+        assert usage.tokens_used == 40
+        assert usage.prompt_tokens == 25
+        assert usage.completion_tokens == 15
 
     def test_a_response_without_usage_yields_no_token_counts(self):
         recorder = OpenAIMetricsRecorder()

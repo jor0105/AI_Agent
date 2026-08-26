@@ -55,6 +55,8 @@ DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 DECISION_ID_RE = re.compile(r'^Q\d+$')
 SHA256_RE = re.compile(r'^[0-9a-f]{64}$', re.I)
 ARCHIVED_CHANGE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}-(.+)$')
+SourceNamespace = tuple[str, str, str]
+Descriptor = tuple[str, SourceNamespace | None, dict[str, object], list[str]]
 
 EXIT_OK = 0
 EXIT_FINDINGS = 1
@@ -344,6 +346,13 @@ def _provenance_finding(code: str, message: str) -> dict[str, str]:
     return {'code': code, 'message': message}
 
 
+def _unverifiable_owner(change_dir: Path, reason: str) -> dict[str, str]:
+    return {
+        'code': 'decision-owner-unverifiable',
+        'message': f'{_logical_change_name(change_dir)} cannot prove its decision ownership ({reason}).',
+    }
+
+
 def _resolve_source_path(
     raw_path: object, findings: list[dict[str, str]]
 ) -> Path | None:
@@ -554,16 +563,16 @@ def _validate_closed_sabatina(
 
 def _source_descriptor(
     change_dir: Path,
-) -> tuple[dict[str, object] | None, list[dict[str, str]]]:
+) -> tuple[
+    dict[str, object] | None, SourceNamespace | None, list[dict[str, str]]
+]:
     raw_source = load_change_manifest(change_dir).get('decision_source')
     if not isinstance(raw_source, dict):
-        return None, [
-            _provenance_finding(
-                'decision-source-missing',
-                'Change must declare a decision_source envelope in .openspec.yaml.',
-            )
-        ]
-
+        missing = _provenance_finding(
+            'decision-source-missing',
+            'Change must declare a decision_source envelope in .openspec.yaml.',
+        )
+        return None, None, [missing]
     findings: list[dict[str, str]] = []
     source = dict(raw_source)
     source_type = source.get('type')
@@ -583,10 +592,8 @@ def _source_descriptor(
                 'decision_source.sha256 must be a 64-character SHA-256 digest.',
             )
         )
-    confirmed_on = source.get('confirmed_on')
-    if not isinstance(confirmed_on, str) or not DATE_RE.fullmatch(
-        confirmed_on
-    ):
+    confirmed = source.get('confirmed_on')
+    if not isinstance(confirmed, str) or not DATE_RE.fullmatch(confirmed):
         findings.append(
             _provenance_finding(
                 'decision-source-confirmation',
@@ -612,7 +619,7 @@ def _source_descriptor(
     _validate_source_file(
         source_type, source_path, digest, decision_ids, findings
     )
-    if source_type == 'sabatina' and source_path is not None:
+    if source_type == 'sabatina' and source_path and source_path.is_file():
         _validate_sabatina_ownership(
             source_path,
             _logical_change_name(change_dir),
@@ -622,7 +629,19 @@ def _source_descriptor(
         )
     source['decision_ids'] = decision_ids
     source['depends_on'] = dependencies
-    return source, findings
+    namespace = None
+    if (
+        source_type in ('sabatina', 'user-contract')
+        and source_path is not None
+        and isinstance(digest, str)
+        and SHA256_RE.fullmatch(digest)
+    ):
+        namespace = (
+            str(source_type),
+            source_path.relative_to(REPO_ROOT.resolve()).as_posix(),
+            digest.lower(),
+        )
+    return source, namespace, findings
 
 
 def _dependency_cycle(graph: dict[str, list[str]]) -> list[str] | None:
@@ -632,15 +651,13 @@ def _dependency_cycle(graph: dict[str, list[str]]) -> list[str] | None:
 
     def visit(name: str) -> list[str] | None:
         if name in visiting:
-            index = stack.index(name)
-            return [*stack[index:], name]
+            return [*stack[stack.index(name) :], name]
         if name in visited:
             return None
         visiting.add(name)
         stack.append(name)
         for dependency in graph.get(name, []):
-            cycle = visit(dependency)
-            if cycle:
+            if cycle := visit(dependency):
                 return cycle
         stack.pop()
         visiting.remove(name)
@@ -648,17 +665,13 @@ def _dependency_cycle(graph: dict[str, list[str]]) -> list[str] | None:
         return None
 
     for name in sorted(graph):
-        cycle = visit(name)
-        if cycle:
+        if cycle := visit(name):
             return cycle
     return None
 
 
 def _str_list(value: object) -> list[str]:
-    """Read a declared list field without trusting its parsed shape."""
-    if isinstance(value, list):
-        return [str(item) for item in value]
-    return []
+    return [str(item) for item in value] if isinstance(value, list) else []
 
 
 def validate_decision_source(
@@ -668,64 +681,53 @@ def validate_decision_source(
     decision_dirs = (
         change_dirs if change_dirs is not None else iter_decision_change_dirs()
     )
-    source, findings = _source_descriptor(change_dir)
-    descriptors: list[tuple[str, Path, dict[str, object], list[str]]] = []
+    source, source_namespace, findings = _source_descriptor(change_dir)
+    descriptors: list[Descriptor] = []
     for candidate in decision_dirs:
-        candidate_source, candidate_findings = _source_descriptor(candidate)
+        candidate_source, namespace, candidate_findings = _source_descriptor(
+            candidate
+        )
         if candidate_source is None:
             if 'decision_source' in load_change_manifest(candidate):
                 findings.append(
-                    _provenance_finding(
-                        'decision-owner-unverifiable',
-                        f'{_logical_change_name(candidate)} cannot prove its '
-                        'decision ownership (decision-source-missing).',
-                    )
+                    _unverifiable_owner(candidate, 'decision-source-missing')
                 )
             continue
-        if candidate_findings and candidate.resolve() != change_dir.resolve():
+        if (
+            candidate_findings
+            and candidate.resolve() != change_dir.resolve()
+            and namespace in (None, source_namespace)
+        ):
             codes = ', '.join(
                 sorted({item['code'] for item in candidate_findings})
             )
-            findings.append(
-                _provenance_finding(
-                    'decision-owner-unverifiable',
-                    f'{_logical_change_name(candidate)} cannot prove its '
-                    f'decision ownership ({codes}).',
-                )
-            )
+            findings.append(_unverifiable_owner(candidate, codes))
         ids = _str_list(candidate_source.get('decision_ids'))
         descriptors.append(
-            (
-                _logical_change_name(candidate),
-                candidate,
-                candidate_source,
-                ids,
-            )
+            (_logical_change_name(candidate), namespace, candidate_source, ids)
         )
     if source is not None:
-        owners: dict[str, list[str]] = {}
-        for name, _, _descriptor, ids in descriptors:
-            for decision_id in ids:
-                owners.setdefault(decision_id, []).append(name)
-        for decision_id, names in sorted(owners.items()):
-            # Ownership is exclusive with no exception: a declared dependency
-            # lets a change consume an upstream decision, never co-own it.
-            if len(names) < 2:
+        owners: dict[tuple[tuple[str, str, str], str], list[str]] = {}
+        for name, namespace, _descriptor, ids in descriptors:
+            if namespace is None:
                 continue
-            findings.append(
-                _provenance_finding(
-                    'decision-id-duplicate-owner',
-                    f'{decision_id} is owned by sibling changes:'
-                    f' {", ".join(names)}.',
+            for decision_id in ids:
+                owners.setdefault((namespace, decision_id), []).append(name)
+        for (_, decision_id), names in sorted(owners.items()):
+            # Ownership is exclusive; dependencies never grant co-ownership.
+            if len(names) > 1:
+                findings.append(
+                    _provenance_finding(
+                        'decision-id-duplicate-owner',
+                        f'{decision_id} is owned by sibling changes:'
+                        f' {", ".join(names)}.',
+                    )
                 )
-            )
-
     graph: dict[str, list[str]] = {}
     known_names = {name for name, _, _, _ in descriptors}
     for name, _, descriptor, _ in descriptors:
         dependencies = _str_list(descriptor.get('depends_on'))
-        unknown = sorted(set(dependencies) - known_names)
-        if unknown:
+        if unknown := sorted(set(dependencies) - known_names):
             findings.append(
                 _provenance_finding(
                     'decision-dependency-unknown',
@@ -1175,12 +1177,10 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest='command', required=True)
 
     sub.add_parser('list', help='changes ativas', parents=[common])
-
     status = sub.add_parser(
         'status', help='estado dos artefatos', parents=[common]
     )
     status.add_argument('--change', required=True)
-
     preflight = sub.add_parser(
         'preflight',
         help='validacao de provenance e ownership',

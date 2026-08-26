@@ -54,9 +54,8 @@ Base abstrata para gravação de métricas nos handlers. Ler o uso reportado é 
 única parte específica de cada provider, então as subclasses implementam
 apenas isso:
 
-- `OpenAIMetricsRecorder` — lê `response.usage` (a OpenAI não reporta durações)
-- `OllamaMetricsRecorder` — lê as contagens do Ollama e converte as durações
-  de nanossegundos para milissegundos
+- `OpenAIMetricsRecorder` — lê `response.usage` (extrai `input_tokens`/`output_tokens` ou `prompt_tokens`/`completion_tokens`, além de `total_tokens`; a OpenAI não reporta durações de modelo)
+- `OllamaMetricsRecorder` — lê as contagens do Ollama (`prompt_eval_count`, `eval_count`) e converte as durações de nanossegundos para milissegundos
 
 ### Métodos
 
@@ -95,13 +94,21 @@ As métricas pertencem ao adapter, e cada `CreateAgent` recebe o seu próprio.
 Dois agentes com o mesmo provider e modelo têm métricas independentes:
 
 ```python
-agent_a = CreateAgent(provider='ollama', model='llama3')
-agent_b = CreateAgent(provider='ollama', model='llama3')
+import asyncio
+from createagents import CreateAgent
 
-await agent_a.chat('Olá')
 
-len(agent_a.get_metrics())  # 1
-len(agent_b.get_metrics())  # 0
+async def main():
+    agent_a = CreateAgent(provider='ollama', model='llama3')
+    agent_b = CreateAgent(provider='ollama', model='llama3')
+
+    await agent_a.chat('Olá')
+
+    print(len(agent_a.get_metrics()))  # 1
+    print(len(agent_b.get_metrics()))  # 0
+
+
+asyncio.run(main())
 ```
 
 ______________________________________________________________________
@@ -280,4 +287,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Versão:** 0.1.3 | **Atualização:** 01/12/2025
+**Versão:** 0.2.0 | **Atualização:** 2026-08-25

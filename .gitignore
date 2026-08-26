@@ -192,6 +192,7 @@ metrics.prom
 debug/
 .claude/
 .codex/
+.agents/sessions/
 .opencode/
 opencode.json
 .github/prompt/

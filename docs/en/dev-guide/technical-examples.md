@@ -14,7 +14,10 @@ class MyTool(BaseTool):
     parameters = {
         'type': 'object',
         'properties': {
-            'input': {'type': 'string', 'description': 'Input string to process'}
+            'input': {
+                'type': 'string',
+                'description': 'Input string to process',
+            }
         },
         'required': ['input'],
     }

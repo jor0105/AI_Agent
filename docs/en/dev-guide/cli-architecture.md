@@ -43,7 +43,7 @@ class ChatCLIApplication:
     - OCP: New commands can be added by registering new handlers
     """
 
-    def __init__(self, agent: 'CreateAgent'):
+    def __init__(self, agent: 'AgentFacade'):
         self._agent = agent
         self._renderer = TerminalRenderer()
         self._input_reader = InputReader()
@@ -214,9 +214,11 @@ Calculates display widths, wraps text, and builds rounded message panels.
 
 **Location**: `src/createagents/presentation/cli/ui/terminal_formatter.py`
 
+> **Note:** The snippet below illustrates the conceptual interface of `TerminalFormatter`. The full repository implementation performs regex ANSI stripping, word wrapping, and Unicode box styling.
+
 #### MarkdownTerminalFormatter
 
-Converts Markdown headers, tables, code blocks, and emphasis into styled ANSI terminal output.
+Converts Markdown headers, tables, lists, and emphasis into styled ANSI terminal output (does not perform code syntax highlighting).
 
 **Location**: `src/createagents/presentation/cli/ui/markdown_formatter.py`
 
@@ -233,11 +235,11 @@ class ColorScheme:
     """Manages ANSI color codes for terminal output."""
 
     BLUE: str = '\033[38;5;75m'  # User prompts
-    PURPLE: str = '\033[38;5;141m'  # AI messages
-    GREEN: str = '\033[38;5;84m'  # Success
-    YELLOW: str = '\033[38;5;221m'  # Warnings / System
+    PURPLE: str = '\033[38;5;141m'  # Static AI responses
+    GREEN: str = '\033[38;5;84m'  # Success markers
+    YELLOW: str = '\033[38;5;221m'  # Warnings / Session interrupts
     RED: str = '\033[38;5;204m'  # Errors
-    CYAN: str = '\033[38;5;87m'  # System
+    CYAN: str = '\033[38;5;87m'  # System / Menus
     RESET: str = '\033[0m'
 ```
 
@@ -245,25 +247,114 @@ ______________________________________________________________________
 
 ## 🔄 Execution Flow
 
+### 1. Initialization
+
 ```
 main()
   → ChatCLIApplication(agent)
-      → TerminalRenderer()
-      → CommandRegistry()
-      → _setup_commands()
-          → Register specific handlers (/help, /metrics, etc.)
-          → Register ChatCommandHandler (LAST)
-  → app.run()
-      → Main loop reading input
-      → Registry resolves handler
-      → Handler executes action
+      → __init__
+          → TerminalRenderer()
+          → InputReader()
+          → CommandRegistry()
+          → _setup_commands()
+              → registry.register(HelpCommandHandler)
+              → registry.register(MetricsCommandHandler)
+              → ... (other specific handlers)
+              → registry.register(ChatCommandHandler) ← LAST
 ```
+
+### 2. Main Loop
+
+```
+app.run()
+  → renderer.render_welcome_screen()
+  → while True:
+      → renderer.render_prompt()
+      → user_input = input_reader.read_user_input()
+      → if _is_exit_command(user_input): break
+      → handler = registry.find_handler(user_input)
+      → handler.execute(agent, user_input)
+```
+
+### 3. Command Processing
+
+```
+# Example: /metrics
+registry.find_handler("/metrics")
+  → iterates registered handlers
+  → MetricsCommandHandler.can_handle("/metrics") → True
+  → returns MetricsCommandHandler
+
+MetricsCommandHandler.execute(agent, "/metrics")
+  → metrics = agent.get_metrics()
+  → renderer.render_metrics(metrics)
+```
+
+### 4. Chat Processing Flow
+
+```
+ChatCommandHandler.execute(agent, "Hello")
+  → asyncio.run(__run_chat(agent, "Hello"))
+      → renderer.render_user_message("Hello")
+      → renderer.render_spacer()
+      → renderer.render_thinking_indicator()
+      → response = await agent.chat("Hello")
+      → if isinstance(response, StreamingResponseDTO):
+            await renderer.render_ai_message_streaming(response)
+        else:
+            renderer.clear_thinking_indicator()
+            renderer.render_ai_message(MarkdownTerminalFormatter.format(response))
+      → renderer.render_spacer()
+```
+
+______________________________________________________________________
+
+## 🎨 Architectural Principles
+
+### Single Responsibility (SRP)
+
+Each class owns a single distinct responsibility:
+
+- `ChatCLIApplication`: Lifecycle orchestration
+- `CommandRegistry`: Command registration and resolution
+- `TerminalRenderer`: UI rendering and formatting
+- `CommandHandler`: Specific command execution logic
+
+### Open/Closed (OCP)
+
+Open for extension via new command handlers without modifying existing classes:
+
+```python
+class CustomCommandHandler(CommandHandler):
+    def can_handle(self, user_input: str) -> bool:
+        return user_input.startswith('/custom')
+
+    def execute(self, agent, user_input):
+        pass
+
+    def get_aliases(self):
+        return ['/custom']
+
+
+# Registration
+registry.register(CustomCommandHandler(renderer))
+```
+
+### Dependency Inversion (DIP)
+
+Handlers depend on abstractions (`CommandHandler`), never concrete orchestrator implementations.
+
+### Command Pattern
+
+Each handler encapsulates an action as an object, enabling dynamic dispatch, request queues, and modular extension.
 
 ______________________________________________________________________
 
 ## 🛠️ Adding New Commands
 
-### Step 1: Create Handler
+To extend the CLI with a custom command:
+
+1. **Create the Handler** subclassing `CommandHandler`:
 
 ```python
 # src/createagents/presentation/cli/commands/my_command.py
@@ -272,34 +363,59 @@ from .base_command import CommandHandler
 
 class MyCommandHandler(CommandHandler):
     def execute(self, agent: 'AgentFacade', user_input: str) -> None:
-        result = self._my_logic(agent)
-        self._renderer.render_system_message(result)
+        self._renderer.render_system_message('Command executed')
 
     def get_aliases(self) -> list[str]:
         return ['/mycommand', 'mycommand']
-
-    def _my_logic(self, agent):
-        return 'Command executed'
 ```
 
-### Step 2: Register in `_setup_commands`
+2. **Register the Handler** in `ChatCLIApplication._setup_commands`:
 
 ```python
 # src/createagents/presentation/cli/application/chat_cli_app.py
 def _setup_commands(self) -> None:
     self._registry.register(MyCommandHandler(self._renderer))
-    # ChatCommandHandler remains last
+    # ChatCommandHandler must always be registered last (default fallback)
     self._registry.register(ChatCommandHandler(self._renderer))
+```
+
+______________________________________________________________________
+
+## 📊 Testability
+
+```python
+from unittest.mock import Mock
+
+from createagents.presentation.cli.commands import HelpCommandHandler
+
+
+def test_help_command_handler():
+    mock_renderer = Mock()
+    handler = HelpCommandHandler(mock_renderer)
+
+    assert handler.can_handle('/help') is True
+    assert handler.can_handle('other') is False
+
+    handler.execute(Mock(), '/help')
+    mock_renderer.render_system_message.assert_called_once()
 ```
 
 ______________________________________________________________________
 
 ## 💡 Best Practices
 
-1. **Registration Order**: Specific handlers first, `ChatCommandHandler` last.
-2. **Use Renderer**: Never invoke `print()` directly in presentation code; route output through `self._renderer`.
+1. **Registration Order**: Specific handlers first, `ChatCommandHandler` last as fallback.
+2. **Use Renderer**: Never invoke `print()` directly; route output through `self._renderer`.
 3. **Normalize Input**: Always use `self._normalize_input(user_input)` for alias comparisons.
-4. **Async Awareness**: Wrap coroutines with `asyncio.run()` when invoked from synchronous handler entrypoints.
+4. **Async Awareness**: Chat is asynchronous; use `asyncio.run()` when entering from sync handler methods.
+
+______________________________________________________________________
+
+## 📚 Next Steps
+
+- [Async Guide](async-guide.md)
+- [API Reference - Commands](../reference/commands.md)
+- [Contributing Guide](contribute.md)
 
 ______________________________________________________________________
 

@@ -43,7 +43,20 @@ Awaits and consumes the entire stream, returning the complete aggregated string.
 
 #### `__str__() -> str`
 
-Returns the accumulated string if consumed, or an unconsumed placeholder string.
+Returns string representation.
+
+**Returns**: Full string if consumed, placeholder otherwise:
+`StreamingResponseDTO(not consumed - use "await response")`
+
+**Example**:
+
+```python
+print(str(dto))  # "StreamingResponseDTO(not consumed - use "await response")"
+```
+
+#### `__repr__() -> str`
+
+Returns debugging representation with consumption status and character length.
 
 ______________________________________________________________________
 
@@ -60,8 +73,10 @@ async def main():
     agent = CreateAgent(
         provider='openai', model='gpt-4', config={'stream': True}
     )
-    response = await agent.chat('Hello')
-    text = await response  # Full text
+    response = await agent.chat('Hello')  # Returns StreamingResponseDTO
+    text = (
+        await response
+    )  # Consumes stream and returns complete string (cached)
     print(text)
 
 
@@ -87,6 +102,66 @@ async def main():
 
 
 asyncio.run(main())
+```
+
+### Pattern 3: Accumulate While Displaying
+
+```python
+import asyncio
+from createagents import CreateAgent
+
+
+async def accumulate_and_display():
+    agent = CreateAgent(
+        provider='openai', model='gpt-4', config={'stream': True}
+    )
+    response = await agent.chat('List 5 tips')
+
+    accumulated = ''
+    async for token in response:
+        accumulated += token
+        print(token, end='', flush=True)
+
+    print(f'\n\nTotal characters: {len(accumulated)}')
+
+
+asyncio.run(accumulate_and_display())
+```
+
+______________________________________________________________________
+
+## Internal Properties
+
+| Property         | Type                        | Description                                |
+| ---------------- | --------------------------- | ------------------------------------------ |
+| `_generator`     | `AsyncGenerator[str, None]` | Underlying token async generator           |
+| `_consumed`      | `bool`                      | Flag indicating if the stream was consumed |
+| `_full_response` | `str`                       | Concatenated string cached in memory       |
+
+______________________________________________________________________
+
+## Consumption Semantics and Iteration
+
+### Consumption and Caching
+
+- **Via `await response`**: Completely drains the asynchronous generator and stores concatenated text in `_full_response`. Subsequent `await response` calls immediately return the cached string.
+- **Via `async for token in response:`**: Consumes tokens progressively until the generator is exhausted, setting `_consumed = True`.
+- **Second `async for` loop**: Since the underlying generator is already exhausted, a second `async for` finishes immediately with 0 items (the `async for` constructs catch `StopAsyncIteration` internally and exit cleanly).
+- **Direct `response.__anext__()` call**: If invoked directly on an already exhausted generator, explicitly raises `StopAsyncIteration`.
+
+______________________________________________________________________
+
+## Exceptions
+
+### `StopAsyncIteration`
+
+Raised when iteration finishes on the underlying token generator.
+
+```python
+async def demo_loop(response):
+    async for token in response:
+        print(token)
+    # StopAsyncIteration is caught internally when the generator completes
 ```
 
 ______________________________________________________________________

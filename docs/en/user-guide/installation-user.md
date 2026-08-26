@@ -18,7 +18,10 @@ ______________________________________________________________________
 ### 1. Create a Virtual Environment (Recommended)
 
 ```bash
-# Create virtual environment
+# Option 1: Using Python's standard venv module
+python3 -m venv .venv
+
+# Option 2: Using uv (if installed in your environment)
 uv venv
 
 # Activate virtual environment
@@ -44,12 +47,15 @@ ______________________________________________________________________
 
 ### 3. Configure Environment Variables
 
-```bash
-cp .env.example .env
-# Edit the .env file and add your OPENAI_API_KEY
+Create a `.env` file in the root of your project:
+
+```env
+OPENAI_API_KEY=sk-proj-your-key-here
 ```
 
-All recognized environment variables are declared in `.env.example`. Only `OPENAI_API_KEY` is mandatory, and only for the `openai` provider; the others provide sensible defaults and may remain blank:
+> **Tip:** If working directly from a cloned git repository, you can copy the template: `cp .env.example .env`.
+
+All recognized environment variables are:
 
 | Variable                     | Effect                                                | Default                  |
 | ---------------------------- | ----------------------------------------------------- | ------------------------ |
@@ -62,7 +68,7 @@ All recognized environment variables are declared in `.env.example`. Only `OPENA
 | `OLLAMA_MAX_TOOL_ITERATIONS` | Tool calling rounds per turn                          | `100`                    |
 | `LOG_LEVEL`                  | Log level after `LoggingConfig.configure()`           | `INFO`                   |
 | `LOG_TO_FILE`                | `true` writes to rotating file                        | `false`                  |
-| `LOG_FILE_PATH`              | File destination when `LOG_TO_FILE` is active         | —                        |
+| `LOG_FILE_PATH`              | File destination when `LOG_TO_FILE` is active         | `logs/app.log`           |
 | `LOG_JSON_FORMAT`            | `true` emits structured JSON logs                     | `false`                  |
 | `FILE_TOOL_BASE_DIR`         | Directory boundary restricted for `ReadLocalFileTool` | Current directory (`.`)  |
 
@@ -108,25 +114,13 @@ ______________________________________________________________________
 
 ## 🤖 Ollama Configuration (Optional)
 
-Run models **locally and privately** with zero API costs:
+Run models **locally** (processing on `localhost` with zero API costs; if `OLLAMA_HOST` is pointed to a remote host, requests are dispatched to that configured server).
 
 ### Install Ollama
 
-**Linux:**
-
-```bash
-curl -fsSL https://ollama.ai/install.sh | sh
-```
-
-**macOS:**
-
-```bash
-brew install ollama
-```
-
-**Windows:**
-
-Download from: [ollama.ai/download/windows](https://ollama.ai/download/windows)
+- **Linux:** `curl -fsSL https://ollama.com/install.sh | sh` (or download from [ollama.com/download/linux](https://ollama.com/download/linux))
+- **macOS:** Download installer from [ollama.com/download/mac](https://ollama.com/download/mac) (or run `brew install ollama`)
+- **Windows:** Download official installer from [ollama.com/download/windows](https://ollama.com/download/windows)
 
 ### Pull Models
 
@@ -205,11 +199,11 @@ cd Create-Agents-AI
 # Install uv if needed
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Base install
-uv sync
+# Base install enforcing lockfile
+uv sync --locked
 
 # OR with file-tools
-uv sync --extra file-tools
+uv sync --locked --extra file-tools
 
 # Activate virtual environment
 source .venv/bin/activate

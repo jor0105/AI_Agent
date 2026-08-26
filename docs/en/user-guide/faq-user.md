@@ -16,9 +16,9 @@ You will receive an informative error directing you to install the corresponding
 
 Yes! Subclass `BaseTool` and implement the `execute` method following the project patterns.
 
-## 5. How can I guarantee total data privacy?
+## 5. How can I ensure data privacy?
 
-Use local models via Ollama. No data leaves your machine or network.
+Use local models with the Ollama provider running on `localhost` (or within your private network). When the Ollama server is hosted locally, no data is sent to external cloud APIs. Note that if you configure `OLLAMA_HOST` to point to a remote server, requests will be routed to that designated host.
 
 ## 6. How do I export metrics?
 

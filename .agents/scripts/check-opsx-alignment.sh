@@ -225,19 +225,19 @@ require_workflow_text "${content_root}/${wf_prefix}/opsx-archive.prompt.md" \
   'an interactive override'
 require_workflow_text "${content_root}/${wf_prefix}/opsx-explore.prompt.md" \
   'Explore mode is read-only.'
-# Consumer-side contracts are deliberately absent here. A consuming project
-# owns its own openspec/config.yaml, its validation command and its evidence
-# verifier; the harness cannot assert on a repository it does not ship. What
-# it can prove is that every command its workflows name is exposed by this
-# package.
-require_workflow_text "${repo_root}/pyproject.toml" \
-  'opsx = "harness.opsx:main"'
-require_workflow_text "${repo_root}/pyproject.toml" \
-  'opsx-handoff = "harness.handoff:main"'
-require_workflow_text "${repo_root}/pyproject.toml" \
-  'opsx-sync = "harness.sync_specs:main"'
-require_workflow_text "${repo_root}/pyproject.toml" \
-  'sabatina = "harness.sabatina:main"'
+# The central repository owns these package entry points. A consuming project
+# receives the same commands from the installed Harness tool and must not
+# duplicate them in its own pyproject.toml.
+if [[ "${repo_root}" == "${harness_root}" ]]; then
+  require_workflow_text "${repo_root}/pyproject.toml" \
+    'opsx = "harness.opsx:main"'
+  require_workflow_text "${repo_root}/pyproject.toml" \
+    'opsx-handoff = "harness.handoff:main"'
+  require_workflow_text "${repo_root}/pyproject.toml" \
+    'opsx-sync = "harness.sync_specs:main"'
+  require_workflow_text "${repo_root}/pyproject.toml" \
+    'sabatina = "harness.sabatina:main"'
+fi
 
 if grep -r -n -E 'openspec/changes/[^[:space:]`"'"'"'<>*]+\.md' "${skill_dir}"; then
   echo "Forbidden legacy execution pattern found in openspec-workflow skill" >&2

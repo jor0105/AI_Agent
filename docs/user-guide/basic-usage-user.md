@@ -162,26 +162,25 @@ for name, description in all_tools.items():
 ## Criar Ferramentas Customizadas
 
 ```python
-import ast
 from createagents import BaseTool
 
 
-class CalculatorTool(BaseTool):
-    name = 'calculator'
-    description = 'Realiza cálculos matemáticos'
+class WordCountTool(BaseTool):
+    name = 'word_count'
+    description = 'Conta o número de palavras em um texto'
     parameters = {
         'type': 'object',
         'properties': {
-            'expression': {
+            'text': {
                 'type': 'string',
-                'description': 'Expressão matemática',
+                'description': 'Texto a ser analisado',
             }
         },
-        'required': ['expression'],
+        'required': ['text'],
     }
 
-    def execute(self, expression: str) -> str:
-        return str(ast.literal_eval(expression))
+    def execute(self, text: str) -> str:
+        return str(len(text.split()))
 ```
 
 ## Métricas
