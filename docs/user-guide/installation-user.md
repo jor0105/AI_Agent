@@ -36,7 +36,7 @@ source .venv/bin/activate  # Linux/macOS
 pip install createagents
 
 # OU com suporte a arquivos (PDF, Excel, CSV, Parquet)
-pip install createagents[file-tools]
+pip install 'createagents[file-tools]'
 ```
 
 > **Nota:** A opção `[file-tools]` adiciona suporte para leitura de arquivos PDF, Excel, CSV e Parquet.
@@ -77,6 +77,8 @@ ______________________________________________________________________
 
 ### 4. Testar Instalação
 
+> **Nota:** Substitua `"YOUR_MODEL"` pelo modelo desejado da OpenAI.
+
 ```python
 import asyncio
 from createagents import CreateAgent
@@ -85,7 +87,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         instructions='Você é um assistente útil.',
     )
     response = await agent.chat('Olá! Teste de instalação.')
@@ -126,12 +128,13 @@ Permite rodar modelos de IA **localmente** (processamento em `localhost` sem cus
 ### Baixar Modelos
 
 ```bash
-ollama pull llama3.2:latest     # Modelo recomendado
-ollama pull granite3-dense:latest     # Alternativo
+ollama pull YOUR_OLLAMA_MODEL
 ollama list             # Ver modelos disponíveis
 ```
 
 ### Usar no Código
+
+> **Nota:** Substitua `"YOUR_OLLAMA_MODEL"` por um modelo instalado no seu Ollama.
 
 ```python
 import asyncio
@@ -141,7 +144,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='ollama',
-        model='llama3.2',
+        model='YOUR_OLLAMA_MODEL',
         instructions='Você é um assistente local.',
     )
     response = await agent.chat('Explique machine learning')
@@ -179,7 +182,7 @@ ______________________________________________________________________
 - Use `uv tree` ou `pip list` para listar dependências instaladas.
 - Consulte os logs de erro completos para identificar problemas específicos.
 
-Se persistir, consulte a [FAQ](faq-user.md) ou abra uma issue no [GitHub](https://github.com/jordanestralioto/Create-Agents-AI/issues).
+Se persistir, consulte a [FAQ](faq-user.md) ou entre em contato pelo email `estraliotojordan@gmail.com`.
 
 ______________________________________________________________________
 
@@ -245,4 +248,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Versão:** 0.2.0 | **Atualização:** 2026-08-25
+**Versão:** 0.2.0 | **Atualização:** 2026-08-27

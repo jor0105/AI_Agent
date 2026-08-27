@@ -12,7 +12,7 @@ from createagents import CreateAgent
 # Criar agente
 agent = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     name='Assistente',
     instructions='Você é um assistente prestativo',
 )
@@ -73,15 +73,15 @@ Você: /metrics
 
 **Aliases**: `/metrics`, `get_metrics`
 
-**Exemplo de saída**:
+**Exemplo de saída (ilustrativo)**:
 
 ```text
 ## Performance Metrics
 
 | Model | Duration | Tokens (In/Out/Total) |
 |-------|----------|-----------------------|
-| gpt-4 | 1.25s    | 45 / 105 / 150        |
-| gpt-4 | 0.98s    | 110 / 120 / 230       |
+| YOUR_MODEL | 1.25s    | 45 / 105 / 150        |
+| YOUR_MODEL | 0.98s    | 110 / 120 / 230       |
 ```
 
 ### `/configs` - Configurações
@@ -101,13 +101,13 @@ Você: /configs
 
 **Aliases**: `/configs`, `get_configs`
 
-**Exemplo de saída**:
+**Exemplo de saída (ilustrativo)**:
 
 ```text
 ## Agent Configuration
 
 **provider:** openai
-**model:** gpt-4
+**model:** YOUR_MODEL
 **name:** None
 **instructions:** None
 **config:** {}
@@ -241,7 +241,7 @@ from createagents import CreateAgent
 
 code_assistant = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     name='Code Expert',
     instructions='Você é um especialista em Python. Sempre forneça exemplos.',
     config={'stream': True},  # Habilita streaming no chat
@@ -271,7 +271,7 @@ from createagents import CreateAgent
 
 agent_with_tools = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     tools=['currentdate'],  # 'readlocalfile' requer [file-tools]
 )
 
@@ -295,7 +295,7 @@ Você: Que dia é hoje?
 from createagents import CreateAgent
 
 local_agent = CreateAgent(
-    provider='ollama', model='llama3.2', name='Assistente Local'
+    provider='ollama', model='YOUR_OLLAMA_MODEL', name='Assistente Local'
 )
 
 # Iniciar CLI
@@ -313,7 +313,7 @@ A CLI é iniciada através do método `start_cli()` da facade `CreateAgent`:
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider='openai', model='gpt-4')
+agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 agent.start_cli()  # Inicia loop interativo
 ```
 
@@ -363,4 +363,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Versão:** 0.2.0 | **Atualização:** 2026-08-25
+**Versão:** 0.2.0 | **Atualização:** 2026-08-27

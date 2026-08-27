@@ -27,7 +27,7 @@ from createagents import CreateAgent
 
 
 async def main():
-    agent = CreateAgent(provider='openai', model='gpt-4')
+    agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 
     # Waits for full response
     response = await agent.chat('Write a short poem')
@@ -49,7 +49,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         config={'stream': True},
     )
 
@@ -80,7 +80,7 @@ from createagents import CreateAgent
 async def chat_interface():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         config={'stream': True},
     )
 
@@ -109,7 +109,7 @@ from createagents import CreateAgent
 
 
 async def simple_query():
-    agent = CreateAgent(provider='openai', model='gpt-4')
+    agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 
     # Direct query
     response = await agent.chat('What is the capital of Canada?')
@@ -134,7 +134,7 @@ from createagents import CreateAgent
 
 async def main():
     agent = CreateAgent(
-        provider='openai', model='gpt-4', config={'stream': True}
+        provider='openai', model='YOUR_MODEL', config={'stream': True}
     )
 
     response = await agent.chat('Tell me a story')
@@ -156,7 +156,7 @@ from createagents import CreateAgent
 
 async def main():
     agent = CreateAgent(
-        provider='openai', model='gpt-4', config={'stream': False}
+        provider='openai', model='YOUR_MODEL', config={'stream': False}
     )
 
     # Returns complete string directly
@@ -179,7 +179,7 @@ from createagents import CreateAgent
 async def ollama_streaming():
     agent = CreateAgent(
         provider='ollama',
-        model='llama3.2',
+        model='YOUR_OLLAMA_MODEL',
         config={'stream': True},
     )
 
@@ -208,7 +208,7 @@ from createagents import CreateAgent
 async def example_with_tools():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         tools=['currentdate'],
         config={'stream': True},
     )
@@ -239,7 +239,7 @@ from createagents import CreateAgent
 async def streaming_with_metrics():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         config={'stream': True},
     )
 
@@ -277,4 +277,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Version:** 0.2.0 | **Updated:** 2026-08-25
+**Version:** 0.2.0 | **Updated:** 2026-08-27

@@ -147,7 +147,7 @@ from createagents import CreateAgent
 
 
 async def simple_chat():
-    agent = CreateAgent(provider='openai', model='gpt-4')
+    agent = CreateAgent(provider='openai', model='YOUR_MODEL')
     response = await agent.chat('Hello')
     print(response)
 
@@ -164,7 +164,7 @@ from createagents import CreateAgent
 
 async def streaming_chat():
     agent = CreateAgent(
-        provider='openai', model='gpt-4', config={'stream': True}
+        provider='openai', model='YOUR_MODEL', config={'stream': True}
     )
     response = await agent.chat('Tell me a story')
 
@@ -184,8 +184,8 @@ from createagents import CreateAgent
 
 
 async def concurrent_chats():
-    agent1 = CreateAgent(provider='openai', model='gpt-4')
-    agent2 = CreateAgent(provider='openai', model='gpt-4')
+    agent1 = CreateAgent(provider='openai', model='YOUR_MODEL')
+    agent2 = CreateAgent(provider='openai', model='YOUR_MODEL')
 
     results = await asyncio.gather(
         agent1.chat('Question 1'),
@@ -227,7 +227,7 @@ class AsyncWebTool(BaseTool):
 # Usage
 async def main():
     agent = CreateAgent(
-        provider='openai', model='gpt-4', tools=[AsyncWebTool()]
+        provider='openai', model='YOUR_MODEL', tools=[AsyncWebTool()]
     )
 
     response = await agent.chat('Fetch data from https://api.example.com')
@@ -363,7 +363,7 @@ from createagents import CreateAgent
 
 async def demo_streaming():
     agent = CreateAgent(
-        provider='openai', model='gpt-4', config={'stream': True}
+        provider='openai', model='YOUR_MODEL', config={'stream': True}
     )
     response = await agent.chat('message')  # Returns StreamingResponseDTO
 
@@ -433,7 +433,7 @@ async def test_chat_with_mock():
         'createagents.main.composers.AgentComposer.create_chat_use_case',
         return_value=mock_use_case,
     ):
-        agent = CreateAgent(provider='ollama', model='llama3.2')
+        agent = CreateAgent(provider='ollama', model='YOUR_OLLAMA_MODEL')
         response = await agent.chat('Test message')
         assert response == 'Mocked Response'
 ```
@@ -454,7 +454,7 @@ async def test_real_openai_integration():
     if not os.getenv('OPENAI_API_KEY'):
         pytest.skip('OPENAI_API_KEY not configured')
 
-    agent = CreateAgent(provider='openai', model='gpt-4o-mini')
+    agent = CreateAgent(provider='openai', model='YOUR_MODEL')
     response = await agent.chat('Reply with: OK')
     assert 'OK' in response
 ```
@@ -480,4 +480,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Version:** 0.2.0 | **Updated:** 2026-08-25
+**Version:** 0.2.0 | **Updated:** 2026-08-27

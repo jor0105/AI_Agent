@@ -1,6 +1,8 @@
 # 🤖 Create Agents AI
 
-> Enterprise-grade Python framework for building intelligent AI agents with clean architecture, multiple providers, and extensible tools.
+> Production-oriented Python framework for building intelligent AI agents with Clean Architecture, multiple providers, and extensible tools.
+
+> **Project status:** Beta. APIs and behavior may evolve as the project matures.
 
 [![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
@@ -29,7 +31,7 @@ ______________________________________________________________________
 pip install createagents
 
 # OR with file-reading capabilities (PDF, Excel, CSV, Parquet)
-pip install createagents[file-tools]
+pip install 'createagents[file-tools]'
 ```
 
 ### Configuration
@@ -44,7 +46,7 @@ OPENAI_API_KEY=sk-proj-your-api-key-here
 
 *(If working from a repository clone, copy the template with `cp .env.example .env`).*
 
-> **Note:** OpenAI requires `OPENAI_API_KEY`. Ollama requires no API key when running on `localhost` (refer to the [installation guide](user-guide/installation-user.md) for details).
+> **Note:** OpenAI requires `OPENAI_API_KEY`. Ollama requires no API key when running on `localhost` (refer to the [installation guide](user-guide/installation-user.md) for details). Replace `"YOUR_MODEL"` with your desired OpenAI model and `"YOUR_OLLAMA_MODEL"` with a locally installed Ollama model.
 
 ### First Agent in 3 Lines
 
@@ -56,7 +58,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         instructions='You are a helpful assistant',
     )
 
@@ -76,11 +78,11 @@ ______________________________________________________________________
 ```python
 from createagents import CreateAgent
 
-# OpenAI (GPT-4, GPT-4o, GPT-4o-mini)
-agent_openai = CreateAgent(provider='openai', model='gpt-4')
+# OpenAI
+agent_openai = CreateAgent(provider='openai', model='YOUR_MODEL')
 
-# Ollama (llama3.2, mistral - local processing on localhost)
-agent_local = CreateAgent(provider='ollama', model='llama3.2')
+# Ollama (local processing on localhost)
+agent_local = CreateAgent(provider='ollama', model='YOUR_OLLAMA_MODEL')
 ```
 
 ### 🔧 Built-in Tools
@@ -95,7 +97,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         tools=['currentdate'],  # 'readlocalfile' requires [file-tools]
     )
 
@@ -119,7 +121,7 @@ asyncio.run(main())
 **Available Tools:**
 
 - `currentdate` - Current date/time in any timezone (always available)
-- `readlocalfile` - Reads PDF, Excel, CSV, Parquet, JSON, YAML, TXT (requires `pip install createagents[file-tools]`)
+- `readlocalfile` - Reads PDF, Excel, CSV, Parquet, JSON, YAML, TXT (requires `pip install 'createagents[file-tools]'`)
 
 **Creating Custom Tools:**
 
@@ -148,7 +150,7 @@ class WordCountTool(BaseTool):
 # Use custom tool alongside built-ins
 agent = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     tools=['currentdate', WordCountTool()],
 )
 
@@ -164,7 +166,7 @@ from createagents import CreateAgent
 
 
 async def main():
-    agent = CreateAgent(provider='openai', model='gpt-4')
+    agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 
     await agent.chat('Hello!')
     await agent.chat('What is the capital of France?')  # Keeps context
@@ -181,17 +183,17 @@ async def main():
 asyncio.run(main())
 ```
 
-### 📊 Metrics and Monitoring
+### 📊 Metrics Export
 
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider='openai', model='gpt-4')
+agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 
 # Retrieve metrics
 metrics = agent.get_metrics()
 
-# Export in different formats
+# Export in different formats (JSON or Prometheus format)
 agent.export_metrics_json('metrics.json')
 agent.export_metrics_prometheus('metrics.prom')
 ```
@@ -203,10 +205,10 @@ from createagents import CreateAgent
 
 agent = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     instructions='Be concise and technical',
     config={
-        'temperature': 0.7,  # Creativity (0-1)
+        'temperature': 0.7,  # Allowed range: 0.0 to 2.0
         'max_tokens': 2000,  # Response limit
     },
     history_max_size=20,  # History size limit
@@ -246,7 +248,7 @@ ______________________________________________________________________
 
 - ✅ **Privacy**: Option for local models on localhost with Ollama (zero API costs and local data retention when `OLLAMA_HOST` is not pointed to an external server)
 - ✅ **Security**: Automatic sanitization of sensitive data in logs
-- ✅ **Monitoring**: Real-time production-ready metrics
+- ✅ **Metrics Export**: Structured metrics export in JSON and Prometheus formats
 - ✅ **Scalability**: Architecture designed for extensibility
 
 ### For Developers
@@ -319,9 +321,8 @@ ______________________________________________________________________
 
 ## 📞 Support
 
-- 📧 **Email**: estraliotojordan@gmail.com
-- 🐛 **Bugs**: [GitHub Issues](https://github.com/jordanestralioto/Create-Agents-AI/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/jordanestralioto/Create-Agents-AI/discussions)
+- 📧 **Email**: `estraliotojordan@gmail.com`
+- 🔒 **Security**: Please report security vulnerabilities privately according to our [Security Policy](https://github.com/jordanestralioto/Create-Agents-AI/blob/develop/SECURITY.md).
 
 ______________________________________________________________________
 
@@ -341,5 +342,5 @@ ______________________________________________________________________
 ______________________________________________________________________
 
 **Version:** 0.2.0\
-**Last updated:** 2026-08-25\
+**Last updated:** 2026-08-27\
 **Status:** 🚀 Published package! Open for contributions and feedback.

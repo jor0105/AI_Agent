@@ -12,7 +12,7 @@ from createagents import CreateAgent
 async def main():
     professor = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         name='Professor Virtual',
         instructions='Você é um professor didático.',
     )
@@ -34,7 +34,7 @@ from createagents import CreateAgent
 async def main():
     assistente = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         name='Assistente Executivo',
         instructions='Use linguagem formal.',
         tools=['currentdate'],
@@ -59,7 +59,7 @@ from createagents import CreateAgent
 async def main():
     code_expert = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         name='Python Expert',
         instructions='Especialista em Python.',
     )
@@ -83,7 +83,7 @@ from createagents import CreateAgent
 async def main():
     tradutor = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         name='Tradutor Especializado',
         instructions='Você é um tradutor profissional.',
     )
@@ -107,7 +107,7 @@ from createagents import CreateAgent
 async def main():
     analista = CreateAgent(
         provider='ollama',
-        model='llama3.2',
+        model='YOUR_OLLAMA_MODEL',
         name='Data Analyst',
         instructions='Forneça insights acionáveis.',
     )
@@ -129,7 +129,7 @@ from createagents import CreateAgent
 
 agent = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     name='Assistente Amigável',
 )
 
@@ -156,7 +156,7 @@ from createagents import CreateAgent
 async def main():
     chatbot = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         name='Chatbot Simples',
         config={'stream': True},
     )
@@ -188,7 +188,7 @@ from createagents import CreateAgent
 async def main():
     agente_local = CreateAgent(
         provider='ollama',
-        model='llama3.2',
+        model='YOUR_OLLAMA_MODEL',
         name='Assistente Local',
         instructions='Você é um assistente que executa localmente.',
     )
@@ -212,7 +212,7 @@ from createagents import CreateAgent
 async def streaming_example():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         config={'stream': True},
     )
 
@@ -238,7 +238,7 @@ from createagents import CreateAgent
 async def ollama_streaming():
     local_agent = CreateAgent(
         provider='ollama',
-        model='llama3.2',
+        model='YOUR_OLLAMA_MODEL',
         name='Assistente Local',
         config={'stream': True},
     )

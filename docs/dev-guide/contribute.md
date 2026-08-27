@@ -72,8 +72,8 @@ uv run --locked --no-sync pip-audit
 
 O workflow completo de CI, incluindo lockfile, segurança, qualidade, tipos,
 docstrings e cobertura, está em
-`.github/workflows/pipeline.yml`. A configuração local dos 41 hooks está em
-`.pre-commit-config.yaml`: são 37 hooks `pre-commit`, 3 `pre-push` e 1
+`.github/workflows/pipeline.yml`. A configuração local dos 40 hooks está em
+`.pre-commit-config.yaml`: são 36 hooks `pre-commit`, 3 `pre-push` e 1
 `commit-msg`.
 
 ### Política dos gates locais
@@ -181,9 +181,9 @@ ______________________________________________________________________
 
 ## 🐞 Reportar Bugs e Sugerir Melhorias
 
-1. [Abra uma issue](https://github.com/jordanestralioto/Create-Agents-AI/issues)
-2. Descreva o problema/sugestão com detalhes, passos para reproduzir e contexto
-3. Inclua logs, prints ou exemplos de código se possível
+- **Dúvidas Gerais e Sugestões**: Entre em contato com o mantenedor pelo email `estraliotojordan@gmail.com`.
+- **Vulnerabilidades de Segurança**: Reporte de forma privada via email seguindo nossa [Política de Segurança](https://github.com/jordanestralioto/Create-Agents-AI/blob/develop/SECURITY.md).
+- Ao relatar problemas, inclua detalhes completos, passos para reprodução, logs de erro e contexto do ambiente.
 
 ______________________________________________________________________
 
@@ -198,9 +198,8 @@ ______________________________________________________________________
 
 ## 🤝 Contato e Suporte
 
-- Email: estraliotojordan@gmail.com
+- Email: `estraliotojordan@gmail.com`
 - GitHub: [@jordanestralioto](https://github.com/jordanestralioto)
-- Discussões: [GitHub Discussions](https://github.com/jordanestralioto/Create-Agents-AI/discussions)
 
 ______________________________________________________________________
 

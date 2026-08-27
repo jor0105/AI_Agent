@@ -76,7 +76,7 @@ class TestAgentChat(TestCase):
         mock_adapter_instance.chat = AsyncMock(return_value='Hello, world!')
         mock_adapter_instance.get_metrics.return_value = []
 
-        agent = CreateAgent(provider='openai', model='gpt-4')
+        agent = CreateAgent(provider='openai', model='YOUR_MODEL')
         response = asyncio.run(agent.chat('Test'))
         self.assertEqual(response, 'Hello, world!')
 ```

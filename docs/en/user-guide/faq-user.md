@@ -10,7 +10,7 @@ Use `agent.get_all_available_tools()` to list all system and custom tools availa
 
 ## 3. What happens if I attempt to use an uninstalled optional tool?
 
-You will receive an informative error directing you to install the corresponding extra: `pip install createagents[file-tools]`.
+You will receive an informative error directing you to install the corresponding extra: `pip install 'createagents[file-tools]'`.
 
 ## 4. Can I create my own tools?
 
@@ -30,7 +30,7 @@ Call `agent.clear_history()`.
 
 ## 8. How do I report bugs or ask for support?
 
-Open an issue on [GitHub Issues](https://github.com/jordanestralioto/Create-Agents-AI/issues) or email `estraliotojordan@gmail.com`.
+For general questions and support, email `estraliotojordan@gmail.com`. For security vulnerabilities, please refer to our policy in `SECURITY.md`.
 
 ## 9. How do I update the framework?
 
@@ -39,7 +39,7 @@ Update via pip:
 ```bash
 pip install --upgrade createagents
 # OR with file-tools
-pip install --upgrade createagents[file-tools]
+pip install --upgrade 'createagents[file-tools]'
 ```
 
 ## 10. Where can I find advanced examples?
@@ -53,7 +53,7 @@ Call the `start_cli()` method on your agent:
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider='openai', model='gpt-4')
+agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 agent.start_cli()  # Starts interactive CLI session
 ```
 
@@ -75,12 +75,12 @@ from createagents import CreateAgent
 
 # Enable streaming
 agent_stream = CreateAgent(
-    provider='openai', model='gpt-4', config={'stream': True}
+    provider='openai', model='YOUR_MODEL', config={'stream': True}
 )
 
 # Disable streaming (default)
 agent_sync = CreateAgent(
-    provider='openai', model='gpt-4', config={'stream': False}
+    provider='openai', model='YOUR_MODEL', config={'stream': False}
 )
 ```
 
@@ -98,7 +98,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         config={'stream': False},  # Explicitly disabled
     )
 

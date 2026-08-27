@@ -12,6 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from harness.consumer_validators import parse_frontmatter
 from harness.selection import (
     SelectionError,
     load_review_owner,
@@ -201,26 +202,24 @@ def parse_metadata_value(raw_value: str) -> object:
 
 
 def _parse_frontmatter_metadata(frontmatter: str) -> dict[str, object]:
-    metadata: dict[str, object] = {}
-    for line in frontmatter.splitlines():
-        if not line.strip() or line.startswith((' ', '\t')) or ':' not in line:
-            continue
-        key, raw_value = line.split(':', 1)
-        metadata[key.strip()] = parse_metadata_value(raw_value)
-    return metadata
+    if not frontmatter.strip():
+        return {}
+    try:
+        meta, _ = parse_frontmatter(f'---\n{frontmatter}\n---\n')
+        return meta
+    except ValueError:
+        return {}
 
 
 def _parse_frontmatter_agents(frontmatter: str) -> list[str]:
     match = re.search(r'agents:\s*\[(.*?)\]', frontmatter, re.DOTALL)
     if not match:
         return []
-    raw = match.group(1)
-    entries = []
-    for chunk in raw.replace('\n', ' ').split(','):
-        value = chunk.strip()
-        if value:
-            entries.append(value)
-    return entries
+    return [
+        c.strip().strip('"\'')
+        for c in match.group(1).replace('\n', ' ').split(',')
+        if c.strip()
+    ]
 
 
 def _parse_frontmatter_fields(

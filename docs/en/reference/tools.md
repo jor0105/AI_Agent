@@ -27,7 +27,7 @@ from createagents import CreateAgent
 
 async def main():
     agent = CreateAgent(
-        provider='openai', model='gpt-4', tools=['currentdate']
+        provider='openai', model='YOUR_MODEL', tools=['currentdate']
     )
 
     response = await agent.chat('What day is today?')
@@ -64,7 +64,7 @@ Reads local files across multiple structured and unstructured formats.
 **Installation:**
 
 ```bash
-pip install createagents[file-tools]
+pip install 'createagents[file-tools]'
 ```
 
 **Usage:**
@@ -76,7 +76,7 @@ from createagents import CreateAgent
 
 async def main():
     agent = CreateAgent(
-        provider='openai', model='gpt-4', tools=['readlocalfile']
+        provider='openai', model='YOUR_MODEL', tools=['readlocalfile']
     )
 
     response = await agent.chat('Read report.pdf and summarize it')
@@ -118,7 +118,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         instructions='You can verify current date and time when necessary',
         tools=['currentdate'],
     )
@@ -139,10 +139,10 @@ from createagents import CreateAgent
 
 
 async def main():
-    # Make sure you installed: pip install createagents[file-tools]
+    # Make sure you installed: pip install 'createagents[file-tools]'
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         instructions='You can read local files',
         tools=['readlocalfile'],
     )
@@ -164,7 +164,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         tools=['currentdate', 'readlocalfile'],
     )
 
@@ -199,7 +199,7 @@ Includes:
 ### Installation with File Tools 📁
 
 ```bash
-pip install createagents[file-tools]
+pip install 'createagents[file-tools]'
 ```
 
 Includes:
@@ -240,7 +240,7 @@ class CustomTool(BaseTool):
 
 agent = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     tools=['currentdate', CustomTool()],  # System + custom tool
 )
 
@@ -265,7 +265,7 @@ Use `get_system_available_tools()` to check built-in framework tools:
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider='openai', model='gpt-4')
+agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 
 system_tools = agent.get_system_available_tools()
 
@@ -277,7 +277,7 @@ for name, description in system_tools.items():
 if 'readlocalfile' in system_tools:
     print('✅ ReadLocalFileTool is available!')
 else:
-    print('⚠️ Install with: pip install createagents[file-tools]')
+    print("⚠️ Install with: pip install 'createagents[file-tools]'")
 ```
 
 ### Method Comparison
@@ -313,14 +313,14 @@ class WeatherTool(BaseTool):
 
 
 # Agent without custom tools
-agent1 = CreateAgent(provider='openai', model='gpt-4')
+agent1 = CreateAgent(provider='openai', model='YOUR_MODEL')
 print('Agent 1:', list(agent1.get_all_available_tools().keys()))
 # Basic installation output: ['currentdate']
 # With [file-tools] extra: ['currentdate', 'readlocalfile']
 
 # Agent with custom tool
 agent2 = CreateAgent(
-    provider='openai', model='gpt-4', tools=['currentdate', WeatherTool()]
+    provider='openai', model='YOUR_MODEL', tools=['currentdate', WeatherTool()]
 )
 print('Agent 2:', list(agent2.get_all_available_tools().keys()))
 # Basic installation output: ['currentdate', 'weather']
@@ -342,7 +342,7 @@ from createagents import CreateAgent
 # System tool explicitly passed in tools list
 agent = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     tools=['currentdate'],  # Explicitly added system tool
 )
 
@@ -359,7 +359,7 @@ ______________________________________________________________________
 ## ⚡ Dependencies Impact
 
 - **Basic Installation (`pip install createagents`):** Installs only essential framework dependencies (`openai`, `ollama`, `python-dotenv`, `defusedxml`, `rich`).
-- **File Tools Installation (`pip install createagents[file-tools]`):** Includes additional libraries (`tiktoken`, `unstructured`, `pandas`, `openpyxl`, `pyarrow`, `chardet`), imported dynamically only when file tools are used.
+- **File Tools Installation (`pip install 'createagents[file-tools]'`):** Includes additional libraries (`tiktoken`, `unstructured`, `pandas`, `openpyxl`, `pyarrow`, `chardet`), imported dynamically only when file tools are used.
 
 ______________________________________________________________________
 
@@ -423,11 +423,11 @@ A: To keep the base library lightweight. If your agent does not need document pa
 A: Use `agent.get_all_available_tools()` to list available system and custom tools. To view active tools configured on the agent, inspect `agent.get_configs()['tools']`.
 
 **Q: What happens if I invoke an uninstalled tool?**\
-A: You will receive an informative error directing you to install the corresponding extra: `pip install createagents[file-tools]`.
+A: You will receive an informative error directing you to install the corresponding extra: `pip install 'createagents[file-tools]'`.
 
 **Q: Can I create my own custom tools?**\
 A: Yes! Simply subclass `BaseTool` and implement the `execute` method.
 
 ______________________________________________________________________
 
-**Version:** 0.2.0 | **Updated:** 2026-08-25
+**Version:** 0.2.0 | **Updated:** 2026-08-27

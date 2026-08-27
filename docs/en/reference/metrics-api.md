@@ -83,8 +83,8 @@ from createagents import CreateAgent
 
 
 async def main():
-    agent_a = CreateAgent(provider='ollama', model='llama3')
-    agent_b = CreateAgent(provider='ollama', model='llama3')
+    agent_a = CreateAgent(provider='ollama', model='YOUR_OLLAMA_MODEL')
+    agent_b = CreateAgent(provider='ollama', model='YOUR_OLLAMA_MODEL')
 
     await agent_a.chat('Hello')
 
@@ -107,7 +107,7 @@ from createagents import CreateAgent
 
 
 async def main():
-    agent = CreateAgent(provider='openai', model='gpt-4')
+    agent = CreateAgent(provider='openai', model='YOUR_MODEL')
     await agent.chat('test')
 
     # Export to string
@@ -120,7 +120,7 @@ async def main():
 asyncio.run(main())
 ```
 
-**JSON Output Format**:
+**JSON Output Format (Illustrative)**:
 
 ```json
 {
@@ -136,7 +136,7 @@ asyncio.run(main())
   },
   "metrics": [
     {
-      "model": "gpt-4",
+      "model": "YOUR_MODEL",
       "latency_ms": 1234.56,
       "tokens_used": 250,
       "prompt_tokens": 100,
@@ -162,7 +162,7 @@ prom_string = agent.export_metrics_prometheus()
 agent.export_metrics_prometheus('metrics.prom')
 ```
 
-**Prometheus Output Format**:
+**Prometheus Output Format (Illustrative)**:
 
 ```
 # HELP chat_requests_total Total number of chat requests
@@ -195,7 +195,7 @@ chat_tokens_total 250
 
 # HELP chat_requests_by_model Total requests by model
 # TYPE chat_requests_by_model counter
-chat_requests_by_model{model="gpt-4"} 1
+chat_requests_by_model{model="YOUR_MODEL"} 1
 ```
 
 ______________________________________________________________________
@@ -229,7 +229,7 @@ from createagents import CreateAgent
 
 
 async def main():
-    agent = CreateAgent(provider='openai', model='gpt-4')
+    agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 
     # Execute calls
     await agent.chat('Question 1')
@@ -269,4 +269,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Version:** 0.2.0 | **Updated:** 2026-08-25
+**Version:** 0.2.0 | **Updated:** 2026-08-27

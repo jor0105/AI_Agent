@@ -76,7 +76,7 @@ uv run --locked --no-sync bandit -c pyproject.toml -r src -ll
 uv run --locked --no-sync pip-audit
 ```
 
-The full CI workflow, including lockfile checks, security, quality, typing, docstrings, and test coverage, is defined in `.github/workflows/pipeline.yml`. The local pre-commit configuration defines 41 hooks across `pre-commit` (37), `pre-push` (3), and `commit-msg` (1).
+The full CI workflow, including lockfile checks, security, quality, typing, docstrings, and test coverage, is defined in `.github/workflows/pipeline.yml`. The local pre-commit configuration defines 40 hooks across `pre-commit` (36), `pre-push` (3), and `commit-msg` (1).
 
 ### Local Quality Gate Policy
 
@@ -163,9 +163,9 @@ ______________________________________________________________________
 
 ## 🐞 Reporting Bugs and Suggesting Improvements
 
-1. [Open an issue](https://github.com/jordanestralioto/Create-Agents-AI/issues)
-2. Describe the issue or suggestion with full details, reproduction steps, and context
-3. Include error logs, screenshots, or code snippets where helpful
+- **General Questions & Suggestions**: Contact the maintainer at `estraliotojordan@gmail.com`.
+- **Security Vulnerabilities**: Report privately via email according to our [Security Policy](https://github.com/jordanestralioto/Create-Agents-AI/blob/develop/SECURITY.md).
+- When reporting issues, please include full details, reproduction steps, error logs, and relevant environment context.
 
 ______________________________________________________________________
 
@@ -180,9 +180,8 @@ ______________________________________________________________________
 
 ## 🤝 Contact and Support
 
-- Email: estraliotojordan@gmail.com
+- Email: `estraliotojordan@gmail.com`
 - GitHub: [@jordanestralioto](https://github.com/jordanestralioto)
-- Discussions: [GitHub Discussions](https://github.com/jordanestralioto/Create-Agents-AI/discussions)
 
 ______________________________________________________________________
 

@@ -19,7 +19,7 @@ Only deterministic mechanical facts may be resolved from the repository.
 
 **Stop condition**: Stop when every artifact required by `apply.requires` is `done`.
 
-**Steps**
+## Steps
 
 1. **If no input provided, ask what they want to build**
 
@@ -131,7 +131,7 @@ Only deterministic mechanical facts may be resolved from the repository.
    opsx status --change "<name>"
    ```
 
-**Output**
+## Output
 
 After completing all artifacts, summarize:
 
@@ -140,7 +140,7 @@ After completing all artifacts, summarize:
 - What's ready: "All artifacts created! Ready for implementation."
 - Prompt: "Run `/opsx:apply` to start implementing."
 
-**Audience of every artifact you write**
+### Audience of every artifact you write
 
 The implementer is a junior developer holding the project's root agent
 policy file and the docs it links, and nothing else — no prior context on
@@ -163,7 +163,7 @@ opsx-handoff --mode bundle "<name>"
 Fix every finding. An apply-ready change with a red handoff gate is not
 apply-ready.
 
-**Artifact Creation Guidelines**
+## Artifact Creation Guidelines
 
 - Follow the `instruction` field from `opsx instructions` for each artifact type
 - Treat the `context` and `rules` fields as mandatory constraints, not style hints
@@ -174,7 +174,7 @@ apply-ready.
 - Read dependency artifacts for context before creating new ones
 - Use the `template` as a starting point, filling in based on context
 
-**Guardrails**
+## Guardrails
 
 - Create ALL artifacts needed for implementation (as defined by schema's `apply.requires`)
 - Always read dependency artifacts before creating a new one

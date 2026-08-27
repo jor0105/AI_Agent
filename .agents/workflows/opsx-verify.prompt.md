@@ -20,7 +20,7 @@ The report is bound to `decision_source.sha256` and to the repository
 fingerprint returned by `opsx fingerprint --change "<name>" --json`; the report and gate report are excluded from that
 fingerprint. Unresolved in-contract divergence is a blocker, not a warning.
 
-**Steps**
+## Steps
 
 1. **If no change name provided, prompt for selection**
 
@@ -225,7 +225,7 @@ fingerprint. Unresolved in-contract divergence is a blocker, not a warning.
      `opsx-handoff --mode completion "<name>"` MUST be fully green; a remaining
      `semantic-report-missing` means the report was never persisted.
 
-**Verification Heuristics**
+## Verification Heuristics
 
 - **Completeness**: Focus on objective checklist items (checkboxes, requirements list)
 - **Correctness**: Use concrete implementation and test evidence; uncertainty about in-contract behavior is a blocker
@@ -233,14 +233,14 @@ fingerprint. Unresolved in-contract divergence is a blocker, not a warning.
 - **False Positives**: Classify only explicitly out-of-contract improvements as warnings; do not downgrade contract divergence
 - **Actionability**: Every issue must have a specific recommendation with file/line references where applicable
 
-**Graceful Degradation**
+## Graceful Degradation
 
 - If the structured report cannot be produced, stop with a blocker and do not
   report archive readiness.
 - If an artifact is missing, record the missing mapping and stop.
 - Always record skipped checks in the report; never silently downgrade them.
 
-**Output Format**
+## Output Format
 
 Use Markdown only as a human summary after writing the JSON report. Include
 the exact report path, mapping counts, blocker count, warning count, and

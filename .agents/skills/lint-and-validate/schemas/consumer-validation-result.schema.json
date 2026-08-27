@@ -1,57 +1,111 @@
 {
+  "$defs": {
+    "item": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "path",
+        "sha256"
+      ],
+      "type": "object"
+    }
+  },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Consumer Validation Result",
-  "type": "object",
   "additionalProperties": false,
-  "required": [
-    "protocolVersion",
-    "profile",
-    "executorVersion",
-    "status",
-    "exitCode",
-    "effectiveScopes",
-    "validators",
-    "counts",
-    "diagnostics",
-    "stableContentIdentity"
-  ],
   "properties": {
-    "protocolVersion": {
-      "const": "consumer-validation-v1"
-    },
-    "profile": {
-      "const": "consumer-isolated-v1"
-    },
-    "executorVersion": {
-      "type": "string"
-    },
-    "status": {
-      "enum": [
+    "counts": {
+      "additionalProperties": false,
+      "properties": {
+        "errors": {
+          "type": "integer"
+        },
+        "failed": {
+          "type": "integer"
+        },
+        "items": {
+          "type": "integer"
+        },
+        "passed": {
+          "type": "integer"
+        },
+        "scopes": {
+          "type": "integer"
+        },
+        "skipped": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "scopes",
+        "items",
         "passed",
         "failed",
-        "error"
-      ]
+        "skipped",
+        "errors"
+      ],
+      "type": "object"
     },
-    "exitCode": {
-      "enum": [
-        0,
-        1,
-        2
-      ]
+    "diagnostics": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "item": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "error",
+              "warning"
+            ]
+          },
+          "validatorId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "item",
+          "validatorId",
+          "code",
+          "message",
+          "severity"
+        ],
+        "type": "object"
+      },
+      "type": "array"
     },
     "effectiveScopes": {
-      "type": "array",
       "items": {
-        "type": "object",
         "additionalProperties": false,
-        "required": [
-          "name",
-          "path",
-          "required",
-          "status",
-          "items"
-        ],
         "properties": {
+          "excludedItems": {
+            "items": {
+              "$ref": "#/$defs/item"
+            },
+            "type": "array"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/$defs/item"
+            },
+            "type": "array"
+          },
           "name": {
             "enum": [
               "skills",
@@ -71,31 +125,63 @@
               "failed",
               "skipped"
             ]
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/$defs/item"
-            }
-          },
-          "excludedItems": {
-            "type": "array",
-            "items": {
-              "$ref": "#/$defs/item"
-            }
           }
+        },
+        "required": [
+          "name",
+          "path",
+          "required",
+          "status",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "executionMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "durationSeconds": {
+          "type": "number"
+        },
+        "finishedAt": {
+          "type": "string"
+        },
+        "startedAt": {
+          "type": "string"
         }
-      }
+      },
+      "type": "object"
+    },
+    "executorVersion": {
+      "type": "string"
+    },
+    "exitCode": {
+      "enum": [
+        0,
+        1,
+        2
+      ]
+    },
+    "profile": {
+      "const": "consumer-isolated-v1"
+    },
+    "protocolVersion": {
+      "const": "consumer-validation-v1"
+    },
+    "stableContentIdentity": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "passed",
+        "failed",
+        "error"
+      ]
     },
     "validators": {
-      "type": "array",
       "items": {
-        "type": "object",
         "additionalProperties": false,
-        "required": [
-          "id",
-          "status"
-        ],
         "properties": {
           "id": {
             "type": "string"
@@ -107,114 +193,28 @@
               "skipped"
             ]
           }
-        }
-      }
-    },
-    "counts": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "scopes",
-        "items",
-        "passed",
-        "failed",
-        "skipped",
-        "errors"
-      ],
-      "properties": {
-        "scopes": {
-          "type": "integer"
         },
-        "items": {
-          "type": "integer"
-        },
-        "passed": {
-          "type": "integer"
-        },
-        "failed": {
-          "type": "integer"
-        },
-        "skipped": {
-          "type": "integer"
-        },
-        "errors": {
-          "type": "integer"
-        }
-      }
-    },
-    "diagnostics": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
         "required": [
-          "item",
-          "validatorId",
-          "code",
-          "message",
-          "severity"
+          "id",
+          "status"
         ],
-        "properties": {
-          "item": {
-            "type": "string"
-          },
-          "validatorId": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "severity": {
-            "enum": [
-              "error",
-              "warning"
-            ]
-          }
-        }
-      }
-    },
-    "stableContentIdentity": {
-      "type": "string"
-    },
-    "executionMetadata": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "durationSeconds": {
-          "type": "number"
-        },
-        "startedAt": {
-          "type": "string"
-        },
-        "finishedAt": {
-          "type": "string"
-        }
-      }
+        "type": "object"
+      },
+      "type": "array"
     }
   },
-  "$defs": {
-    "item": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "name",
-        "path",
-        "sha256"
-      ],
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "path": {
-          "type": "string"
-        },
-        "sha256": {
-          "type": "string"
-        }
-      }
-    }
-  }
+  "required": [
+    "protocolVersion",
+    "profile",
+    "executorVersion",
+    "status",
+    "exitCode",
+    "effectiveScopes",
+    "validators",
+    "counts",
+    "diagnostics",
+    "stableContentIdentity"
+  ],
+  "title": "Consumer Validation Result",
+  "type": "object"
 }

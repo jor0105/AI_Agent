@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from pathlib import Path
 
 from harness.consumer_validation import (
     ContractError,
@@ -43,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         request_data = json.loads(request_file.read_text(encoding='utf-8'))
-    except (json.JSONDecodeError, OSError) as exc:
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
         sys.stderr.write(f'error: cannot read request JSON: {exc}\n')
         return 2
 
@@ -53,11 +52,11 @@ def main(argv: list[str] | None = None) -> int:
         sys.stderr.write(f'error: {exc}\n')
         return 2
 
-    print(json.dumps(result, indent=2, ensure_ascii=True))
+    sys.stdout.write(f'{json.dumps(result, indent=2, ensure_ascii=True)}\n')
     if result.get('diagnostics'):
         for diag in result['diagnostics']:
             sys.stderr.write(
-                f"[{diag['code']}] {diag['item']} ({diag['validatorId']}): {diag['message']}\n"
+                f'[{diag["code"]}] {diag["item"]} ({diag["validatorId"]}): {diag["message"]}\n'
             )
     return int(result.get('exitCode', 0))
 

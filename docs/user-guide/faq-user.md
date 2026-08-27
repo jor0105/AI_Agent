@@ -10,7 +10,7 @@ Use `agent.get_all_available_tools()` para listar.
 
 ## 3. O que acontece se eu tentar usar uma ferramenta não instalada?
 
-Você receberá um erro claro indicando como instalar.
+Você receberá um erro claro indicando a instalação: `pip install 'createagents[file-tools]'`.
 
 ## 4. Posso criar minhas próprias ferramentas?
 
@@ -30,7 +30,7 @@ Chame `agent.clear_history()`.
 
 ## 8. Como reportar bugs ou pedir suporte?
 
-Abra uma issue no GitHub ou envie email para estraliotojordan@gmail.com.
+Para dúvidas gerais e suporte, envie email para `estraliotojordan@gmail.com`. Para vulnerabilidades de segurança, consulte a política em `SECURITY.md`.
 
 ## 9. Como atualizar o framework?
 
@@ -39,7 +39,7 @@ Atualize via pip:
 ```bash
 pip install --upgrade createagents
 # OU com file-tools
-pip install --upgrade createagents[file-tools]
+pip install --upgrade 'createagents[file-tools]'
 ```
 
 ## 10. Onde encontrar exemplos avançados?
@@ -53,7 +53,7 @@ Basta chamar o método `start_cli()` do agente:
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider='openai', model='gpt-4')
+agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 agent.start_cli()  # Inicia CLI interativa
 ```
 
@@ -75,12 +75,12 @@ from createagents import CreateAgent
 
 # Habilitar streaming
 agent_stream = CreateAgent(
-    provider='openai', model='gpt-4', config={'stream': True}
+    provider='openai', model='YOUR_MODEL', config={'stream': True}
 )
 
 # Desabilitar streaming (padrão)
 agent_sync = CreateAgent(
-    provider='openai', model='gpt-4', config={'stream': False}
+    provider='openai', model='YOUR_MODEL', config={'stream': False}
 )
 ```
 
@@ -98,7 +98,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         config={'stream': False},  # Desabilita streaming
     )
 

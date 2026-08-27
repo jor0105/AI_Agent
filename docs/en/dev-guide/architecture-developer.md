@@ -369,14 +369,14 @@ use_case = ChatWithAgentUseCase(mock_repo)
 # Seamless provider switching without code changes
 from createagents import CreateAgent
 
-agent = CreateAgent(provider='ollama', model='llama3.2')
+agent = CreateAgent(provider='ollama', model='YOUR_OLLAMA_MODEL')
 ```
 
 ### 📈 Scalability
 
 - New providers added via adapters without modifying domain logic
 - Tool contracts isolated from transport layers
-- Production-ready metrics and logging hooks
+- Metrics collection and logging hooks
 
 ### 🛡️ Maintainability
 
@@ -429,4 +429,4 @@ class StreamingResponseDTO:
 
 ______________________________________________________________________
 
-**Version:** 0.2.0 | **Updated:** 2026-08-25
+**Version:** 0.2.0 | **Updated:** 2026-08-27

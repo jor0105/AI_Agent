@@ -99,8 +99,8 @@ from createagents import CreateAgent
 
 
 async def main():
-    agent_a = CreateAgent(provider='ollama', model='llama3')
-    agent_b = CreateAgent(provider='ollama', model='llama3')
+    agent_a = CreateAgent(provider='ollama', model='YOUR_OLLAMA_MODEL')
+    agent_b = CreateAgent(provider='ollama', model='YOUR_OLLAMA_MODEL')
 
     await agent_a.chat('Olá')
 
@@ -123,7 +123,7 @@ from createagents import CreateAgent
 
 
 async def main():
-    agent = CreateAgent(provider='openai', model='gpt-4')
+    agent = CreateAgent(provider='openai', model='YOUR_MODEL')
     await agent.chat('teste')
 
     # Exportar para string
@@ -136,7 +136,7 @@ async def main():
 asyncio.run(main())
 ```
 
-**Formato**:
+**Formato (ilustrativo)**:
 
 ```json
 {
@@ -152,7 +152,7 @@ asyncio.run(main())
   },
   "metrics": [
     {
-      "model": "gpt-4",
+      "model": "YOUR_MODEL",
       "latency_ms": 1234.56,
       "tokens_used": 250,
       "prompt_tokens": 100,
@@ -178,7 +178,7 @@ prom_string = agent.export_metrics_prometheus()
 agent.export_metrics_prometheus('metrics.prom')
 ```
 
-**Formato**:
+**Formato (ilustrativo)**:
 
 ```
 # HELP chat_requests_total Total number of chat requests
@@ -211,7 +211,7 @@ chat_tokens_total 250
 
 # HELP chat_requests_by_model Total requests by model
 # TYPE chat_requests_by_model counter
-chat_requests_by_model{model="gpt-4"} 1
+chat_requests_by_model{model="YOUR_MODEL"} 1
 ```
 
 ______________________________________________________________________
@@ -247,7 +247,7 @@ from createagents import CreateAgent
 
 
 async def main():
-    agent = CreateAgent(provider='openai', model='gpt-4')
+    agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 
     # Fazer algumas chamadas
     await agent.chat('Pergunta 1')
@@ -287,4 +287,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Versão:** 0.2.0 | **Atualização:** 2026-08-25
+**Versão:** 0.2.0 | **Atualização:** 2026-08-27

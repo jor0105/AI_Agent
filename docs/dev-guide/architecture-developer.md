@@ -370,7 +370,7 @@ use_case = ChatWithAgentUseCase(mock_repo)
 # Trocar provider sem mudar código
 from createagents import CreateAgent
 
-agent = CreateAgent(provider='ollama', model='llama3.2')
+agent = CreateAgent(provider='ollama', model='YOUR_OLLAMA_MODEL')
 ```
 
 ### 📈 Escalabilidade
@@ -430,4 +430,4 @@ class StreamingResponseDTO:
 
 ______________________________________________________________________
 
-**Versão:** 0.2.0 | **Atualização:** 2026-08-25
+**Versão:** 0.2.0 | **Atualização:** 2026-08-27

@@ -28,7 +28,7 @@ def __init__(
 | Parameter          | Type   | Description                                                                       | Required |
 | ------------------ | ------ | --------------------------------------------------------------------------------- | -------- |
 | `provider`         | `str`  | AI provider: `"openai"` or `"ollama"`                                             | ✅ Yes   |
-| `model`            | `str`  | Model identifier (e.g. `"gpt-4o-mini"`, `"llama3.2"`)                             | ✅ Yes   |
+| `model`            | `str`  | Model identifier (e.g. `"YOUR_MODEL"`, `"YOUR_OLLAMA_MODEL"`)                     | ✅ Yes   |
 | `name`             | `str`  | Agent display name                                                                | ❌ No    |
 | `instructions`     | `str`  | System prompt / instructions                                                      | ❌ No    |
 | `config`           | `dict` | Model hyperparameters (`temperature`, `max_tokens`, `stream`, etc.)               | ❌ No    |
@@ -42,7 +42,7 @@ from createagents import CreateAgent
 
 agent = CreateAgent(
     provider='openai',
-    model='gpt-4o-mini',
+    model='YOUR_MODEL',
     instructions='You are a technical assistant',
     config={'temperature': 0.7, 'max_tokens': 2000},
     tools=['currentdate'],
@@ -168,7 +168,7 @@ class MyTool(BaseTool):
 
 # Instantiate agent with custom tool
 agent = CreateAgent(
-    provider='openai', model='gpt-4', tools=['currentdate', MyTool()]
+    provider='openai', model='YOUR_MODEL', tools=['currentdate', MyTool()]
 )
 
 # List all available tools
@@ -200,7 +200,7 @@ def get_system_available_tools() -> Dict[str, str]: ...
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider='openai', model='gpt-4')
+agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 
 system_tools = agent.get_system_available_tools()
 print('System tools available:')
@@ -211,7 +211,7 @@ for name, description in system_tools.items():
 if 'readlocalfile' in system_tools:
     print('✅ ReadLocalFileTool is available')
 else:
-    print('❌ Install with: pip install createagents[file-tools]')
+    print("❌ Install with: pip install 'createagents[file-tools]'")
 ```
 
 **Comparison:**
@@ -284,7 +284,7 @@ from createagents import CreateAgent
 
 agent = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     config={'stream': True},
 )
 agent.start_cli()  # Launches interactive CLI with streaming
@@ -313,7 +313,7 @@ from createagents import CreateAgent
 
 async def main():
     agent = CreateAgent(
-        provider='openai', model='gpt-4', tools=['currentdate']
+        provider='openai', model='YOUR_MODEL', tools=['currentdate']
     )
 
     response = await agent.chat('What day is today?')
@@ -339,7 +339,7 @@ Reads local files across 32 formats with a strict 100 MiB (104,857,600 bytes) se
 
 **Name:** `"readlocalfile"`
 
-**Requires:** `pip install createagents[file-tools]`
+**Requires:** `pip install 'createagents[file-tools]'`
 
 **Supported Formats (32 extensions):**
 
@@ -356,7 +356,7 @@ from createagents import CreateAgent
 
 async def main():
     agent = CreateAgent(
-        provider='openai', model='gpt-4', tools=['readlocalfile']
+        provider='openai', model='YOUR_MODEL', tools=['readlocalfile']
     )
 
     response = await agent.chat('Summarize document.pdf')
@@ -384,11 +384,11 @@ config = {
     'temperature': 0.7,  # 0.0–2.0: Creativity
     'max_tokens': 2000,  # >0: Completion limit
     'top_p': 0.9,  # 0.0–1.0: Nucleus sampling
-    'think': True,  # Ollama: bool / OpenAI: str ["low", "medium" or "high"]
+    'think': 'medium',  # OpenAI: "low"|"medium"|"high"; Ollama: bool or "low"|"medium"|"high"
     'top_k': 40,  # >0: (Ollama)
 }
 
-agent = CreateAgent(provider='openai', model='gpt-4o-mini', config=config)
+agent = CreateAgent(provider='openai', model='YOUR_MODEL', config=config)
 ```
 
 **Supported Parameters:**
@@ -414,7 +414,7 @@ from createagents import CreateAgent
 
 
 async def main():
-    agent = CreateAgent(provider='openai', model='gpt-4o-mini')
+    agent = CreateAgent(provider='openai', model='YOUR_MODEL')
     response = await agent.chat('Hello!')
     print(response)
 
@@ -432,7 +432,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4o-mini',
+        model='YOUR_MODEL',
         tools=['currentdate'],  # add 'readlocalfile' with the file-tools extra
     )
 
@@ -451,7 +451,7 @@ from createagents import CreateAgent
 
 
 async def main():
-    agent = CreateAgent(provider='ollama', model='llama3.2')
+    agent = CreateAgent(provider='ollama', model='YOUR_OLLAMA_MODEL')
     response = await agent.chat('Explain AI')
     print(response)
 
@@ -464,10 +464,10 @@ asyncio.run(main())
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider='openai', model='gpt-4o-mini')
+agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 agent.start_cli()  # Full terminal interface
 ```
 
 ______________________________________________________________________
 
-**Version:** 0.2.0 | **Updated:** 2026-08-25
+**Version:** 0.2.0 | **Updated:** 2026-08-27

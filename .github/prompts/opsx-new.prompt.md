@@ -21,7 +21,7 @@ without a new decision.
 
 **Stop condition**: Stop after creating the change, showing the current artifact status, and printing the instructions for the first artifact `ready`.
 
-**Steps**
+## Steps
 
 1. **If no input provided, ask what they want to build**
 
@@ -108,7 +108,7 @@ without a new decision.
 
 7. **STOP and wait for user direction**
 
-**Output**
+## Output
 
 After completing the steps, summarize:
 
@@ -118,7 +118,7 @@ After completing the steps, summarize:
 - The template for the first artifact
 - Prompt: "Ready to create the first artifact? Run `/opsx:continue` or just describe what this change is about and I'll draft it."
 
-**Guardrails**
+## Guardrails
 
 - Do NOT create any artifacts yet - just show the instructions
 - Do NOT advance beyond showing the first artifact template

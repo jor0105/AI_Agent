@@ -8,21 +8,16 @@ from pathlib import Path
 from typing import Any
 
 from harness.consumer_validators import (
+    BoundaryError,
     Diagnostic,
     validate_agent_item,
     validate_skill_item,
     validate_workflow_item,
 )
 
-SKIP_PARTS = {
+IGNORED_DIR_NAMES = {
     '__pycache__',
     '.git',
-    'references',
-    'assets',
-    'scripts',
-    'templates',
-    'schemas',
-    'data',
 }
 
 
@@ -60,6 +55,18 @@ def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _check_confinement(root: Path, file_path: Path, scope_name: str) -> None:
+    try:
+        if not file_path.resolve().is_relative_to(root.resolve()):
+            raise BoundaryError(
+                f"discovered {scope_name} item '{file_path}' escapes repository root via symlink"
+            )
+    except OSError as exc:
+        raise BoundaryError(
+            f"discovered {scope_name} item '{file_path}' cannot be resolved safely"
+        ) from exc
+
+
 def discover_scope_items(
     root: Path, scope_name: str, scope_path_str: str
 ) -> list[DiscoveredItem]:
@@ -70,8 +77,11 @@ def discover_scope_items(
     if scope_name == 'skills':
         for skill_file in sorted(scope_dir.rglob('SKILL.md')):
             parts = skill_file.relative_to(scope_dir).parts
-            if any(p in SKIP_PARTS for p in parts[:-1]):
+            if any(
+                p in IGNORED_DIR_NAMES or p.startswith('.') for p in parts[:-1]
+            ):
                 continue
+            _check_confinement(root, skill_file, scope_name)
             name = skill_file.relative_to(scope_dir).parent.as_posix()
             rel = skill_file.relative_to(root).as_posix()
             items.append(
@@ -84,11 +94,12 @@ def discover_scope_items(
             )
     elif scope_name == 'agents':
         for agent_file in sorted(scope_dir.rglob('*.agent.md')):
+            parts = agent_file.relative_to(scope_dir).parts
             if any(
-                p in SKIP_PARTS
-                for p in agent_file.relative_to(scope_dir).parts[:-1]
+                p in IGNORED_DIR_NAMES or p.startswith('.') for p in parts[:-1]
             ):
                 continue
+            _check_confinement(root, agent_file, scope_name)
             name = agent_file.relative_to(scope_dir).as_posix()
             rel = agent_file.relative_to(root).as_posix()
             items.append(
@@ -101,11 +112,12 @@ def discover_scope_items(
             )
     elif scope_name == 'workflows':
         for wf_file in sorted(scope_dir.rglob('*.prompt.md')):
+            parts = wf_file.relative_to(scope_dir).parts
             if any(
-                p in SKIP_PARTS
-                for p in wf_file.relative_to(scope_dir).parts[:-1]
+                p in IGNORED_DIR_NAMES or p.startswith('.') for p in parts[:-1]
             ):
                 continue
+            _check_confinement(root, wf_file, scope_name)
             name = wf_file.relative_to(scope_dir).as_posix()
             rel = wf_file.relative_to(root).as_posix()
             items.append(
@@ -120,48 +132,72 @@ def discover_scope_items(
 
 
 def apply_scope_selection(
-    scope_name: str, scope_def: dict[str, Any], discovered: list[DiscoveredItem]
+    scope_name: str,
+    scope_def: dict[str, Any],
+    discovered: list[DiscoveredItem],
 ) -> tuple[list[DiscoveredItem], list[DiscoveredItem]]:
-    is_required = scope_def['required']
-    include = scope_def.get('include', [])
-    exclude = scope_def.get('exclude', [])
+    is_required = bool(scope_def.get('required', False))
+    includes = scope_def.get('include')
+    excludes = scope_def.get('exclude')
+
+    has_non_empty_inc = includes is not None and len(includes) > 0
+    has_non_empty_exc = excludes is not None and len(excludes) > 0
+
     if is_required:
-        if include or exclude:
-            raise ValueError(
+        if has_non_empty_inc or has_non_empty_exc:
+            raise BoundaryError(
                 f"required scope '{scope_name}' cannot use include or exclude filters"
             )
-        return list(discovered), []
-    if len(include) != len(set(include)):
-        raise ValueError(
-            f"duplicate names in include filter for scope '{scope_name}'"
-        )
-    if len(exclude) != len(set(exclude)):
-        raise ValueError(
-            f"duplicate names in exclude filter for scope '{scope_name}'"
-        )
-    overlap = set(include) & set(exclude)
-    if overlap:
-        raise ValueError(
-            f"overlapping names in include/exclude for scope '{scope_name}': {sorted(overlap)}"
-        )
+        return discovered, []
+
     disc_map = {item.name: item for item in discovered}
-    for name in include:
-        if name not in disc_map:
-            raise ValueError(
-                f"unmatched include filter name '{name}' in scope '{scope_name}'"
+    disc_names = set(disc_map)
+    effective_names = set(disc_names)
+
+    if includes is not None:
+        if not includes:
+            raise BoundaryError(
+                f"filters in optional scope '{scope_name}' produces an empty selection"
             )
-    for name in exclude:
-        if name not in disc_map:
-            raise ValueError(
-                f"unmatched exclude filter name '{name}' in scope '{scope_name}'"
+        if len(includes) != len(set(includes)):
+            raise BoundaryError(
+                f"include filter in scope '{scope_name}' contains duplicate names"
             )
-    effective_names = (
-        set(include) if include else set(disc_map.keys())
-    ) - set(exclude)
-    if (include or exclude) and not effective_names:
-        raise ValueError(
-            f"filtering for scope '{scope_name}' produces an empty selection"
+        inc_set = set(includes)
+        unknown_inc = inc_set - disc_names
+        if unknown_inc:
+            raise BoundaryError(
+                f"unmatched include filter name in scope '{scope_name}': {sorted(unknown_inc)}"
+            )
+        effective_names &= inc_set
+
+    if excludes is not None:
+        if len(excludes) != len(set(excludes)):
+            raise BoundaryError(
+                f"exclude filter in scope '{scope_name}' contains duplicate names"
+            )
+        exc_set = set(excludes)
+        unknown_exc = exc_set - disc_names
+        if unknown_exc:
+            raise BoundaryError(
+                f"unmatched exclude filter name in scope '{scope_name}': {sorted(unknown_exc)}"
+            )
+        effective_names -= exc_set
+
+    if includes is not None and excludes is not None:
+        overlap = set(includes) & set(excludes)
+        if overlap:
+            raise BoundaryError(
+                f"scope '{scope_name}' has overlapping names in include and exclude filters: {sorted(overlap)}"
+            )
+
+    if (includes is not None or excludes is not None) and not effective_names:
+        raise BoundaryError(
+            f"filters in optional scope '{scope_name}' produces an empty selection"
         )
+
     effective = [disc_map[n] for n in sorted(effective_names)]
-    excluded = [item for item in discovered if item.name not in effective_names]
+    excluded = [
+        item for item in discovered if item.name not in effective_names
+    ]
     return effective, excluded

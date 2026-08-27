@@ -8,7 +8,7 @@ Aprenda a criar e interagir com agentes de IA rapidamente.
 from createagents import CreateAgent
 
 agent = CreateAgent(
-    provider='openai', model='gpt-4', instructions='Você é um assistente útil'
+    provider='openai', model='YOUR_MODEL', instructions='Você é um assistente útil'
 )
 ```
 
@@ -22,7 +22,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         instructions='Você é um assistente útil',
     )
 
@@ -42,7 +42,7 @@ asyncio.run(main())
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider='openai', model='gpt-4')
+agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 config = agent.get_configs()
 print(f'Modelo: {config["model"]}')
 print(f'Histórico: {len(config["history"])} mensagens')
@@ -53,7 +53,7 @@ print(f'Histórico: {len(config["history"])} mensagens')
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider='openai', model='gpt-4')
+agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 agent.clear_history()
 ```
 
@@ -69,7 +69,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
     )
     # Recebe a resposta completa
     response = await agent.chat('Escreva um poema')
@@ -89,7 +89,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         config={'stream': True},
     )
     # Recebe tokens em tempo real
@@ -110,10 +110,10 @@ asyncio.run(main())
 from createagents import CreateAgent
 
 agent_formal = CreateAgent(
-    provider='openai', model='gpt-4', instructions='Use linguagem formal'
+    provider='openai', model='YOUR_MODEL', instructions='Use linguagem formal'
 )
 agent_tecnico = CreateAgent(
-    provider='openai', model='gpt-4', instructions='Especialista em Python'
+    provider='openai', model='YOUR_MODEL', instructions='Especialista em Python'
 )
 ```
 
@@ -124,7 +124,7 @@ from createagents import CreateAgent
 
 agent = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     config={'temperature': 0.7, 'max_tokens': 2000},
     history_max_size=50,
 )
@@ -139,7 +139,7 @@ from createagents import CreateAgent
 
 async def main():
     agent = CreateAgent(
-        provider='openai', model='gpt-4', tools=['currentdate']
+        provider='openai', model='YOUR_MODEL', tools=['currentdate']
     )
     response = await agent.chat('Que dia é hoje?')
     print(response)
@@ -153,7 +153,7 @@ asyncio.run(main())
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider='openai', model='gpt-4')
+agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 all_tools = agent.get_all_available_tools()
 for name, description in all_tools.items():
     print(f'• {name}: {description[:50]}...')
@@ -188,7 +188,7 @@ class WordCountTool(BaseTool):
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider='openai', model='gpt-4')
+agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 metrics = agent.get_metrics()
 agent.export_metrics_json('metrics.json')
 agent.export_metrics_prometheus('metrics.prom')

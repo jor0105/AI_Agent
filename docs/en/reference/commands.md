@@ -62,15 +62,15 @@ ______________________________________________________________________
 You: /metrics
 ```
 
-**Output**:
+**Output (Illustrative)**:
 
 ```markdown
 ## Performance Metrics
 
 | Model | Duration | Tokens (In/Out/Total) |
 |---|---|---|
-| gpt-4 | 1.23s | 100 / 150 / 250 |
-| gpt-4 | 0.98s | 80 / 100 / 180 |
+| YOUR_MODEL | 1.23s | 100 / 150 / 250 |
+| YOUR_MODEL | 0.98s | 80 / 100 / 180 |
 ```
 
 **Displayed Fields**:
@@ -93,13 +93,13 @@ ______________________________________________________________________
 You: /configs
 ```
 
-**Output**:
+**Output (Illustrative)**:
 
 ```markdown
 ## Agent Configuration
 
 **provider:** openai
-**model:** gpt-4
+**model:** YOUR_MODEL
 **name:** Code Assistant
 **instructions:** You are a Python expert.
 **config:** {'temperature': 0.7, 'max_tokens': 2000}
@@ -375,4 +375,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Version:** 0.2.0 | **Updated:** 2026-08-25
+**Version:** 0.2.0 | **Updated:** 2026-08-27

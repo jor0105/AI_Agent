@@ -12,31 +12,18 @@ from harness.consumer_discovery import (
     apply_scope_selection,
     discover_scope_items,
 )
-from harness.consumer_validators import (
+from harness.consumer_types import (
     SCOPE_VALIDATORS,
+    BoundaryError,
+    ContractError,
     Diagnostic,
+    DistributionVersionError,
 )
 from harness.paths import GitRootError, strict_repo_root
 
 PROTOCOL_VERSION = 'consumer-validation-v1'
 PROFILE = 'consumer-isolated-v1'
 SUPPORTED_SCOPES = ('skills', 'agents', 'workflows')
-
-
-class ConsumerValidationError(Exception):
-    """Base error for consumer validation."""
-
-
-class ContractError(ConsumerValidationError):
-    """Contract violation in request or environment (exit code 2)."""
-
-
-class BoundaryError(ContractError):
-    """Path or symlink escapes the repository boundary (exit code 2)."""
-
-
-class DistributionVersionError(ContractError):
-    """Installed distribution metadata cannot be resolved (exit code 2)."""
 
 
 def get_executor_version() -> str:
@@ -104,9 +91,7 @@ def _validate_scope_filters(
             )
 
 
-def _validate_scope_definition(
-    scope_name: str, scope_def: Any
-) -> bool:
+def _validate_scope_definition(scope_name: str, scope_def: Any) -> bool:
     if not isinstance(scope_def, dict):
         raise ContractError(f"scope '{scope_name}' must be an object")
     extra_keys = set(scope_def) - {'path', 'required', 'include', 'exclude'}

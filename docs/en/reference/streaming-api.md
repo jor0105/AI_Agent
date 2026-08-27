@@ -71,7 +71,7 @@ from createagents import CreateAgent
 
 async def main():
     agent = CreateAgent(
-        provider='openai', model='gpt-4', config={'stream': True}
+        provider='openai', model='YOUR_MODEL', config={'stream': True}
     )
     response = await agent.chat('Hello')  # Returns StreamingResponseDTO
     text = (
@@ -92,7 +92,7 @@ from createagents import CreateAgent
 
 async def main():
     agent = CreateAgent(
-        provider='openai', model='gpt-4', config={'stream': True}
+        provider='openai', model='YOUR_MODEL', config={'stream': True}
     )
     response = await agent.chat('Tell a story')
 
@@ -113,7 +113,7 @@ from createagents import CreateAgent
 
 async def accumulate_and_display():
     agent = CreateAgent(
-        provider='openai', model='gpt-4', config={'stream': True}
+        provider='openai', model='YOUR_MODEL', config={'stream': True}
     )
     response = await agent.chat('List 5 tips')
 
@@ -174,4 +174,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Version:** 0.2.0 | **Updated:** 2026-08-25
+**Version:** 0.2.0 | **Updated:** 2026-08-27

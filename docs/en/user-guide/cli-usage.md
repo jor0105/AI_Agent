@@ -12,7 +12,7 @@ from createagents import CreateAgent
 # Create agent
 agent = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     name='Assistant',
     instructions='You are a helpful assistant',
 )
@@ -73,15 +73,15 @@ You: /metrics
 
 **Aliases**: `/metrics`, `get_metrics`
 
-**Example Output**:
+**Example Output (Illustrative)**:
 
 ```text
 ## Performance Metrics
 
 | Model | Duration | Tokens (In/Out/Total) |
 |-------|----------|-----------------------|
-| gpt-4 | 1.25s    | 45 / 105 / 150        |
-| gpt-4 | 0.98s    | 110 / 120 / 230       |
+| YOUR_MODEL | 1.25s    | 45 / 105 / 150        |
+| YOUR_MODEL | 0.98s    | 110 / 120 / 230       |
 ```
 
 ### `/configs` - Agent Configuration
@@ -101,13 +101,13 @@ You: /configs
 
 **Aliases**: `/configs`, `get_configs`
 
-**Example Output**:
+**Example Output (Illustrative)**:
 
 ```text
 ## Agent Configuration
 
 **provider:** openai
-**model:** gpt-4
+**model:** YOUR_MODEL
 **name:** None
 **instructions:** None
 **config:** {}
@@ -241,7 +241,7 @@ from createagents import CreateAgent
 
 code_assistant = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     name='Code Expert',
     instructions='You are a Python expert. Always provide clear examples.',
     config={'stream': True},  # Enables real-time streaming in chat
@@ -271,7 +271,7 @@ from createagents import CreateAgent
 
 agent_with_tools = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     tools=['currentdate'],  # 'readlocalfile' requires [file-tools]
 )
 
@@ -295,7 +295,7 @@ You: What day is today?
 from createagents import CreateAgent
 
 local_agent = CreateAgent(
-    provider='ollama', model='llama3.2', name='Local Assistant'
+    provider='ollama', model='YOUR_OLLAMA_MODEL', name='Local Assistant'
 )
 
 # Start CLI
@@ -311,7 +311,7 @@ The CLI is launched via `start_cli()` on the `CreateAgent` facade:
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider='openai', model='gpt-4')
+agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 agent.start_cli()  # Launches main interactive loop
 ```
 
@@ -349,7 +349,7 @@ pip install --upgrade createagents
 
 1. Check your network latency (for OpenAI)
 2. For Ollama, verify that the model fits into available memory/GPU
-3. Consider using a smaller model (e.g. `llama3.2:1b` or `gpt-4o-mini`)
+3. Consider using a smaller or faster model
 
 ______________________________________________________________________
 
@@ -361,4 +361,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Version:** 0.2.0 | **Updated:** 2026-08-25
+**Version:** 0.2.0 | **Updated:** 2026-08-27

@@ -20,7 +20,7 @@ function names, and other mechanical facts from the codebase, but you must
 return to the confirmed source for missing scope, behavior, contract,
 trade-off, acceptance, rollout, or rollback decisions.
 
-**Steps**
+## Steps
 
 1. **If no change name provided, prompt for selection**
 
@@ -111,7 +111,7 @@ trade-off, acceptance, rollout, or rollback decisions.
    opsx status --change "<name>"
    ```
 
-**Output**
+## Output
 
 After each invocation, show:
 
@@ -121,7 +121,7 @@ After each invocation, show:
 - What artifacts are now unlocked
 - Prompt: "Run `/opsx:continue` to create the next artifact"
 
-**Artifact Creation Guidelines**
+## Artifact Creation Guidelines
 
 The artifact types and their purpose depend on the schema. Use the `instruction` field from the instructions output to understand what to create.
 
@@ -137,7 +137,7 @@ Common artifact patterns:
 
 For other schemas, follow the `instruction` field from the CLI output.
 
-**Audience of every artifact you write**
+### Audience of every artifact you write
 
 The implementer is a junior developer holding the project's root agent
 policy file and the docs it links, and nothing else — no prior context on
@@ -161,7 +161,7 @@ what it reports:
 opsx-handoff --mode artifact --artifact "<artifact-id>" "<name>"
 ```
 
-**Guardrails**
+## Guardrails
 
 - Create exactly one artifact per invocation. Never continue to the next ready
   artifact in the same invocation.

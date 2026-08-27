@@ -33,7 +33,7 @@
     },
     {
       "hasScripts": true,
-      "hash": "sha256:936b26c6fdfc679efa2e80966f1bb62a9d252af68e436bece1b6e248822f89f8",
+      "hash": "sha256:91b6b9a2f84f580aa894b54191f9a8674330271983c8ae3b2523a6bfeb696426",
       "id": "skills/lint-and-validate",
       "selectedBy": "manifest"
     },
@@ -135,7 +135,7 @@
     },
     {
       "hasScripts": true,
-      "hash": "sha256:5d2183823371584eb42ba5cd543cb021a92b73a1fa33bb8b327108ae652dd8bf",
+      "hash": "sha256:5eb88b7d14b69664a9e022ac7d61f22c18d811544a3e5ffab41e835ad7050ad8",
       "id": "tools/validate-agent-protocols",
       "selectedBy": "manifest"
     },
@@ -165,7 +165,7 @@
     },
     {
       "hasScripts": false,
-      "hash": "sha256:ee9672338e04b4a626551e328747ae5e056d5e00a795f625fab09d6618294e83",
+      "hash": "sha256:97c81be6128f44ef5c433999adfc857258488f2861074209c2c41be521865711",
       "id": "workflows/opsx-continue",
       "selectedBy": "manifest"
     },
@@ -177,13 +177,13 @@
     },
     {
       "hasScripts": false,
-      "hash": "sha256:04ea2ad2b5d5146eb5f083a1681e423a8000077888efcb96b16dd5eab2d08873",
+      "hash": "sha256:d894ed1598ee2eb307cc80a99e159016c2c12ad804acc880bab9af5e4382c467",
       "id": "workflows/opsx-ff",
       "selectedBy": "manifest"
     },
     {
       "hasScripts": false,
-      "hash": "sha256:5b7e2f1f5a99b1f8adf76228c92b78eb8553737a69a65874c192b4a4d52aab3d",
+      "hash": "sha256:181db54bea439ec15c71ef89bd7825ee33e19873f63cb92826a08d69010d6959",
       "id": "workflows/opsx-new",
       "selectedBy": "manifest"
     },
@@ -201,7 +201,7 @@
     },
     {
       "hasScripts": false,
-      "hash": "sha256:be41f844a09ecab17c75dcfc9b95f164b07321f5c9fe8f196f706cb702023840",
+      "hash": "sha256:0d9e25e31942380535b033a83ef4e2b94cac76c593b4b310a27901afc2dabe2a",
       "id": "workflows/opsx-verify",
       "selectedBy": "manifest"
     },

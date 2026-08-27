@@ -27,7 +27,7 @@ from createagents import CreateAgent
 
 async def main():
     agent = CreateAgent(
-        provider='openai', model='gpt-4', tools=['currentdate']
+        provider='openai', model='YOUR_MODEL', tools=['currentdate']
     )
 
     resposta = await agent.chat('Que dia é hoje?')
@@ -64,7 +64,7 @@ Lê arquivos locais em múltiplos formatos.
 **Instalação:**
 
 ```bash
-pip install createagents[file-tools]
+pip install 'createagents[file-tools]'
 ```
 
 **Uso:**
@@ -76,7 +76,7 @@ from createagents import CreateAgent
 
 async def main():
     agent = CreateAgent(
-        provider='openai', model='gpt-4', tools=['readlocalfile']
+        provider='openai', model='YOUR_MODEL', tools=['readlocalfile']
     )
 
     resposta = await agent.chat('Leia o arquivo report.pdf e resuma')
@@ -118,7 +118,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         instructions='Você pode verificar data/hora quando necessário',
         tools=['currentdate'],
     )
@@ -139,10 +139,10 @@ from createagents import CreateAgent
 
 
 async def main():
-    # Certifique-se que instalou: pip install createagents[file-tools]
+    # Certifique-se que instalou: pip install 'createagents[file-tools]'
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         instructions='Você pode ler arquivos locais',
         tools=['readlocalfile'],
     )
@@ -164,7 +164,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         tools=['currentdate', 'readlocalfile'],
     )
 
@@ -199,7 +199,7 @@ Inclui:
 ### Instalação com File Tools 📁
 
 ```bash
-pip install createagents[file-tools]
+pip install 'createagents[file-tools]'
 ```
 
 Inclui:
@@ -240,7 +240,7 @@ class CustomTool(BaseTool):
 
 agent = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     tools=['currentdate', CustomTool()],  # Ferramenta do sistema + customizada
 )
 
@@ -265,7 +265,7 @@ Use `get_system_available_tools()` para ver apenas as ferramentas built-in dispo
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider='openai', model='gpt-4')
+agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 
 # Obter apenas ferramentas do sistema
 system_tools = agent.get_system_available_tools()
@@ -278,7 +278,7 @@ for name, description in system_tools.items():
 if 'readlocalfile' in system_tools:
     print('✅ ReadLocalFileTool disponível!')
 else:
-    print('⚠️ Instale com: pip install createagents[file-tools]')
+    print("⚠️ Instale com: pip install 'createagents[file-tools]'")
 ```
 
 ### Diferença Entre os Métodos
@@ -301,58 +301,42 @@ class WeatherTool(BaseTool):
     parameters = {
         'type': 'object',
         'properties': {
-            'city': {
-                'type': 'string',
-                'description': 'Nome da cidade para consulta',
-            }
+            'city': {'type': 'string', 'description': 'Nome da cidade'}
         },
         'required': ['city'],
     }
 
     def execute(self, city: str) -> str:
-        return f'Previsão para {city}: Ensolarado'
+        return f'Tempo ensolarado em {city}'
 
 
 # Agente sem ferramentas customizadas
-agent1 = CreateAgent(provider='openai', model='gpt-4')
+agent1 = CreateAgent(provider='openai', model='YOUR_MODEL')
 print('Agente 1:', list(agent1.get_all_available_tools().keys()))
 # Saída básica: ['currentdate']
 # Saída com extra [file-tools]: ['currentdate', 'readlocalfile']
 
 # Agente com ferramentas customizadas
 agent2 = CreateAgent(
-    provider='openai', model='gpt-4', tools=['currentdate', WeatherTool()]
+    provider='openai', model='YOUR_MODEL', tools=['currentdate', WeatherTool()]
 )
 print('Agente 2:', list(agent2.get_all_available_tools().keys()))
 # Saída básica: ['currentdate', 'weather']
 # Saída com extra [file-tools]: ['currentdate', 'readlocalfile', 'weather']
 
-# Ferramentas do sistema (global para o ambiente)
-print('Sistema:', list(agent1.get_system_available_tools().keys()))
-# Saída básica: ['currentdate']
-# Saída com extra [file-tools]: ['currentdate', 'readlocalfile']
-```
-
-### Evitando Duplicatas
-
-O sistema automaticamente evita duplicatas de ferramentas. Se você adicionar uma ferramenta do sistema à lista de tools do agente, ela aparecerá apenas uma vez:
-
-```python
-from createagents import CreateAgent
-
 # Ferramenta do sistema adicionada explicitamente
 agent = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     tools=['currentdate'],  # Adiciona explicitamente uma ferramenta do sistema
 )
 
-# Não haverá duplicatas
-tools = agent.get_all_available_tools()
-# 'currentdate' aparece apenas UMA vez
-print(list(tools.keys()))
-# Saída básica: ['currentdate']
-# Saída com extra [file-tools]: ['currentdate', 'readlocalfile']
+response = agent.get_configs()
+print(
+    'Tools configuradas no agente:',
+    [t.name if hasattr(t, 'name') else t for t in response['tools']],
+)
+# Saída: Tools configuradas no agente: ['currentdate']
 ```
 
 ______________________________________________________________________
@@ -360,7 +344,7 @@ ______________________________________________________________________
 ## ⚡ Impacto de Dependências
 
 - **Instalação básica (`pip install createagents`):** Apenas dependências essenciais do framework (`openai`, `ollama`, `python-dotenv`, `defusedxml`, `rich`).
-- **Instalação com ferramentas de arquivo (`pip install createagents[file-tools]`):** Inclui bibliotecas adicionais (`tiktoken`, `unstructured`, `pandas`, `openpyxl`, `pyarrow`, `chardet`), importadas sob demanda apenas quando ferramentas de arquivo são utilizadas.
+- **Instalação com ferramentas de arquivo (`pip install 'createagents[file-tools]'`):** Inclui bibliotecas adicionais (`tiktoken`, `unstructured`, `pandas`, `openpyxl`, `pyarrow`, `chardet`), importadas sob demanda apenas quando ferramentas de arquivo são utilizadas.
 
 ______________________________________________________________________
 
@@ -424,11 +408,11 @@ R: Para manter o sistema leve. Se você não precisa ler PDFs/Excel, não precis
 R: Use `agent.get_all_available_tools()` para listar o catálogo disponível. Para ver as ferramentas configuradas no agente, use `agent.get_configs()['tools']`.
 
 **P: O que acontece se eu tentar usar uma ferramenta não instalada?**
-R: Você receberá erro claro: `pip install createagents[file-tools]`
+R: Você receberá erro claro: `pip install 'createagents[file-tools]'`
 
 **P: Posso criar minhas próprias ferramentas?**
 R: Sim! Siga o padrão de ferramentas próprias e estenda `BaseTool`.
 
 ______________________________________________________________________
 
-**Versão:** 0.2.0 | **Atualização:** 2026-08-25
+**Versão:** 0.2.0 | **Atualização:** 2026-08-27

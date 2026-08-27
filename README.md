@@ -1,325 +1,223 @@
-# 🤖 Create Agents AI
+# Create Agents AI
 
 <div align="center">
 
-**Framework Python enterprise para criar agentes de IA inteligentes com arquitetura limpa, múltiplos provedores e ferramentas extensíveis.**
+**Production-oriented Python library for building conversational AI agents with pluggable providers, extensible tools, conversation history, and metrics following Clean Architecture.**
 
 [![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![PyPI version](https://img.shields.io/pypi/v/createagents.svg)](https://pypi.org/project/createagents/)
+[![CI Pipeline](https://github.com/jordanestralioto/Create-Agents-AI/actions/workflows/pipeline.yml/badge.svg)](https://github.com/jordanestralioto/Create-Agents-AI/actions/workflows/pipeline.yml)
+[![codecov](https://codecov.io/gh/jordanestralioto/Create-Agents-AI/graph/badge.svg)](https://codecov.io/gh/jordanestralioto/Create-Agents-AI)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Code style: Ruff](https://img.shields.io/badge/code%20style-Ruff-D7FF64.svg)](https://docs.astral.sh/ruff/)
-[![Checked with mypy](https://img.shields.io/badge/mypy-checked-blue)](http://mypy-lang.org/)
+[![Checked with mypy](https://img.shields.io/badge/mypy-checked-blue)](https://mypy-lang.org/)
 
-[Documentação](docs/index.md) • [Exemplos](#-exemplos-de-uso) • [API Reference](docs/reference/api.md) • [Contribuir](docs/dev-guide/contribute.md)
+[Documentation](docs/en/index.md) • [Quick Start](#quick-start) • [API Reference](docs/en/reference/api.md) • [Contributing](CONTRIBUTING.md) • [Security](SECURITY.md) • [License](LICENSE)
 
 </div>
 
 ______________________________________________________________________
 
-## 🎯 Sobre
+## Overview
 
-**Create Agents AI** é um framework Python modular e extensível para construção de agentes conversacionais inteligentes, seguindo os princípios de **Clean Architecture** e **SOLID**. Projetado para ambientes enterprise, oferece suporte a múltiplos provedores de IA (OpenAI, Ollama), ferramentas extensíveis e métricas integradas.
+**Create Agents AI** (`createagents`) is a modular and extensible Python framework designed to build intelligent, testable conversational agents. Built on **Clean Architecture** and **SOLID** principles, it provides strict provider isolation, automatic conversation history, tool integration, metrics export, and an interactive terminal CLI.
 
-### Por que usar?
+> **Project status:** Beta. APIs and behavior may evolve as the project matures.
 
-- ✅ **Arquitetura Limpa**: Código testável, manutenível e escalável
-- ✅ **Múltiplos Provedores**: OpenAI e Ollama (local e privado quando em localhost)
-- ✅ **Ferramentas Extensíveis**: Sistema de tools com suporte a customização
-- ✅ **Histórico Contextual**: Gerenciamento automático de conversas
-- ✅ **Métricas Integradas**: Monitoramento em JSON e Prometheus
-- ✅ **Type Safety**: Suporte completo a type hints
-- ✅ **CI/CD Profissional**: Quality checks automáticos com GitHub Actions
+### Key Capabilities
 
-______________________________________________________________________
+- **Clean Architecture**: Inward dependency flow with business logic isolated from external frameworks and providers.
+- **Pluggable Providers**: First-class support for OpenAI and Ollama (local and private on localhost).
+- **Extensible Tools**: Standard `BaseTool` interface with built-in date/time and secure local file reading.
+- **Contextual History**: Automatic multi-turn conversation memory management.
+- **Metrics Export**: Export interaction metrics to JSON and Prometheus formats without requiring external daemons.
+- **Silent by Default**: Zero unsolicited console logging until explicitly enabled via `LoggingConfig`.
+- **Type Safety & Quality**: The codebase is type-checked with mypy, verified with Ruff and Bandit, and covered by automated test gates.
 
-## ✨ Features
+### Supported Providers
 
-### 🤖 Provedores de IA
-
-| Provedor   | Status     |
-| ---------- | ---------- |
-| **OpenAI** | ✅ Estável |
-| **Ollama** | ✅ Estável |
-
-### 🔧 Ferramentas Built-in
-
-| Ferramenta            | Descrição                                    | Instalação                             |
-| --------------------- | -------------------------------------------- | -------------------------------------- |
-| **CurrentDateTool**   | Data/hora em qualquer timezone               | Padrão                                 |
-| **ReadLocalFileTool** | Lê PDF, Excel, CSV, Parquet, JSON, YAML, TXT | `pip install createagents[file-tools]` |
-
-### 📊 Recursos Avançados
-
-- **Histórico Automático**: Gerenciamento de contexto conversacional
-- **Métricas de Performance**: Exportação em JSON e Prometheus
-- **Sanitização de Logs**: Proteção automática de dados sensíveis
-- **Logging Configurável**: Silencioso por padrão, ativável para debug
-- **Ferramentas Customizadas**: Interface `BaseTool` para extensões
-- **Configuração Flexível**: Temperature, max_tokens, top_p, think mode e mais.
-
-### 📝 Logging
-
-A biblioteca é **silenciosa por padrão** (não emite logs). Para ver logs durante o desenvolvimento:
-
-```python
-import logging
-from createagents import LoggingConfig
-
-# Ativar logs para debug
-LoggingConfig.configure_for_development(level=logging.INFO)
-```
-
-📖 [Guia completo de Logging](docs/dev-guide/logging_guide.md)
+| Provider   | Status    | Prerequisites                                                |
+| ---------- | --------- | ------------------------------------------------------------ |
+| **OpenAI** | Supported | `OPENAI_API_KEY` environment variable                        |
+| **Ollama** | Supported | Reachable Ollama instance (no API key required on localhost) |
 
 ______________________________________________________________________
 
-## 🚀 Instalação Rápida
+## Installation
 
-### Pré-requisitos
+### For End Users
 
-- Python 3.12 ou superior
-- pip (geralmente incluído com Python) ou uv
-
-### Instalação via PyPI (Usuários)
+Install the latest published package from PyPI:
 
 ```bash
-# Instalação básica
+# Standard installation
 pip install createagents
 
-# OU com suporte a leitura de arquivos (PDF, Excel, CSV, Parquet)
-pip install createagents[file-tools]
+# With file-reading tools (PDF, Excel, CSV, Parquet)
+pip install 'createagents[file-tools]'
 ```
 
-#### Configuração para Usuários PyPI
+### For Development and Contributors
 
-Crie um arquivo `.env` na raiz do seu projeto (ou configure as variáveis no seu ambiente):
-
-```env
-OPENAI_API_KEY=sk-proj-sua-chave-aqui
-```
-
-*Nota: Para Ollama rodando localmente em `localhost`, nenhuma chave de API é necessária.*
-
-### Instalação para Desenvolvimento (Contribuidores)
-
-Se você deseja contribuir com o projeto a partir do código-fonte:
+Clone the repository and use [uv](https://docs.astral.sh/uv/) for reproducible dependency resolution:
 
 ```bash
-# Clone o repositório
 git clone https://github.com/jordanestralioto/Create-Agents-AI.git
 cd Create-Agents-AI
 
-# Instale com uv respeitando o lockfile
+# Install all locked dependencies
 uv sync --locked
 
-# OU com suporte a file-tools
+# Or include optional file-tools
 uv sync --locked --extra file-tools
-
-# Configure o ambiente copiando o template do repositório
-cp .env.example .env
-# Edite .env localmente com a sua chave sem versionar seu valor
 ```
 
-📖 [Guia completo para contribuidores →](docs/dev-guide/contribute.md)
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Developer Contribution Guide](docs/en/dev-guide/contribute.md) for full instructions.
 
 ______________________________________________________________________
 
-## 💡 Quick Start
+## Quick Start
 
-### Exemplo Básico
+### 1. OpenAI Agent
 
-```python
-import asyncio
-from createagents import CreateAgent
-
-
-async def main():
-    # Criar agente
-    agent = CreateAgent(
-        provider='openai',
-        model='gpt-4',
-        instructions='Você é um assistente técnico especializado em Python',
-    )
-
-    # Conversar
-    response = await agent.chat('Como criar uma função recursiva?')
-    print(response)
-
-
-asyncio.run(main())
-```
-
-### Com Ferramentas
-
-```python
-import asyncio
-from createagents import CreateAgent
-
-
-async def main():
-    # Agente com ferramentas
-    agent = CreateAgent(
-        provider='openai', model='gpt-4', tools=['currentdate']
-    )
-
-    # O agente usa ferramentas automaticamente
-    response = await agent.chat('Que dia é hoje?')  # Usa CurrentDateTool
-    print(response)
-
-
-asyncio.run(main())
-```
-
-### Ollama (Local)
+Set your API key:
 
 ```bash
-# Instalar Ollama
-curl -fsSL https://ollama.com/install.sh | sh
-# Links diretos: Linux (https://ollama.com/download/linux)
-# macOS (https://ollama.com/download/mac) ou brew install ollama
-# Windows (https://ollama.com/download/windows)
+export OPENAI_API_KEY="your-openai-api-key-here"
+```
 
-# Baixar modelo e executar
-ollama pull llama3.2:latest
+> **Note**: Replace `"YOUR_MODEL"` below with your desired OpenAI model identifier.
+
+```python
+import asyncio
+from createagents import CreateAgent
+
+
+async def main() -> None:
+    # Initialize the agent
+    agent = CreateAgent(
+        provider='openai',
+        model='YOUR_MODEL',
+        instructions='You are a helpful and concise software engineering assistant.',
+    )
+
+    # Send a message
+    response = await agent.chat('How do I structure a Python project?')
+    print(response)
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
+```
+
+### 2. Local Ollama Agent
+
+Ensure your Ollama server is running and pull your preferred model:
+
+```bash
+# Pull model and start the Ollama server
+ollama pull YOUR_OLLAMA_MODEL
 ollama serve
 ```
 
-### Agente Local com Ollama
+> **Note**: Replace `"YOUR_OLLAMA_MODEL"` with a locally installed model name.
 
 ```python
 import asyncio
 from createagents import CreateAgent
 
 
-async def main():
+async def main() -> None:
+    # Initialize local Ollama agent
     agent = CreateAgent(
         provider='ollama',
-        model='llama3.2',
-        instructions='Você é um assistente local',
+        model='YOUR_OLLAMA_MODEL',
+        instructions='You are a local private assistant.',
     )
 
-    response = await agent.chat('Explique Clean Architecture')
+    response = await agent.chat('Explain Clean Architecture in two sentences.')
     print(response)
 
 
-asyncio.run(main())
+if __name__ == '__main__':
+    asyncio.run(main())
 ```
 
 ______________________________________________________________________
 
-## 📋 Exemplos de Uso
+## Built-in Tools
 
-Os exemplos completos foram separados por cenário para manter esta página
-curta e fácil de consultar:
+Create Agents AI includes standard tools out of the box and supports custom extensions through `BaseTool`.
 
-- [Exemplos práticos para usuários](docs/user-guide/examples-user.md)
-- [API e ferramentas](docs/reference/api.md)
-- [Exemplos técnicos para contribuidores](docs/dev-guide/technical-examples.md)
+| Tool Name       | Class               | Description                                                                                                            | Requirements                             |
+| --------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `currentdate`   | `CurrentDateTool`   | Current date/time across any IANA timezone                                                                             | Built-in                                 |
+| `readlocalfile` | `ReadLocalFileTool` | Reads local text, markdown, CSV, Excel (`.xlsx`, `.xlsm`, and `.xls` subject to reader availability), PDF, and Parquet | `pip install 'createagents[file-tools]'` |
 
-______________________________________________________________________
+### Using Tools
 
-## 🏗️ Arquitetura
+```python
+import asyncio
+from createagents import CreateAgent
 
-Este projeto segue **Clean Architecture** e **SOLID Principles**:
 
-```
-src/
-└─ createagents/                         # Pacote principal
-    ├─ domain/                            # Regras de negócio
-    ├─ application/                       # Casos de uso, DTOs e portas
-    ├─ infra/                             # Adapters, factories e configuração
-    ├─ main/                              # Facade e composição de dependências
-    │   ├─ facade/                        # CreateAgent
-    │   └─ composers/                     # AgentComposer
-    ├─ presentation/                     # CLI e interface de terminal
-    └─ utils/                             # Utilitários compartilhados
-```
+async def main() -> None:
+    agent = CreateAgent(
+        provider='openai',
+        model='YOUR_MODEL',
+        tools=['currentdate'],
+    )
 
-### Diagrama de Camadas
+    # The agent automatically determines when to call the tool
+    response = await agent.chat('What is the current time in America/New_York?')
+    print(response)
 
-```
-┌────────────────────────────────────────────────────────────┐
-│ MAIN                                                        │
-│ CreateAgent: src/createagents/main/facade/client.py        │
-│ AgentComposer (composition root)                           │
-└──────────────────────────────┬─────────────────────────────┘
-                               │ compõe e injeta dependências
-        ┌──────────────────────┼──────────────────────┐
-        │                      │                      │
-        ▼                      ▼                      ▼
-┌───────────────┐   ┌────────────────┐   ┌────────────────────────┐
-│ PRESENTATION  │   │ APPLICATION    │   │ INFRA                   │
-│ CLI           │──▶│ Use Cases      │◀──│ Adapters / Factories    │
-└───────────────┘   └───────┬────────┘   └────────────────────────┘
-                            │ depende de
-                            ▼
-                    ┌────────────────┐
-                    │ DOMAIN         │
-                    │ Entities/Rules │
-                    └────────────────┘
-```
 
-`CreateAgent` não pertence à camada Presentation: a fachada pública vive em
-`src/createagents/main/facade/`, enquanto a CLI vive em
-`src/createagents/presentation/cli/`. O composition root é
-`src/createagents/main/composers/agent_composer.py`. A aplicação depende apenas
-do domínio; infraestrutura e apresentação implementam as portas consumidas
-pelos casos de uso.
-
-**Benefícios**: Testável, Flexível, Escalável e Manutenível
-
-📖 [Documentação completa da arquitetura](docs/dev-guide/architecture-developer.md)
-
-______________________________________________________________________
-
-- 📖 **Para Usuários**: [Instalação](docs/user-guide/installation-user.md) • [Uso Básico](docs/user-guide/basic-usage-user.md) • [Exemplos Práticos](docs/user-guide/examples-user.md) • [FAQ](docs/user-guide/faq-user.md)
-- 🏗️ **Para Desenvolvedores**: [Arquitetura](docs/dev-guide/architecture-developer.md) • [Exemplos Técnicos](docs/dev-guide/technical-examples.md) • [Contribuir](docs/dev-guide/contribute.md)
-- 📚 **Referência**: [API Reference](docs/reference/api.md) • [Ferramentas](docs/reference/tools.md) • [Comandos](docs/reference/commands.md)
-
-### Build Local da Documentação
-
-```bash
-uv run --locked --no-sync mkdocs serve
-# Acesse: http://localhost:8000
+if __name__ == '__main__':
+    asyncio.run(main())
 ```
 
 ______________________________________________________________________
 
-## 🔧 Configuração
+## Configuration & Environment
 
-### Variáveis de Ambiente
+### Environment Variables
 
-No clone do repositório, copie `.env.example` para `.env`. Na instalação via PyPI, configure as variáveis diretamente no seu ambiente ou em um arquivo `.env` local. Nunca inclua valores secretos no código ou no repositório.
+| Variable                     | Scope     | Purpose                                                    |
+| ---------------------------- | --------- | ---------------------------------------------------------- |
+| `OPENAI_API_KEY`             | OpenAI    | Required API authentication token                          |
+| `OPENAI_TIMEOUT`             | OpenAI    | Request timeout in seconds                                 |
+| `OPENAI_MAX_RETRIES`         | OpenAI    | Maximum retry attempts for failed requests                 |
+| `OPENAI_MAX_TOOL_ITERATIONS` | OpenAI    | Maximum tool execution loops per chat turn                 |
+| `OLLAMA_HOST`                | Ollama    | Ollama server host URL (default: `http://localhost:11434`) |
+| `OLLAMA_MAX_RETRIES`         | Ollama    | Maximum retry attempts for Ollama requests                 |
+| `OLLAMA_MAX_TOOL_ITERATIONS` | Ollama    | Maximum tool execution loops per chat turn                 |
+| `LOG_LEVEL`                  | Logging   | Base logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`)   |
+| `LOG_TO_FILE`                | Logging   | Enable writing logs to disk (`true`/`false`)               |
+| `LOG_FILE_PATH`              | Logging   | Destination path for log files                             |
+| `LOG_JSON_FORMAT`            | Logging   | Format logs as structured JSON (`true`/`false`)            |
+| `FILE_TOOL_BASE_DIR`         | File Tool | Restricts `readlocalfile` access to a sandbox directory    |
 
-```bash
-# OpenAI: obrigatório somente quando o provider é "openai".
-export OPENAI_API_KEY
-```
-
-| Contexto   | Variáveis                                                                              | Comportamento                                                                                  |
-| ---------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| OpenAI     | `OPENAI_API_KEY`, `OPENAI_TIMEOUT`, `OPENAI_MAX_RETRIES`, `OPENAI_MAX_TOOL_ITERATIONS` | Requer `OPENAI_API_KEY`; as demais controlam timeout, retries e iterações de tools.            |
-| Ollama     | `OLLAMA_HOST`, `OLLAMA_MAX_RETRIES`, `OLLAMA_MAX_TOOL_ITERATIONS`                      | Não requer API key, mas requer um servidor Ollama alcançável.                                  |
-| Logging    | `LOG_LEVEL`, `LOG_TO_FILE`, `LOG_FILE_PATH`, `LOG_JSON_FORMAT`                         | A biblioteca permanece silenciosa até `LoggingConfig.configure()` ser chamado pelo consumidor. |
-| File tools | `FILE_TOOL_BASE_DIR`                                                                   | Restringe o diretório usado pela `ReadLocalFileTool`.                                          |
-
-### Configuração do Modelo
+### Agent Runtime Configuration
 
 ```python
 from createagents import CreateAgent
 
 config = {
-    'temperature': 0.7,  # Criatividade (0-1)
-    'max_tokens': 1000,  # Limite de resposta
-    'top_p': 0.9,  # Nucleus sampling
-    'think': True,  # Ollama: bool / OpenAI: "low"|"medium"|"high"
+    'temperature': 0.7,  # Allowed range: 0.0 to 2.0
+    'max_tokens': 1500,  # Positive integer
+    'top_p': 0.9,  # Allowed range: 0.0 to 1.0
+    'stream': False,  # Enable token-by-token streaming
 }
+
+# Provider-specific reasoning/thinking options:
+# Ollama: think=True/False or "low"|"medium"|"high"
+# OpenAI: think="low"|"medium"|"high" (on supported reasoning models)
 
 agent = CreateAgent(
     provider='openai',
-    model='gpt-4',
-    name='Assistente',
-    instructions='Seja conciso',
+    model='YOUR_MODEL',
+    instructions='Be technical and concise.',
     config=config,
     history_max_size=20,
 )
@@ -327,160 +225,103 @@ agent = CreateAgent(
 
 ______________________________________________________________________
 
-## 📊 API Reference
+## Logging & Metrics
 
-A referência completa das assinaturas, métodos, ferramentas e configurações
-está em [docs/reference/api.md](docs/reference/api.md).
+### Silent Library Logging
 
-______________________________________________________________________
-
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas! Siga os passos:
-
-1. **Fork** o repositório
-
-2. **Crie uma branch**: `git checkout -b feature/add-provider`
-
-3. **Implemente** seguindo os padrões existentes
-
-4. **Adicione testes** que comprovem o comportamento, os casos de borda e as
-   regressões relevantes
-
-5. **Execute os checks**:
-
-   ```bash
-   # Install pre-commit hooks from the locked environment
-   uv run --locked --no-sync pre-commit install --install-hooks
-
-   # Run pre-commit hooks
-   uv run --locked --no-sync pre-commit run --all-files
-
-   # Run pre-push hooks
-   uv run --locked --no-sync pre-commit run --all-files --hook-stage pre-push
-
-   # Run safe local tests (no external APIs)
-   uv run --locked --no-sync pytest -m 'not integration and not slow' -ra --cov=src --cov-fail-under=85
-   ```
-
-6. **Faça um commit em inglês** usando Conventional Commits, por exemplo
-   `feat: add support for provider XYZ`
-
-7. **Atualize a documentação** quando comportamento, contratos ou exemplos
-   mudarem
-
-8. **Envie um Pull Request**
-
-### Adicionando um Novo Provedor
-
-1. Crie um novo adapter em `src/createagents/infra/adapters/NomeProvedor/`
-2. Implemente a porta `ChatRepository` da aplicação
-3. Registre o provider em `src/createagents/infra/factories/chat_adapter_factory.py`
-4. Adicione testes espelhando a camada em `tests/infra/adapters/`
-
-Novos handlers da CLI ficam em `src/createagents/presentation/cli/commands/` e
-são registrados em
-`src/createagents/presentation/cli/application/chat_cli_app.py`, no método
-`_setup_commands`.
-
-Exemplo:
+The library installs a `NullHandler` and remains completely silent by default. Consumers can opt into logging during development or configure handlers explicitly:
 
 ```python
-from collections.abc import AsyncGenerator
-from typing import Any
-from createagents.application.interfaces import ChatRepository
-from createagents.domain import BaseTool
+import logging
+from createagents import LoggingConfig
 
-
-class MeuAdapter(ChatRepository):
-    async def chat(
-        self,
-        model: str,
-        instructions: str | None,
-        config: dict[str, Any] | None,
-        tools: list[BaseTool] | None,
-        history: list[dict[str, str]],
-        user_ask: str,
-    ) -> str | AsyncGenerator[str, None]:
-        # Implementation
-        pass
+# Enable console logging for development
+LoggingConfig.configure_for_development(level=logging.INFO)
 ```
 
-📖 [Guia completo de contribuição](docs/dev-guide/contribute.md)
+### Metrics Export
 
-______________________________________________________________________
+Collect and export interaction metrics (latency, token counts, model calls) to structured JSON or Prometheus format strings and files:
 
-## 🧪 CI/CD & Workflows
+```python
+from createagents import CreateAgent
 
-Este projeto tem automação profissional com GitHub Actions:
+agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 
-### Quality Checks (CI)
+# Retrieve metrics objects
+metrics = agent.get_metrics()
 
-- **Executa em**: Push/PR para `develop` ou `main`
-- **Matrix**: Python 3.12, 3.13, 3.14
-- **Checks**:
-  - ✅ Lint & Format (Ruff)
-  - ✅ Type checking (mypy)
-  - ✅ Security (Bandit, gitleaks, pip-audit, zizmor)
-  - ✅ Tests com cobertura mínima de 85%
-  - ✅ Docstring validation (pydocstyle)
-
-O workflow completo está em
-[`.github/workflows/pipeline.yml`](.github/workflows/pipeline.yml).
-
-### Hooks locais
-
-O projeto configura 41 hooks: 37 na etapa `pre-commit`, 3 na etapa `pre-push`
-e 1 na etapa `commit-msg` para validar Conventional Commits.
-
-```bash
-uv sync --locked
-uv run --locked --no-sync pre-commit install --install-hooks
-uv run --locked --no-sync pre-commit run --all-files
-uv run --locked --no-sync pre-commit run --all-files --hook-stage pre-push
+# Export metrics to JSON or Prometheus format files/strings
+agent.export_metrics_json('metrics.json')
+agent.export_metrics_prometheus('metrics.prom')
 ```
 
-Os hooks não sincronizam o ambiente nem reescrevem `uv.lock`; veja a política e o fluxo de atualização deliberada no [guia de contribuição](docs/dev-guide/contribute.md).
+> **Note**: The package exports metrics formatted for Prometheus scraping or file collectors; it does not run a background Prometheus HTTP server or monitoring daemon.
 
 ______________________________________________________________________
 
-## 📄 Licença
+## Architecture
 
-Este projeto está licenciado sob a **MIT License** - veja o arquivo [LICENSE](LICENSE) para detalhes.
+Create Agents AI is structured around strict Clean Architecture boundaries:
+
+```
+┌────────────────────────────────────────────────────────────┐
+│ MAIN (Composition Root & Facade)                           │
+│ CreateAgent: src/createagents/main/facade/client.py        │
+│ AgentComposer: src/createagents/main/composers/            │
+└──────────────────────────────┬─────────────────────────────┘
+                               │ wires and injects dependencies
+        ┌──────────────────────┼──────────────────────┐
+        │                      │                      │
+        ▼                      ▼                      ▼
+┌───────────────┐   ┌────────────────┐   ┌────────────────────────┐
+│ PRESENTATION  │   │ APPLICATION    │   │ INFRASTRUCTURE         │
+│ CLI Terminal  │──▶│ Use Cases      │◀──│ Adapters & Factories   │
+│ Application   │   │ DTOs & Ports   │   │ (OpenAI, Ollama, Tools)│
+└───────────────┘   └───────┬────────┘   └────────────────────────┘
+                            │ depends only on
+                            ▼
+                    ┌────────────────┐
+                    │ DOMAIN         │
+                    │ Entities/Rules │
+                    └────────────────┘
+```
+
+- **Domain**: Pure business entities, value objects, and domain exceptions. No external dependencies.
+- **Application**: Use cases, DTOs, and interface ports (e.g. `ChatRepository`). Depends solely on Domain.
+- **Infrastructure**: Concrete adapters implementing application ports (OpenAI, Ollama, tools, logging, metrics).
+- **Presentation**: Interactive terminal CLI consuming the application facade lazily.
+- **Main**: Composition root (`AgentComposer`) wiring concrete adapters into use cases, and the public `CreateAgent` facade.
+
+Read the [Architecture Developer Guide](docs/en/dev-guide/architecture-developer.md) for full architectural details.
 
 ______________________________________________________________________
 
-## 📞 Suporte
+## Documentation Directory
 
-- 📖 [Documentação Completa](docs/index.md)
-- 🐛 [Reportar Bugs](https://github.com/jordanestralioto/Create-Agents-AI/issues)
-- 💬 [Discussões](https://github.com/jordanestralioto/Create-Agents-AI/discussions)
-- 📧 Email: estraliotojordan@gmail.com
+The complete documentation suite is published and accessible:
 
-______________________________________________________________________
+### English Documentation (Primary)
 
-## 👨‍💻 Autor
+- **User Guide**: [Installation](docs/en/user-guide/installation-user.md) • [Basic Usage](docs/en/user-guide/basic-usage-user.md) • [CLI Usage](docs/en/user-guide/cli-usage.md) • [Streaming Guide](docs/en/user-guide/streaming-guide.md) • [Examples](docs/en/user-guide/examples-user.md) • [FAQ](docs/en/user-guide/faq-user.md)
+- **Developer Guide**: [Architecture](docs/en/dev-guide/architecture-developer.md) • [CLI Architecture](docs/en/dev-guide/cli-architecture.md) • [Async Guide](docs/en/dev-guide/async-guide.md) • [Logging Guide](docs/en/dev-guide/logging_guide.md) • [Technical Examples](docs/en/dev-guide/technical-examples.md) • [How to Contribute](docs/en/dev-guide/contribute.md)
+- **Reference**: [API Reference](docs/en/reference/api.md) • [Streaming API](docs/en/reference/streaming-api.md) • [Metrics API](docs/en/reference/metrics-api.md) • [Tools](docs/en/reference/tools.md) • [CLI Commands](docs/en/reference/commands.md)
 
-**Jordan Estralioto**
+### Portuguese Documentation
 
-- GitHub: [@jordanestralioto](https://github.com/jordanestralioto)
-- Email: estraliotojordan@gmail.com
+- [Portuguese Documentation Home](docs/index.md)
 
 ______________________________________________________________________
 
-## 📚 Referências
+## Governance & Community
 
-- [Clean Architecture - Robert C. Martin](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
-- [OpenAI API Documentation](https://platform.openai.com/docs)
-- [Ollama Documentation](https://github.com/ollama/ollama)
-- [SOLID Principles](https://en.wikipedia.org/wiki/SOLID)
+- **Contributing**: Please review [CONTRIBUTING.md](CONTRIBUTING.md) and the [Contribution Guide](docs/en/dev-guide/contribute.md).
+- **Security**: For vulnerability reporting, please see [SECURITY.md](SECURITY.md).
+- **Code of Conduct**: Community standards are defined in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+- **License**: Released under the [MIT License](LICENSE).
 
-______________________________________________________________________
+## Support & Contact
 
-<div align="center">
-
-**Versão:** 0.2.0 • **Última atualização:** 2026-08-25 • **Status:** 🚀 Projeto publicado!
-
-⭐ Se este projeto foi útil, considere dar uma estrela no GitHub!
-
-</div>
+- **Maintainer**: Jordan Estralioto
+- **Email**: `estraliotojordan@gmail.com`
+- **Security**: Please report security vulnerabilities privately according to [SECURITY.md](SECURITY.md).

@@ -1,6 +1,8 @@
 # 🤖 Create Agents AI
 
-> Framework Python enterprise para criar agentes de IA inteligentes com arquitetura limpa, múltiplos provedores e ferramentas extensíveis.
+> Framework Python orientado à produção para criar agentes de IA inteligentes com Clean Architecture, múltiplos provedores e ferramentas extensíveis.
+
+> **Status do projeto:** Beta. As APIs e o comportamento podem evoluir à medida que o projeto amadurece.
 
 [![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
@@ -29,7 +31,7 @@ ______________________________________________________________________
 pip install createagents
 
 # OU com suporte a leitura de arquivos (PDF, Excel, CSV, Parquet)
-pip install createagents[file-tools]
+pip install 'createagents[file-tools]'
 ```
 
 ### Configuração
@@ -44,7 +46,7 @@ OPENAI_API_KEY=sk-proj-sua-chave-aqui
 
 *(Se estiver utilizando um clone do repositório, você pode copiar o modelo com `cp .env.example .env`).*
 
-> **Nota:** OpenAI exige `OPENAI_API_KEY`. O Ollama não exige API key ao executar em `localhost` (consulte o [guia de instalação](user-guide/installation-user.md) para detalhes de ambiente).
+> **Nota:** OpenAI exige `OPENAI_API_KEY`. O Ollama não exige API key ao executar em `localhost` (consulte o [guia de instalação](user-guide/installation-user.md) para detalhes de ambiente). Substitua `"YOUR_MODEL"` pelo modelo desejado da OpenAI e `"YOUR_OLLAMA_MODEL"` por um modelo local instalado no Ollama.
 
 ### Primeiro Agente em 3 Linhas
 
@@ -56,7 +58,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         instructions='Você é um assistente útil',
     )
 
@@ -76,11 +78,11 @@ ______________________________________________________________________
 ```python
 from createagents import CreateAgent
 
-# OpenAI (GPT-4, GPT-4o, GPT-4o-mini)
-agent_openai = CreateAgent(provider='openai', model='gpt-4')
+# OpenAI
+agent_openai = CreateAgent(provider='openai', model='YOUR_MODEL')
 
-# Ollama (llama3.2, mistral - processamento local em localhost)
-agent_local = CreateAgent(provider='ollama', model='llama3.2')
+# Ollama (processamento local em localhost)
+agent_local = CreateAgent(provider='ollama', model='YOUR_OLLAMA_MODEL')
 ```
 
 ### 🔧 Ferramentas Integradas
@@ -95,7 +97,7 @@ from createagents import CreateAgent
 async def main():
     agent = CreateAgent(
         provider='openai',
-        model='gpt-4',
+        model='YOUR_MODEL',
         tools=['currentdate'],  # 'readlocalfile' requer [file-tools]
     )
 
@@ -120,7 +122,7 @@ asyncio.run(main())
 
 - `currentdate` - Data/hora em qualquer timezone (sempre disponível)
 - `readlocalfile` - Lê PDF, Excel, CSV, Parquet, JSON, YAML, TXT (requer
-  `pip install createagents[file-tools]`)
+  `pip install 'createagents[file-tools]'`)
 
 **Criar ferramentas customizadas:**
 
@@ -149,7 +151,7 @@ class WordCountTool(BaseTool):
 # Usar ferramenta customizada
 agent = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     tools=['currentdate', WordCountTool()],  # Sistema + customizada
 )
 
@@ -165,7 +167,7 @@ from createagents import CreateAgent
 
 
 async def main():
-    agent = CreateAgent(provider='openai', model='gpt-4')
+    agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 
     await agent.chat('Olá!')
     await agent.chat('Qual é a capital do Brasil?')  # Mantém contexto
@@ -182,17 +184,17 @@ async def main():
 asyncio.run(main())
 ```
 
-### 📊 Métricas e Monitoramento
+### 📊 Métricas e Exportação
 
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider='openai', model='gpt-4')
+agent = CreateAgent(provider='openai', model='YOUR_MODEL')
 
 # Coletar métricas
 metrics = agent.get_metrics()
 
-# Exportar em diferentes formatos
+# Exportar em diferentes formatos (JSON ou formato Prometheus)
 agent.export_metrics_json('metrics.json')
 agent.export_metrics_prometheus('metrics.prom')
 ```
@@ -204,10 +206,10 @@ from createagents import CreateAgent
 
 agent = CreateAgent(
     provider='openai',
-    model='gpt-4',
+    model='YOUR_MODEL',
     instructions='Seja conciso e técnico',
     config={
-        'temperature': 0.7,  # Criatividade (0-1)
+        'temperature': 0.7,  # Faixa permitida: 0.0 a 2.0
         'max_tokens': 2000,  # Limite de resposta
     },
     history_max_size=20,  # Tamanho do histórico
@@ -247,7 +249,7 @@ ______________________________________________________________________
 
 - ✅ **Privacidade**: Opção de modelos locais em localhost com Ollama (sem custos de API e com dados retidos no ambiente local caso `OLLAMA_HOST` não aponte para um host externo)
 - ✅ **Segurança**: Sanitização automática de dados sensíveis nos logs
-- ✅ **Monitoramento**: Métricas em tempo real para produção
+- ✅ **Exportação de Métricas**: Exportação de métricas estruturadas em JSON e Prometheus
 - ✅ **Escalabilidade**: Arquitetura preparada para crescimento
 
 ### Para Desenvolvedores
@@ -325,9 +327,8 @@ ______________________________________________________________________
 
 ## 📞 Suporte
 
-- 📧 **Email**: estraliotojordan@gmail.com
-- 🐛 **Bugs**: [GitHub Issues](https://github.com/jordanestralioto/Create-Agents-AI/issues)
-- 💬 **Discussões**: [GitHub Discussions](https://github.com/jordanestralioto/Create-Agents-AI/discussions)
+- 📧 **Email**: `estraliotojordan@gmail.com`
+- 🔒 **Segurança**: Reporte vulnerabilidades de segurança de forma privada conforme nossa [Política de Segurança](https://github.com/jordanestralioto/Create-Agents-AI/blob/develop/SECURITY.md).
 
 ______________________________________________________________________
 
@@ -347,5 +348,5 @@ ______________________________________________________________________
 ______________________________________________________________________
 
 **Versão:** 0.2.0
-**Última atualização:** 2026-08-25
+**Última atualização:** 2026-08-27
 **Status:** 🚀 Projeto publicado! Aberto para contribuições e sugestões.
