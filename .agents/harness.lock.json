@@ -33,7 +33,7 @@
     },
     {
       "hasScripts": true,
-      "hash": "sha256:ecd279abed88f711ccf2b4763c86b46eccbf67d17258fa03f64df1a539a42766",
+      "hash": "sha256:936b26c6fdfc679efa2e80966f1bb62a9d252af68e436bece1b6e248822f89f8",
       "id": "skills/lint-and-validate",
       "selectedBy": "manifest"
     },

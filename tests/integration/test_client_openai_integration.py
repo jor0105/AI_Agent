@@ -5,6 +5,7 @@ import pytest
 
 from createagents.domain import ChatException
 from createagents.infra import OpenAIChatAdapter
+from createagents.infra.adapters.Tools.available_tools import AvailableTools
 
 IA_OPENAI_TEST_1: str = (
     'gpt-5-nano'  # nao aceita configs, aceita tools e think: low
@@ -1184,9 +1185,6 @@ class TestOpenAIChatAdapterToolsIntegration:
     @pytest.mark.asyncio
     async def test_chat_with_currentdate_tool_get_date(self):
         _get_openai_api_key()
-        from createagents.infra.adapters.Tools.available_tools import (
-            AvailableTools,
-        )
 
         adapter = OpenAIChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -1207,9 +1205,6 @@ class TestOpenAIChatAdapterToolsIntegration:
     @pytest.mark.asyncio
     async def test_chat_with_currentdate_tool_get_time(self):
         _get_openai_api_key()
-        from createagents.infra.adapters.Tools.available_tools import (
-            AvailableTools,
-        )
 
         adapter = OpenAIChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -1230,9 +1225,6 @@ class TestOpenAIChatAdapterToolsIntegration:
     @pytest.mark.asyncio
     async def test_chat_with_currentdate_tool_get_datetime(self):
         _get_openai_api_key()
-        from createagents.infra.adapters.Tools.available_tools import (
-            AvailableTools,
-        )
 
         adapter = OpenAIChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -1253,9 +1245,6 @@ class TestOpenAIChatAdapterToolsIntegration:
     @pytest.mark.asyncio
     async def test_chat_with_currentdate_tool_get_timestamp(self):
         _get_openai_api_key()
-        from createagents.infra.adapters.Tools.available_tools import (
-            AvailableTools,
-        )
 
         adapter = OpenAIChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -1276,9 +1265,6 @@ class TestOpenAIChatAdapterToolsIntegration:
     @pytest.mark.asyncio
     async def test_chat_with_currentdate_tool_date_with_weekday(self):
         _get_openai_api_key()
-        from createagents.infra.adapters.Tools.available_tools import (
-            AvailableTools,
-        )
 
         adapter = OpenAIChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -1299,9 +1285,6 @@ class TestOpenAIChatAdapterToolsIntegration:
     @pytest.mark.asyncio
     async def test_chat_with_currentdate_tool_multiple_timezones(self):
         _get_openai_api_key()
-        from createagents.infra.adapters.Tools.available_tools import (
-            AvailableTools,
-        )
 
         adapter = OpenAIChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -1325,11 +1308,6 @@ class TestOpenAIChatAdapterToolsIntegration:
     @pytest.mark.asyncio
     async def test_chat_with_readlocalfile_tool_text_file(self):
         _get_openai_api_key()
-        import os
-
-        from createagents.infra.adapters.Tools.available_tools import (
-            AvailableTools,
-        )
 
         adapter = OpenAIChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -1358,11 +1336,6 @@ class TestOpenAIChatAdapterToolsIntegration:
     @pytest.mark.asyncio
     async def test_chat_with_readlocalfile_tool_csv_file(self):
         _get_openai_api_key()
-        import os
-
-        from createagents.infra.adapters.Tools.available_tools import (
-            AvailableTools,
-        )
 
         adapter = OpenAIChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -1391,9 +1364,6 @@ class TestOpenAIChatAdapterToolsIntegration:
     @pytest.mark.asyncio
     async def test_chat_with_tools_and_configs_combined(self):
         _get_openai_api_key()
-        from createagents.infra.adapters.Tools.available_tools import (
-            AvailableTools,
-        )
 
         adapter = OpenAIChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -1424,9 +1394,6 @@ class TestOpenAIChatAdapterToolsIntegration:
     @pytest.mark.asyncio
     async def test_chat_with_multiple_tool_calls_in_conversation(self):
         _get_openai_api_key()
-        from createagents.infra.adapters.Tools.available_tools import (
-            AvailableTools,
-        )
 
         adapter = OpenAIChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -1462,9 +1429,6 @@ class TestOpenAIChatAdapterToolsIntegration:
     @pytest.mark.asyncio
     async def test_chat_without_tools_when_tools_available(self):
         _get_openai_api_key()
-        from createagents.infra.adapters.Tools.available_tools import (
-            AvailableTools,
-        )
 
         adapter = OpenAIChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -1485,9 +1449,6 @@ class TestOpenAIChatAdapterToolsIntegration:
     @pytest.mark.asyncio
     async def test_chat_with_tools_and_think_config(self):
         _get_openai_api_key()
-        from createagents.infra.adapters.Tools.available_tools import (
-            AvailableTools,
-        )
 
         adapter = OpenAIChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -1513,9 +1474,6 @@ class TestOpenAIChatAdapterToolsIntegration:
     @pytest.mark.asyncio
     async def test_chat_with_tools_and_top_k_config(self):
         _get_openai_api_key()
-        from createagents.infra.adapters.Tools.available_tools import (
-            AvailableTools,
-        )
 
         adapter = OpenAIChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -1541,9 +1499,6 @@ class TestOpenAIChatAdapterToolsIntegration:
     @pytest.mark.asyncio
     async def test_chat_with_tools_and_all_configs_openai(self):
         _get_openai_api_key()
-        from createagents.infra.adapters.Tools.available_tools import (
-            AvailableTools,
-        )
 
         adapter = OpenAIChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())

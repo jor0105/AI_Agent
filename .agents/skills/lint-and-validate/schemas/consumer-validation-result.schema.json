@@ -1,0 +1,220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Consumer Validation Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocolVersion",
+    "profile",
+    "executorVersion",
+    "status",
+    "exitCode",
+    "effectiveScopes",
+    "validators",
+    "counts",
+    "diagnostics",
+    "stableContentIdentity"
+  ],
+  "properties": {
+    "protocolVersion": {
+      "const": "consumer-validation-v1"
+    },
+    "profile": {
+      "const": "consumer-isolated-v1"
+    },
+    "executorVersion": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "passed",
+        "failed",
+        "error"
+      ]
+    },
+    "exitCode": {
+      "enum": [
+        0,
+        1,
+        2
+      ]
+    },
+    "effectiveScopes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "path",
+          "required",
+          "status",
+          "items"
+        ],
+        "properties": {
+          "name": {
+            "enum": [
+              "skills",
+              "agents",
+              "workflows"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "passed",
+              "failed",
+              "skipped"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/item"
+            }
+          },
+          "excludedItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/item"
+            }
+          }
+        }
+      }
+    },
+    "validators": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "passed",
+              "failed",
+              "skipped"
+            ]
+          }
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scopes",
+        "items",
+        "passed",
+        "failed",
+        "skipped",
+        "errors"
+      ],
+      "properties": {
+        "scopes": {
+          "type": "integer"
+        },
+        "items": {
+          "type": "integer"
+        },
+        "passed": {
+          "type": "integer"
+        },
+        "failed": {
+          "type": "integer"
+        },
+        "skipped": {
+          "type": "integer"
+        },
+        "errors": {
+          "type": "integer"
+        }
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "item",
+          "validatorId",
+          "code",
+          "message",
+          "severity"
+        ],
+        "properties": {
+          "item": {
+            "type": "string"
+          },
+          "validatorId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "error",
+              "warning"
+            ]
+          }
+        }
+      }
+    },
+    "stableContentIdentity": {
+      "type": "string"
+    },
+    "executionMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "durationSeconds": {
+          "type": "number"
+        },
+        "startedAt": {
+          "type": "string"
+        },
+        "finishedAt": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

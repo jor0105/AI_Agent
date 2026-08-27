@@ -41,6 +41,38 @@ def content_root(name: str) -> Path:
     return HARNESS_ROOT / name
 
 
+def strict_repo_root(cwd: Path | str | None = None) -> Path:
+    """Return the repository root for cwd or fail strictly.
+
+    Unlike repo_root(), this function never falls back to cwd. It requires
+    git rev-parse --show-toplevel to succeed with a non-empty resolved path.
+    """
+    working_dir = Path(cwd) if cwd is not None else Path.cwd()
+    try:
+        completed = subprocess.run(
+            ['git', 'rev-parse', '--show-toplevel'],
+            cwd=working_dir,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise GitRootError(
+            f'not inside a git repository or git unavailable: {working_dir}'
+        ) from exc
+
+    resolved = completed.stdout.strip()
+    if not resolved:
+        raise GitRootError(
+            f'git rev-parse --show-toplevel returned empty root: {working_dir}'
+        )
+    return Path(resolved).resolve()
+
+
+class GitRootError(Exception):
+    """Strict Git root could not be determined."""
+
+
 def repo_root() -> Path:
     """Return the repository the operator is acting on.
 

@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Consumer Validation Request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocolVersion",
+    "profile",
+    "scopes"
+  ],
+  "properties": {
+    "protocolVersion": {
+      "const": "consumer-validation-v1"
+    },
+    "profile": {
+      "const": "consumer-isolated-v1"
+    },
+    "scopes": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "skills": {
+          "$ref": "#/$defs/scope"
+        },
+        "agents": {
+          "$ref": "#/$defs/scope"
+        },
+        "workflows": {
+          "$ref": "#/$defs/scope"
+        }
+      },
+      "anyOf": [
+        {
+          "properties": {
+            "skills": {
+              "properties": {
+                "required": {
+                  "const": true
+                }
+              },
+              "required": [
+                "required"
+              ]
+            }
+          },
+          "required": [
+            "skills"
+          ]
+        },
+        {
+          "properties": {
+            "agents": {
+              "properties": {
+                "required": {
+                  "const": true
+                }
+              },
+              "required": [
+                "required"
+              ]
+            }
+          },
+          "required": [
+            "agents"
+          ]
+        },
+        {
+          "properties": {
+            "workflows": {
+              "properties": {
+                "required": {
+                  "const": true
+                }
+              },
+              "required": [
+                "required"
+              ]
+            }
+          },
+          "required": [
+            "workflows"
+          ]
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "required"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "include": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exclude": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
