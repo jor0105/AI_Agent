@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from ....infra.config import create_logger
 from ..commands import (
     ChatCommandHandler,
     ClearCommandHandler,
@@ -13,7 +14,7 @@ from ..ui import TerminalRenderer
 from .command_registry import CommandRegistry
 
 if TYPE_CHECKING:
-    from ....application.facade import CreateAgent
+    from ..protocols import AgentFacade
 
 
 class ChatCLIApplication:
@@ -26,16 +27,17 @@ class ChatCLIApplication:
     - OCP: New commands can be added by registering new handlers
     """
 
-    def __init__(self, agent: 'CreateAgent'):
+    def __init__(self, agent: 'AgentFacade') -> None:
         """Initialize the CLI application.
 
         Args:
-            agent: The CreateAgent instance to interact with.
+            agent: The agent facade to interact with.
         """
         self._agent = agent
         self._renderer = TerminalRenderer()
         self._input_reader = InputReader()
         self._registry = CommandRegistry()
+        self._logger = create_logger(__name__)
         self._setup_commands()
 
     def _setup_commands(self) -> None:
@@ -89,6 +91,7 @@ class ChatCLIApplication:
                 self._renderer.render_interrupt()
                 break
             except Exception as e:
+                self._logger.exception('Unhandled error in CLI command loop')
                 self._renderer.render_error(str(e))
 
     def _is_exit_command(self, user_input: str) -> bool:

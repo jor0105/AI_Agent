@@ -1,9 +1,10 @@
-from typing import Any, Dict, AsyncGenerator, List, Optional, Union
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from ....application.interfaces import ChatRepository
-from ....domain import BaseTool, ChatException
-from ...config import ChatMetrics, LoggingConfig
-from .ollama_client import OllamaClient
+from ....domain import BaseTool, ChatException, ChatMetrics
+from ...config import LoggingConfig
+from .ollama_client import OllamaClient, OllamaMessage
 from .ollama_handler import OllamaHandler
 from .ollama_stream_handler import OllamaStreamHandler
 
@@ -22,24 +23,23 @@ class OllamaChatAdapter(ChatRepository):
     5. Model generates final response
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.__logger = LoggingConfig.get_logger(__name__)
         self.__client = OllamaClient()
-        self.__metrics: List[ChatMetrics] = []
+        self.__metrics: list[ChatMetrics] = []
 
         self.__logger.info('Ollama adapter initialized')
 
     async def chat(
         self,
         model: str,
-        instructions: Optional[str],
-        config: Optional[Dict[str, Any]],
-        tools: Optional[List[BaseTool]],
-        history: List[Dict[str, str]],
+        instructions: str | None,
+        config: dict[str, Any] | None,
+        tools: list[BaseTool] | None,
+        history: list[dict[str, str]],
         user_ask: str,
-    ) -> Union[str, AsyncGenerator[str, None]]:
-        """
-        Sends a message to Ollama and returns the response.
+    ) -> str | AsyncGenerator[str, None]:
+        """Sends a message to Ollama and returns the response.
 
         Args:
             model: The name of the model.
@@ -63,7 +63,7 @@ class OllamaChatAdapter(ChatRepository):
                 'Starting chat with model %s on Ollama.', model
             )
 
-            messages = []
+            messages: list[OllamaMessage] = []
             if instructions and instructions.strip():
                 messages.append({'role': 'system', 'content': instructions})
             messages.extend(history)
@@ -75,10 +75,9 @@ class OllamaChatAdapter(ChatRepository):
                     self.__client, self.__metrics
                 )
                 self.__logger.debug('Streaming mode enabled for Ollama')
-                result_stream = stream_handler.handle_stream(
+                return stream_handler.handle_stream(
                     model, messages, config, tools
                 )
-                return result_stream
 
             # Non-streaming mode - Tool calling loop
             handler = OllamaHandler(self.__client, self.__metrics)
@@ -90,15 +89,15 @@ class OllamaChatAdapter(ChatRepository):
         except ChatException:
             raise
         except Exception as e:
-            self.__logger.error(
-                'An error occurred while communicating with Ollama: %s', e
+            self.__logger.exception(
+                'An error occurred while communicating with Ollama'
             )
             raise ChatException(
-                f'An error occurred while communicating with Ollama: {str(e)}',
+                f'An error occurred while communicating with Ollama: {e!s}',
                 original_error=e,
             ) from e
 
-    def get_metrics(self) -> List[ChatMetrics]:
+    def get_metrics(self) -> list[ChatMetrics]:
         """Return the list of collected metrics.
 
         Returns:

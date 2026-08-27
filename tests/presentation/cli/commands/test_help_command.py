@@ -22,7 +22,7 @@ class TestHelpCommandHandler:
         handler = HelpCommandHandler(renderer)
 
         with patch(
-            'createagents.presentation.cli.commands.help_command.TextSanitizer.format_markdown_for_terminal',
+            'createagents.presentation.cli.commands.base_command.MarkdownTerminalFormatter.format',
             return_value='formatted-help',
         ) as mock_formatter:
             handler.execute(Mock(), '/help')

@@ -15,8 +15,8 @@ class TestCommandRegistry:
         handler1 = Mock(spec=CommandHandler)
         handler2 = Mock(spec=CommandHandler)
         handler1.can_handle.return_value = False
-        handler2.can_handle.side_effect = (
-            lambda user_input: user_input == '/metrics'
+        handler2.can_handle.side_effect = lambda user_input: (
+            user_input == '/metrics'
         )
 
         registry.register(handler1)

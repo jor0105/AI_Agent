@@ -2,7 +2,7 @@
 
 Documentação técnica da camada Presentation (CLI) do CreateAgents AI.
 
----
+______________________________________________________________________
 
 ## 📐 Visão Geral
 
@@ -22,7 +22,7 @@ ChatCLIApplication (orquestrador)
         └── ClearCommandHandler
 ```
 
----
+______________________________________________________________________
 
 ## 🎯 Componentes Principais
 
@@ -43,7 +43,7 @@ class ChatCLIApplication:
     - OCP: New commands can be added by registering new handlers
     """
 
-    def __init__(self, agent: 'CreateAgent'):
+    def __init__(self, agent: 'AgentFacade'):
         self._agent = agent
         self._renderer = TerminalRenderer()
         self._input_reader = InputReader()
@@ -62,7 +62,7 @@ class ChatCLIApplication:
 - `run()` - Loop principal da aplicação
 - `_is_exit_command(input)` - Verifica comandos de saída
 
----
+______________________________________________________________________
 
 ### 2. CommandHandler (Interface)
 
@@ -81,23 +81,22 @@ class CommandHandler(ABC):
     def __init__(self, renderer: TerminalRenderer):
         self._renderer = renderer
 
-    @abstractmethod
     def can_handle(self, user_input: str) -> bool:
-        """Check if this handler can process the input."""
-        pass
+        """Check if this handler can process the input (default: alias matching)."""
+        return self._normalize_input(user_input) in self.get_aliases()
 
     @abstractmethod
-    def execute(self, agent: 'CreateAgent', user_input: str) -> None:
+    def execute(self, agent: 'AgentFacade', user_input: str) -> None:
         """Execute the command."""
         pass
 
     @abstractmethod
-    def get_aliases(self) -> List[str]:
+    def get_aliases(self) -> list[str]:
         """Get command aliases."""
         pass
 ```
 
----
+______________________________________________________________________
 
 ### 3. CommandRegistry
 
@@ -114,13 +113,13 @@ class CommandRegistry:
     """
 
     def __init__(self):
-        self._handlers: List[CommandHandler] = []
+        self._handlers: list[CommandHandler] = []
 
     def register(self, handler: CommandHandler) -> None:
         """Register a command handler."""
         self._handlers.append(handler)
 
-    def find_handler(self, user_input: str) -> Optional[CommandHandler]:
+    def find_handler(self, user_input: str) -> CommandHandler | None:
         """Find the first handler that can process the input."""
         for handler in self._handlers:
             if handler.can_handle(user_input):
@@ -129,9 +128,9 @@ class CommandRegistry:
 ```
 
 **Padrão de Registro**:
-Os handlers são registrados em ordem, do mais específico ao mais genérico. O `ChatCommandHandler` deve ser sempre o último (handler padrão).
+Os handlers são registrados em ordem, do mais específico ao mais genérico. O `ChatCommandHandler` deve ser sempre o último (handler padrão de fallback).
 
----
+______________________________________________________________________
 
 ### 4. Command Handlers
 
@@ -144,12 +143,15 @@ class ChatCommandHandler(CommandHandler):
     """Handles regular chat messages (default handler)."""
 
     def can_handle(self, user_input: str) -> bool:
-        # Aceita qualquer entrada (fallback)
-        return True
+        # Aceita qualquer entrada não-vazia (fallback)
+        return bool(user_input.strip())
 
-    def execute(self, agent: 'CreateAgent', user_input: str) -> None:
-        # Processa streaming assíncrono
-        asyncio.run(self._async_execute(agent, user_input))
+    def execute(self, agent: 'AgentFacade', user_input: str) -> None:
+        # Processa chat e streaming
+        asyncio.run(self.__run_chat(agent, user_input))
+
+    def get_aliases(self) -> list[str]:
+        return []
 ```
 
 #### HelpCommandHandler
@@ -158,11 +160,10 @@ class ChatCommandHandler(CommandHandler):
 
 ```python
 class HelpCommandHandler(CommandHandler):
-    def can_handle(self, user_input: str) -> bool:
-        normalized = self._normalize_input(user_input)
-        return normalized in self.get_aliases()
+    def execute(self, agent: 'AgentFacade', user_input: str) -> None:
+        self._render_markdown(_HELP_TEXT)
 
-    def get_aliases(self) -> List[str]:
+    def get_aliases(self) -> list[str]:
         return ['/help', 'help']
 ```
 
@@ -172,14 +173,14 @@ class HelpCommandHandler(CommandHandler):
 
 ```python
 class MetricsCommandHandler(CommandHandler):
-    def execute(self, agent: 'CreateAgent', user_input: str) -> None:
+    def execute(self, agent: 'AgentFacade', user_input: str) -> None:
         metrics = agent.get_metrics()
-        # Formata e renderiza métricas
+        # Constrói tabela Markdown e exibe via self._render_markdown(...)
 ```
 
-_(Outros handlers seguem estrutura similar)_
+_(Outros handlers como ConfigsCommandHandler, ToolsCommandHandler e ClearCommandHandler seguem estrutura similar)_
 
----
+______________________________________________________________________
 
 ### 5. TerminalRenderer
 
@@ -189,88 +190,111 @@ _(Outros handlers seguem estrutura similar)_
 
 ```python
 class TerminalRenderer:
-    """Handles terminal rendering with colors and formatting.
+    """Handles terminal rendering with colors, panels and formatting."""
 
-    Responsibility: Encapsulate all terminal output logic.
-    This follows SRP by handling only rendering concerns.
-    """
-
-    def __init__(self):
+    def __init__(self, show_timestamps: bool = False):
         self._formatter = TerminalFormatter()
-        self._colors = ColorScheme()
+        self._console = Console()
+        self._show_timestamps = show_timestamps
 
-    def render_welcome_screen(self) -> None:
-        """Display welcome message."""
-
-    def render_prompt(self) -> None:
-        """Display user input prompt."""
-
-    def render_assistant_token(self, token: str) -> None:
-        """Render a single token from assistant."""
-
-    def render_system_message(self, message: str) -> None:
-        """Render a system message."""
-
-    def render_error(self, message: str) -> None:
-        """Render an error message."""
+    def render_welcome_screen(self) -> None: ...
+    def render_prompt(self) -> None: ...
+    def render_user_message(self, message: str) -> None: ...
+    def render_ai_message(self, message: str) -> None: ...
+    async def render_ai_message_streaming(
+        self, token_generator: AsyncIterator[str]
+    ) -> None: ...
+    def render_thinking_indicator(self) -> None: ...
+    def clear_thinking_indicator(self) -> None: ...
+    def render_system_message(self, message: str) -> None: ...
+    def render_success_message(self, message: str) -> None: ...
+    def render_error(self, message: str) -> None: ...
 ```
 
-**Métodos de Renderização**:
+______________________________________________________________________
 
-- `render_welcome_screen()` - Tela de boas-vindas
-- `render_prompt()` - Prompt de entrada
-- `render_input_indicator()` - Indicador ✎
-- `render_assistant_token(token)` - Token individual do agente
-- `render_thinking_indicator()` - Indicador "pensando..."
-- `render_system_message(msg)` - Mensagem do sistema
-- `render_error(msg)` - Mensagem de erro
-- `render_metrics(metrics)` - Exibir métricas
-- `render_configs(configs)` - Exibir configurações
-- `render_tools(tools)` - Exibir ferramentas
+### 6. Formatters
 
----
+#### TerminalFormatter
 
-### 6. TerminalFormatter
-
-**Responsabilidade**: Formatação de markdown para terminal.
+**Responsabilidade**: Formatação de balões arredondados e cálculo de largura.
 
 **Localização**: `src/createagents/presentation/cli/ui/terminal_formatter.py`
 
+> **Nota:** As assinaturas abaixo ilustram a interface conceitual do `TerminalFormatter`. A implementação completa no repositório realiza a remoção de sequências ANSI via regex, quebra de linha inteligente e molduras Unicode.
+
 ```python
 class TerminalFormatter:
-    """Formats markdown text for terminal display.
-
-    Converts markdown elements to terminal-compatible formatting.
-    """
+    """Handles terminal text formatting and display width calculations."""
 
     @staticmethod
-    def format_markdown(text: str) -> str:
-        """Convert markdown to terminal formatting."""
-        # Converte **bold**, *italic*, `code`, etc.
+    def get_display_width(text: str) -> int:
+        """Calcula largura visual considerando caracteres largos e ignorando ANSI."""
+        return len(text)
+
+    @staticmethod
+    def wrap_text(
+        text: str, max_width: int, subsequent_indent: str = ''
+    ) -> list[str]:
+        """Quebra linhas preservando indentação e largura do terminal."""
+        return [text]
+
+    @staticmethod
+    def format_rounded_box(
+        text: str,
+        color: str,
+        align: str = 'left',
+        icon: str = '',
+        timestamp: str = '',
+    ) -> str:
+        """Envolve o texto em uma caixa arredondada com timestamp e ícone."""
+        return text
 ```
 
----
+#### MarkdownTerminalFormatter
+
+**Responsabilidade**: Formatação de Markdown para saída ANSI colorida no terminal.
+
+**Localização**: `src/createagents/presentation/cli/ui/markdown_formatter.py`
+
+```python
+class MarkdownTerminalFormatter:
+    """Renders Markdown as ANSI-styled text for the interactive CLI."""
+
+    @staticmethod
+    def format(text: str) -> str:
+        """Converte headers, listas, tabelas e ênfases em estilos ANSI."""
+        return text
+```
+
+______________________________________________________________________
 
 ### 7. ColorScheme
 
-**Responsabilidade**: Define esquema de cores do terminal.
+**Responsabilidade**: Centraliza códigos de cores ANSI (paleta 256 cores) e métodos semânticos.
 
 **Localização**: `src/createagents/presentation/cli/ui/color_scheme.py`
 
 ```python
 class ColorScheme:
-    """Defines color scheme for terminal output."""
+    """Manages ANSI color codes for terminal output."""
 
-    PRIMARY = "\033[36m"      # Cyan
-    SUCCESS = "\033[32m"      # Green
-    WARNING = "\033[33m"      # Yellow
-    ERROR = "\033[31m"        # Red
-    INFO = "\033[34m"         # Blue
-    COMMAND = "\033[35m"      # Magenta
-    RESET = "\033[0m"
+    BLUE: str = '\033[38;5;75m'  # Mensagens do usuário
+    PURPLE: str = '\033[38;5;141m'  # Mensagens da IA
+    GREEN: str = '\033[38;5;84m'  # Sucesso
+    YELLOW: str = '\033[38;5;221m'  # Avisos
+    RED: str = '\033[38;5;204m'  # Erros
+    CYAN: str = '\033[38;5;87m'  # Sistema
+    GRAY: str = '\033[38;5;245m'  # Texto sutil
+    DARK_GRAY: str = '\033[38;5;240m'  # Metadados
+    RESET: str = '\033[0m'
+
+    # Métodos semânticos
+    # get_user_color(), get_ai_color(), get_system_color(),
+    # get_success_color(), get_error_color(), get_timestamp_color()
 ```
 
----
+______________________________________________________________________
 
 ## 🔄 Fluxo de Execução
 
@@ -317,19 +341,24 @@ MetricsCommandHandler.execute(agent, "/metrics")
   → renderer.render_metrics(metrics)
 ```
 
-### 4. Processamento de Chat (Streaming)
+### 4. Processamento de Chat
 
 ```
 ChatCommandHandler.execute(agent, "Olá")
-  → asyncio.run(_async_execute(agent, "Olá"))
+  → asyncio.run(__run_chat(agent, "Olá"))
+      → renderer.render_user_message("Olá")
+      → renderer.render_spacer()
       → renderer.render_thinking_indicator()
       → response = await agent.chat("Olá")
-      → async for token in response:
-          → renderer.render_assistant_token(token)
-      → renderer.clear_thinking_indicator()
+      → if isinstance(response, StreamingResponseDTO):
+            await renderer.render_ai_message_streaming(response)
+        else:
+            renderer.clear_thinking_indicator()
+            renderer.render_ai_message(MarkdownTerminalFormatter.format(response))
+      → renderer.render_spacer()
 ```
 
----
+______________________________________________________________________
 
 ## 🎨 Princípios Arquiteturais
 
@@ -359,6 +388,7 @@ class CustomCommandHandler(CommandHandler):
     def get_aliases(self):
         return ['/custom']
 
+
 # Registrar
 registry.register(CustomCommandHandler(renderer))
 ```
@@ -375,84 +405,59 @@ Cada handler encapsula uma ação como objeto, permitindo:
 - Enfileiramento de solicitações
 - Suporte a operações reversíveis
 
----
+______________________________________________________________________
 
 ## 🛠️ Adicionando Novos Comandos
 
-### Passo 1: Criar Handler
+Para estender a CLI com um novo comando:
+
+1. **Crie o Handler** herdando de `CommandHandler`:
 
 ```python
 # src/createagents/presentation/cli/commands/my_command.py
 from .base_command import CommandHandler
 
+
 class MyCommandHandler(CommandHandler):
-    def can_handle(self, user_input: str) -> bool:
-        return self._normalize_input(user_input) in self.get_aliases()
+    def execute(self, agent: 'AgentFacade', user_input: str) -> None:
+        self._renderer.render_system_message('Resultado do comando')
 
-    def execute(self, agent: 'CreateAgent', user_input: str) -> None:
-        # Sua lógica aqui
-        result = self._my_logic(agent)
-        self._renderer.render_system_message(result)
-
-    def get_aliases(self) -> List[str]:
+    def get_aliases(self) -> list[str]:
         return ['/mycommand', 'mycommand']
-
-    def _my_logic(self, agent):
-        # Implementação
-        return "Resultado do comando"
 ```
 
-### Passo 2: Registrar Handler
+2. **Registre o Handler** em `ChatCLIApplication._setup_commands`:
 
 ```python
 # src/createagents/presentation/cli/application/chat_cli_app.py
 def _setup_commands(self) -> None:
-    # ...outros comandos...
     self._registry.register(MyCommandHandler(self._renderer))
-    # ChatCommandHandler deve ser sempre último
+    # ChatCommandHandler é sempre registrado por último (fallback padrão)
     self._registry.register(ChatCommandHandler(self._renderer))
 ```
 
-### Passo 3: Exportar (Opcional)
-
-```python
-# src/createagents/presentation/cli/commands/__init__.py
-from .my_command import MyCommandHandler
-
-__all__ = [
-    # ...outros...
-    'MyCommandHandler',
-]
-```
-
----
+______________________________________________________________________
 
 ## 📊 Testabilidade
 
-A arquitetura permite fácil testabilidade:
-
 ```python
-import pytest
 from unittest.mock import Mock
 
+from createagents.presentation.cli.commands import HelpCommandHandler
+
+
 def test_help_command_handler():
-    # Mock renderer
     mock_renderer = Mock()
     handler = HelpCommandHandler(mock_renderer)
 
-    # Mock agent
-    mock_agent = Mock()
+    assert handler.can_handle('/help') is True
+    assert handler.can_handle('other') is False
 
-    # Test can_handle
-    assert handler.can_handle("/help") == True
-    assert handler.can_handle("other") == False
-
-    # Test execute
-    handler.execute(mock_agent, "/help")
+    handler.execute(Mock(), '/help')
     mock_renderer.render_system_message.assert_called_once()
 ```
 
----
+______________________________________________________________________
 
 ## 💡 Best Practices
 
@@ -462,7 +467,7 @@ def test_help_command_handler():
 4. **Normalize Input**: Use `_normalize_input()` para comparações
 5. **Async Awareness**: Chat é assíncrono, use `asyncio.run()` se necessário
 
----
+______________________________________________________________________
 
 ## 📚 Próximos Passos
 
@@ -470,6 +475,6 @@ def test_help_command_handler():
 - [API Reference - Commands](../reference/commands.md)
 - [Contribuindo](contribute.md)
 
----
+______________________________________________________________________
 
-**Versão:** 0.1.3 | **Atualização:** 01/12/2025
+**Versão:** 0.2.0 | **Atualização:** 2026-08-25

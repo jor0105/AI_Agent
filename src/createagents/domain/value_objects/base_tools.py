@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, ClassVar
 
 
 class BaseTool(ABC):
@@ -23,34 +23,35 @@ class BaseTool(ABC):
 
     Example:
         ```python
-        class CalculatorTool(BaseTool):
-            name = "calculator"
-            description = "Performs mathematical calculations"
+        class WordCountTool(BaseTool):
+            name = "word_count"
+            description = "Counts the number of words in a text"
             parameters = {
                 "type": "object",
                 "properties": {
-                    "expression": {
+                    "text": {
                         "type": "string",
-                        "description": "Mathematical expression to evaluate"
+                        "description": "Text to count words from",
                     }
                 },
-                "required": ["expression"]
+                "required": ["text"],
             }
 
-            def execute(self, expression: str) -> str:
-                return str(eval(expression))
+            def execute(self, text: str) -> str:
+                return str(len(text.split()))
         ```
     """
 
     name: str = 'base_tool'
     description: str = 'Base tool description (should be overridden)'
-    parameters: Dict[str, Any] = {
+
+    parameters: ClassVar[dict[str, Any]] = {
         'type': 'object',
         'properties': {},
     }
 
     @abstractmethod
-    def execute(self, *args, **kwargs) -> Any:
+    def execute(self, *args: Any, **kwargs: Any) -> Any:
         """Execute the tool's main functionality.
 
         This method must be implemented by all subclasses.
@@ -63,7 +64,7 @@ class BaseTool(ABC):
             The result of the tool execution (typically a string).
         """
 
-    def get_schema(self) -> Dict[str, Any]:
+    def get_schema(self) -> dict[str, Any]:
         """Return a generic schema describing the tool.
 
         This method returns a provider-agnostic schema that contains

@@ -1,105 +1,40 @@
-from unittest.mock import Mock
 import time
+from unittest.mock import Mock
 
 import pytest
 
 from createagents.infra.adapters.Common.metrics_recorder import (
-    MetricsRecorder,
+    OllamaMetricsRecorder,
+    OpenAIMetricsRecorder,
+    ProviderUsage,
 )
 from createagents.infra.config.metrics import ChatMetrics
 
+# allow-assertion-reduction: Generic provider cases were replaced by provider-specific recorder coverage below.
+
 
 @pytest.mark.unit
-class TestMetricsRecorder:
-    def test_scenario_initialization_with_no_metrics_list(self):
-        recorder = MetricsRecorder()
-        assert recorder._metrics == []
+class TestRecorderBaseBehaviour:
+    """Shared behaviour, exercised through a concrete recorder."""
 
-    def test_scenario_initialization_with_existing_metrics_list(self):
-        existing_metrics = [Mock(spec=ChatMetrics)]
-        recorder = MetricsRecorder(existing_metrics)
-        assert recorder._metrics == existing_metrics
+    def test_starts_with_an_empty_metrics_list(self):
+        assert OpenAIMetricsRecorder().get_metrics() == []
 
-    def test_scenario_record_success_metrics_generic_provider(self):
-        recorder = MetricsRecorder()
-        start_time = time.time()
+    def test_appends_to_an_injected_list(self):
+        shared: list[ChatMetrics] = []
+        recorder = OpenAIMetricsRecorder(shared)
 
-        recorder.record_success_metrics(
-            model='test-model',
-            start_time=start_time,
-            response_api=Mock(),
-            provider_type='generic',
-        )
+        recorder.record_error_metrics('m', time.time(), 'boom')
 
-        metrics = recorder.get_metrics()
-        assert len(metrics) == 1
-        assert metrics[0].model == 'test-model'
-        assert metrics[0].success is True
-        assert metrics[0].latency_ms >= 0
+        assert len(shared) == 1
 
-    def test_scenario_record_success_metrics_openai_provider(self):
-        recorder = MetricsRecorder()
-        start_time = time.time()
-
-        mock_usage = Mock()
-        mock_usage.total_tokens = 100
-        mock_usage.prompt_tokens = 50
-        mock_usage.completion_tokens = 50
-
-        mock_response = Mock()
-        mock_response.usage = mock_usage
-
-        recorder.record_success_metrics(
-            model='gpt-4',
-            start_time=start_time,
-            response_api=mock_response,
-            provider_type='openai',
-        )
-
-        metrics = recorder.get_metrics()
-        assert len(metrics) == 1
-        assert metrics[0].model == 'gpt-4'
-        assert metrics[0].tokens_used == 100
-        assert metrics[0].prompt_tokens == 50
-        assert metrics[0].completion_tokens == 50
-        assert metrics[0].success is True
-
-    def test_scenario_record_success_metrics_ollama_provider(self):
-        recorder = MetricsRecorder()
-        start_time = time.time()
-
-        mock_response = {
-            'prompt_eval_count': 30,
-            'eval_count': 20,
-            'load_duration': 1000000,
-            'prompt_eval_duration': 2000000,
-            'eval_duration': 3000000,
-        }
-
-        recorder.record_success_metrics(
-            model='llama2',
-            start_time=start_time,
-            response_api=mock_response,
-            provider_type='ollama',
-        )
-
-        metrics = recorder.get_metrics()
-        assert len(metrics) == 1
-        assert metrics[0].model == 'llama2'
-        assert metrics[0].tokens_used == 50
-        assert metrics[0].prompt_tokens == 30
-        assert metrics[0].completion_tokens == 20
-        assert metrics[0].load_duration_ms == 1.0
-        assert metrics[0].prompt_eval_duration_ms == 2.0
-        assert metrics[0].eval_duration_ms == 3.0
-
-    def test_scenario_record_error_metrics(self):
-        recorder = MetricsRecorder()
-        start_time = time.time()
-        error = ValueError('Test error')
+    def test_records_error_metrics(self):
+        recorder = OpenAIMetricsRecorder()
 
         recorder.record_error_metrics(
-            model='test-model', start_time=start_time, error=error
+            model='test-model',
+            start_time=time.time(),
+            error=ValueError('Test error'),
         )
 
         metrics = recorder.get_metrics()
@@ -109,69 +44,150 @@ class TestMetricsRecorder:
         assert metrics[0].error_message == 'Test error'
         assert metrics[0].latency_ms >= 0
 
-    def test_scenario_get_metrics_returns_copy(self):
-        recorder = MetricsRecorder()
-        start_time = time.time()
+    def test_falsy_error_becomes_a_readable_message(self):
+        recorder = OpenAIMetricsRecorder()
 
-        recorder.record_error_metrics(
-            model='test', start_time=start_time, error='error'
+        recorder.record_error_metrics('m', time.time(), None)
+
+        assert recorder.get_metrics()[0].error_message == 'Unknown error'
+
+    def test_get_metrics_returns_a_copy(self):
+        recorder = OpenAIMetricsRecorder()
+        recorder.record_error_metrics('test', time.time(), 'error')
+
+        first = recorder.get_metrics()
+        second = recorder.get_metrics()
+
+        assert first == second
+        assert first is not second
+
+    def test_records_in_call_order(self):
+        recorder = OpenAIMetricsRecorder()
+        start = time.time()
+
+        recorder.record_success_metrics('model1', start, Mock())
+        recorder.record_error_metrics('model2', start, 'err')
+        recorder.record_success_metrics('model3', start, Mock())
+
+        assert [m.model for m in recorder.get_metrics()] == [
+            'model1',
+            'model2',
+            'model3',
+        ]
+
+
+@pytest.mark.unit
+class TestOpenAIMetricsRecorder:
+    def test_reads_token_counts_from_usage(self):
+        response = Mock()
+        response.usage = Mock(
+            spec=['total_tokens', 'prompt_tokens', 'completion_tokens'],
+            total_tokens=100,
+            prompt_tokens=50,
+            completion_tokens=50,
+        )
+        recorder = OpenAIMetricsRecorder()
+
+        recorder.record_success_metrics('gpt-4', time.time(), response)
+
+        metrics = recorder.get_metrics()[0]
+        assert metrics.model == 'gpt-4'
+        assert metrics.tokens_used == 100
+        assert metrics.prompt_tokens == 50
+        assert metrics.completion_tokens == 50
+        assert metrics.success is True
+
+    def test_reads_token_counts_from_responses_api_usage(self):
+        response = Mock()
+        response.usage = Mock(
+            spec=['total_tokens', 'input_tokens', 'output_tokens'],
+            total_tokens=75,
+            input_tokens=40,
+            output_tokens=35,
+        )
+        recorder = OpenAIMetricsRecorder()
+
+        recorder.record_success_metrics('gpt-4', time.time(), response)
+
+        metrics = recorder.get_metrics()[0]
+        assert metrics.model == 'gpt-4'
+        assert metrics.tokens_used == 75
+        assert metrics.prompt_tokens == 40
+        assert metrics.completion_tokens == 35
+        assert metrics.success is True
+
+    def test_calculates_total_tokens_when_missing(self):
+        response = Mock()
+        response.usage = Mock(
+            spec=['input_tokens', 'output_tokens'],
+            input_tokens=25,
+            output_tokens=15,
+        )
+        recorder = OpenAIMetricsRecorder()
+
+        usage = recorder._extract_usage(response)
+
+        assert usage.tokens_used == 40
+        assert usage.prompt_tokens == 25
+        assert usage.completion_tokens == 15
+
+    def test_a_response_without_usage_yields_no_token_counts(self):
+        recorder = OpenAIMetricsRecorder()
+
+        usage = recorder._extract_usage(Mock(spec=[]))
+
+        assert usage == ProviderUsage()
+
+    def test_openai_reports_no_durations(self):
+        response = Mock()
+        response.usage = Mock(
+            total_tokens=1, prompt_tokens=1, completion_tokens=0
+        )
+        recorder = OpenAIMetricsRecorder()
+
+        recorder.record_success_metrics('gpt-4', time.time(), response)
+
+        metrics = recorder.get_metrics()[0]
+        assert metrics.load_duration_ms is None
+        assert metrics.prompt_eval_duration_ms is None
+        assert metrics.eval_duration_ms is None
+
+
+@pytest.mark.unit
+class TestOllamaMetricsRecorder:
+    def test_reads_counts_and_converts_nanosecond_durations(self):
+        response = {
+            'prompt_eval_count': 30,
+            'eval_count': 20,
+            'load_duration': 1_000_000,
+            'prompt_eval_duration': 2_000_000,
+            'eval_duration': 3_000_000,
+        }
+        recorder = OllamaMetricsRecorder()
+
+        recorder.record_success_metrics('llama2', time.time(), response)
+
+        metrics = recorder.get_metrics()[0]
+        assert metrics.model == 'llama2'
+        assert metrics.tokens_used == 50
+        assert metrics.prompt_tokens == 30
+        assert metrics.completion_tokens == 20
+        assert metrics.load_duration_ms == 1.0
+        assert metrics.prompt_eval_duration_ms == 2.0
+        assert metrics.eval_duration_ms == 3.0
+
+    def test_empty_response_yields_zero_tokens_and_no_durations(self):
+        usage = OllamaMetricsRecorder()._extract_usage({})
+
+        assert usage == ProviderUsage(
+            tokens_used=0, prompt_tokens=0, completion_tokens=0
         )
 
-        metrics1 = recorder.get_metrics()
-        metrics2 = recorder.get_metrics()
-
-        assert metrics1 == metrics2
-        assert metrics1 is not metrics2
-
-    def test_scenario_multiple_metrics_recorded(self):
-        recorder = MetricsRecorder()
-        start_time = time.time()
-
-        recorder.record_success_metrics(
-            model='model1', start_time=start_time, response_api=Mock()
-        )
-        recorder.record_error_metrics(
-            model='model2', start_time=start_time, error='err'
-        )
-        recorder.record_success_metrics(
-            model='model3', start_time=start_time, response_api=Mock()
+    def test_missing_durations_stay_none(self):
+        usage = OllamaMetricsRecorder()._extract_usage(
+            {'prompt_eval_count': 1, 'eval_count': 2}
         )
 
-        metrics = recorder.get_metrics()
-        assert len(metrics) == 3
-        assert metrics[0].model == 'model1'
-        assert metrics[1].model == 'model2'
-        assert metrics[2].model == 'model3'
-
-    def test_scenario_extract_openai_tokens_no_usage(self):
-        mock_response = Mock(spec=[])
-
-        tokens_used, prompt_tokens, completion_tokens = (
-            MetricsRecorder._extract_openai_tokens(mock_response)
-        )
-
-        assert tokens_used is None
-        assert prompt_tokens is None
-        assert completion_tokens is None
-
-    def test_scenario_extract_ollama_tokens_empty_response(self):
-        response = {}
-
-        tokens_used, prompt_tokens, completion_tokens = (
-            MetricsRecorder._extract_ollama_tokens(response)
-        )
-
-        assert tokens_used == 0
-        assert prompt_tokens == 0
-        assert completion_tokens == 0
-
-    def test_scenario_extract_ollama_durations_none_values(self):
-        response = {}
-
-        load_ms, prompt_ms, eval_ms = (
-            MetricsRecorder._extract_ollama_durations(response)
-        )
-
-        assert load_ms is None
-        assert prompt_ms is None
-        assert eval_ms is None
+        assert usage.load_duration_ms is None
+        assert usage.prompt_eval_duration_ms is None
+        assert usage.eval_duration_ms is None

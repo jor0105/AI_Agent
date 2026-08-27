@@ -107,24 +107,31 @@ class TestOpenAIHandler:
         assert metrics[0].success is False
         assert 'API Error' in metrics[0].error_message
 
+    @patch(
+        'createagents.infra.adapters.OpenAI.openai_tool_invoker.ToolCallParser'
+    )
     @patch('createagents.infra.adapters.OpenAI.openai_handler.ToolCallParser')
-    @patch('createagents.infra.adapters.OpenAI.openai_handler.ToolExecutor')
+    @patch('createagents.infra.adapters.Common.tool_session.ToolExecutor')
     @patch(
         'createagents.infra.adapters.OpenAI.openai_handler.ToolSchemaFormatter'
     )
     @pytest.mark.asyncio
     async def test_execute_tool_loop_with_tool_calls(
-        self, mock_formatter, mock_executor_cls, mock_parser
+        self,
+        mock_formatter,
+        mock_executor_cls,
+        mock_parser,
+        mock_invoker_parser,
     ):
         # Setup
         mock_parser.has_tool_calls.side_effect = [
             True,
             False,
         ]  # First call has tools, second has final response
-        mock_parser.get_assistant_message_with_tool_calls.return_value = []
+        mock_invoker_parser.get_assistant_message_with_tool_calls.return_value = []
 
         # Mock tool extraction
-        mock_parser.extract_tool_calls.return_value = [
+        mock_invoker_parser.extract_tool_calls.return_value = [
             {'id': 'call_1', 'name': 'test_tool', 'arguments': {'arg': 'val'}}
         ]
 

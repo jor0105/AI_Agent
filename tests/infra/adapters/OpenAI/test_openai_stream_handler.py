@@ -79,11 +79,12 @@ class TestOpenAIStreamHandler:
 
     @pytest.mark.asyncio
     @patch(
-        'createagents.infra.adapters.OpenAI.openai_stream_handler.ToolCallParser'
+        'createagents.infra.adapters.OpenAI.openai_tool_invoker.ToolCallParser'
     )
     @patch(
-        'createagents.infra.adapters.OpenAI.openai_stream_handler.ToolExecutor'
+        'createagents.infra.adapters.OpenAI.openai_stream_handler.ToolCallParser'
     )
+    @patch('createagents.infra.adapters.Common.tool_session.ToolExecutor')
     @patch(
         'createagents.infra.adapters.OpenAI.openai_stream_handler.ToolSchemaFormatter'
     )
@@ -92,16 +93,17 @@ class TestOpenAIStreamHandler:
         mock_formatter,
         mock_executor_cls,
         mock_parser,
+        mock_invoker_parser,
     ):
         mock_formatter.format_tools_for_responses_api.return_value = [
             {'name': 'dummy'}
         ]
         mock_parser.has_tool_calls.side_effect = [True, False]
-        mock_parser.get_assistant_message_with_tool_calls.return_value = []
-        mock_parser.extract_tool_calls.return_value = [
+        mock_invoker_parser.get_assistant_message_with_tool_calls.return_value = []
+        mock_invoker_parser.extract_tool_calls.return_value = [
             {'name': 'dummy', 'arguments': {'value': 1}, 'id': 'call_1'}
         ]
-        mock_parser.format_tool_results_for_llm.return_value = {
+        mock_invoker_parser.format_tool_results_for_llm.return_value = {
             'role': 'tool',
             'content': 'ok',
         }
@@ -173,3 +175,88 @@ class TestOpenAIStreamHandler:
         assert len(metrics) == 1
         assert metrics[0].success is False
         assert 'Stream Error' in metrics[0].error_message
+
+
+@pytest.mark.unit
+class TestCompletedResponseFallback:
+    """When no text delta arrives, the completed response must still emit.
+
+    The Responses API nests assistant text as
+    `output[] -> 'message' -> content[] -> 'output_text'`. An earlier
+    fallback looked for an output item of type 'text', which the API never
+    emits, so the stream silently produced nothing.
+    """
+
+    @staticmethod
+    def _completed(output):
+        return SimpleNamespace(
+            type='response.completed',
+            response=SimpleNamespace(response_output=None, output=output),
+        )
+
+    @staticmethod
+    async def _collect(handler):
+        return [
+            token
+            async for token in handler.handle_stream(
+                model=IA_OPENAI_TEST_1,
+                instructions=None,
+                messages=[],
+                config={'stream': True},
+                tools=None,
+            )
+        ]
+
+    def _handler(self, output):
+        client = MagicMock()
+        client.call_api = AsyncMock(
+            return_value=FakeStream([self._completed(output)])
+        )
+        return OpenAIStreamHandler(client, [])
+
+    @pytest.mark.asyncio
+    async def test_yields_text_nested_in_a_message_item(self):
+        output = [
+            SimpleNamespace(
+                type='message',
+                content=[
+                    SimpleNamespace(type='output_text', text='Hello '),
+                    SimpleNamespace(type='output_text', text='world'),
+                ],
+            )
+        ]
+
+        assert await self._collect(self._handler(output)) == [
+            'Hello ',
+            'world',
+        ]
+
+    @pytest.mark.asyncio
+    async def test_ignores_non_message_output_items(self):
+        output = [
+            SimpleNamespace(type='reasoning', content=None),
+            SimpleNamespace(
+                type='message',
+                content=[SimpleNamespace(type='output_text', text='answer')],
+            ),
+        ]
+
+        assert await self._collect(self._handler(output)) == ['answer']
+
+    @pytest.mark.asyncio
+    async def test_ignores_non_text_content_parts(self):
+        output = [
+            SimpleNamespace(
+                type='message',
+                content=[
+                    SimpleNamespace(type='refusal', text='nope'),
+                    SimpleNamespace(type='output_text', text='ok'),
+                ],
+            )
+        ]
+
+        assert await self._collect(self._handler(output)) == ['ok']
+
+    @pytest.mark.asyncio
+    async def test_empty_output_yields_nothing(self):
+        assert await self._collect(self._handler([])) == []

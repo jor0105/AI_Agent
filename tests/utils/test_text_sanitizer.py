@@ -2,32 +2,33 @@ import re
 
 import pytest
 
+from createagents.presentation.cli.ui import MarkdownTerminalFormatter
 from createagents.utils import TextSanitizer
 
 
 @pytest.mark.unit
 class TestWrapText:
     def test_wrap_empty_text(self):
-        result = TextSanitizer._wrap_text('', 80)
+        result = MarkdownTerminalFormatter._wrap_text('', 80)
         assert result == []
 
     def test_wrap_single_word_fits(self):
-        result = TextSanitizer._wrap_text('Hello', 80)
+        result = MarkdownTerminalFormatter._wrap_text('Hello', 80)
         assert result == ['Hello']
 
     def test_wrap_single_word_exceeds_width(self):
-        result = TextSanitizer._wrap_text(
+        result = MarkdownTerminalFormatter._wrap_text(
             'Supercalifragilisticexpialidocious', 10
         )
         assert result == ['Supercalifragilisticexpialidocious']
 
     def test_wrap_multiple_words_fits(self):
-        result = TextSanitizer._wrap_text('Hello World', 80)
+        result = MarkdownTerminalFormatter._wrap_text('Hello World', 80)
         assert result == ['Hello World']
 
     def test_wrap_multiple_words_needs_wrapping(self):
         text = 'The quick brown fox jumps over the lazy dog'
-        result = TextSanitizer._wrap_text(text, 20)
+        result = MarkdownTerminalFormatter._wrap_text(text, 20)
 
         all_words = ' '.join(result).split()
         original_words = text.split()
@@ -37,16 +38,16 @@ class TestWrapText:
             assert len(line) <= 20
 
     def test_wrap_with_width_zero(self):
-        result = TextSanitizer._wrap_text('Hello World', 0)
+        result = MarkdownTerminalFormatter._wrap_text('Hello World', 0)
         assert len(result) > 0
 
     def test_wrap_with_width_one(self):
-        result = TextSanitizer._wrap_text('Hello World', 1)
+        result = MarkdownTerminalFormatter._wrap_text('Hello World', 1)
         assert len(result) >= 2
 
     def test_wrap_preserves_word_order(self):
         text = 'One Two Three Four Five Six Seven Eight'
-        result = TextSanitizer._wrap_text(text, 15)
+        result = MarkdownTerminalFormatter._wrap_text(text, 15)
 
         reconstructed = ' '.join(result)
         words_original = text.split()
@@ -56,38 +57,40 @@ class TestWrapText:
 
     def test_wrap_with_extra_spaces(self):
         text = 'Hello    World    Test'
-        result = TextSanitizer._wrap_text(text, 80)
+        result = MarkdownTerminalFormatter._wrap_text(text, 80)
 
         assert 'Hello' in result[0]
         assert 'World' in result[0]
 
     def test_wrap_very_long_text(self):
         text = ' '.join(['word'] * 100)
-        result = TextSanitizer._wrap_text(text, 20)
+        result = MarkdownTerminalFormatter._wrap_text(text, 20)
 
         assert len(result) > 1
         for line in result:
             assert len(line) <= 20
 
     def test_wrap_single_long_word_with_small_width(self):
-        result = TextSanitizer._wrap_text('Antidisestablishmentarianism', 5)
+        result = MarkdownTerminalFormatter._wrap_text(
+            'Antidisestablishmentarianism', 5
+        )
         assert 'Antidisestablishmentarianism' in result
 
     def test_wrap_respects_width_boundary(self):
         text = 'Short text to wrap with specific width limit'
         width = 25
-        result = TextSanitizer._wrap_text(text, width)
+        result = MarkdownTerminalFormatter._wrap_text(text, width)
 
         for line in result:
             assert len(line) <= width
 
     def test_wrap_only_whitespace(self):
-        result = TextSanitizer._wrap_text('     ', 80)
+        result = MarkdownTerminalFormatter._wrap_text('     ', 80)
         assert result == []
 
     def test_wrap_text_with_tabs(self):
         text = 'Hello\tWorld\tTest'
-        result = TextSanitizer._wrap_text(text, 80)
+        result = MarkdownTerminalFormatter._wrap_text(text, 80)
 
         assert len(result) > 0
         reconstructed = ' '.join(result)
@@ -97,7 +100,7 @@ class TestWrapText:
 
     def test_wrap_text_with_newlines_treated_as_spaces(self):
         text = 'Hello\nWorld\nTest'
-        result = TextSanitizer._wrap_text(text, 80)
+        result = MarkdownTerminalFormatter._wrap_text(text, 80)
 
         assert len(result) > 0
         reconstructed = ' '.join(result)
@@ -108,9 +111,9 @@ class TestWrapText:
     def test_wrap_with_increasingly_larger_width(self):
         text = 'The quick brown fox jumps over the lazy dog'
 
-        result_10 = TextSanitizer._wrap_text(text, 10)
-        result_20 = TextSanitizer._wrap_text(text, 20)
-        result_100 = TextSanitizer._wrap_text(text, 100)
+        result_10 = MarkdownTerminalFormatter._wrap_text(text, 10)
+        result_20 = MarkdownTerminalFormatter._wrap_text(text, 20)
+        result_100 = MarkdownTerminalFormatter._wrap_text(text, 100)
 
         assert len(result_100) <= len(result_20) <= len(result_10)
 
@@ -118,7 +121,7 @@ class TestWrapText:
         text = (
             'Supercalifragilisticexpialidocious Antidisestablishmentarianism'
         )
-        result = TextSanitizer._wrap_text(text, 40)
+        result = MarkdownTerminalFormatter._wrap_text(text, 40)
 
         assert len(result) >= 1
         for line in result:
@@ -249,29 +252,29 @@ class TestSanitize:
 @pytest.mark.unit
 class TestFormatMarkdownForTerminal:
     def test_format_non_string_input(self):
-        assert TextSanitizer.format_markdown_for_terminal(123) == 123
-        assert TextSanitizer.format_markdown_for_terminal(None) is None
+        assert MarkdownTerminalFormatter.format(123) == 123
+        assert MarkdownTerminalFormatter.format(None) is None
 
     def test_format_empty_string(self):
-        result = TextSanitizer.format_markdown_for_terminal('')
+        result = MarkdownTerminalFormatter.format('')
         assert result == ''
 
     def test_format_plain_text(self):
         text = 'This is plain text'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert 'This is plain text' in result
 
     def test_format_remove_br_tags(self):
         text = 'Line 1<br>Line 2<br/>Line 3'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '<br' not in result
         assert '\n' in result
 
     def test_format_remove_html_tags(self):
         text = 'This is <b>bold</b> and <i>italic</i> and <span>span</span>'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '<b>' not in result
         assert '<i>' not in result
@@ -281,7 +284,7 @@ class TestFormatMarkdownForTerminal:
 
     def test_format_remove_complex_html_tags(self):
         text = 'This is a <a href="link">link</a> and <div class="box">content</div>'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '<a' not in result
         assert '<div' not in result
@@ -290,23 +293,23 @@ class TestFormatMarkdownForTerminal:
 
     def test_format_h1_header(self):
         text = '# Main Title'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert 'Main Title' in result
         assert '───────' in result
 
     def test_format_h2_header(self):
         text = '## Section Title'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
         assert 'Section Title' in result
 
     def test_format_h3_header(self):
         text = '### Subsection'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
         assert 'Subsection' in result
 
     def test_format_h4_header_uses_indicator(self):
-        result = TextSanitizer.format_markdown_for_terminal('#### Header')
+        result = MarkdownTerminalFormatter.format('#### Header')
 
         assert 'Header' in result
         assert '▌' in result
@@ -314,12 +317,12 @@ class TestFormatMarkdownForTerminal:
     def test_format_h5_h6_headers_render_text(self):
         for level in [5, 6]:
             markdown = '#' * level + ' Header'
-            result = TextSanitizer.format_markdown_for_terminal(markdown)
+            result = MarkdownTerminalFormatter.format(markdown)
             assert 'Header' in result
 
     def test_format_multiple_headers(self):
         text = '# Title\n## Section 1\n### Subsection\n## Section 2'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert 'Title' in result
         assert 'Section 1' in result
@@ -328,35 +331,35 @@ class TestFormatMarkdownForTerminal:
 
     def test_format_bold_double_asterisk(self):
         text = 'This is **bold** text'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '**' not in result
         assert 'bold' in result
 
     def test_format_bold_double_underscore(self):
         text = 'This is __bold__ text'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '__' not in result
         assert 'bold' in result
 
     def test_format_italic_single_asterisk(self):
         text = 'This is *italic* text'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '*italic*' not in result
         assert 'italic' in result
 
     def test_format_italic_single_underscore(self):
         text = 'This is _italic_ text'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '_italic_' not in result
         assert 'italic' in result
 
     def test_format_mixed_bold_italic(self):
         text = 'This is **bold** and *italic* and __bold__ and _italic_'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '**' not in result
         assert '__' not in result
@@ -365,7 +368,7 @@ class TestFormatMarkdownForTerminal:
 
     def test_format_unordered_list_dash(self):
         text = '- Item 1\n- Item 2\n- Item 3'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '•' in result
         assert 'Item 1' in result
@@ -374,21 +377,21 @@ class TestFormatMarkdownForTerminal:
 
     def test_format_unordered_list_asterisk(self):
         text = '* Item 1\n* Item 2\n* Item 3'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '•' in result
         assert 'Item 1' in result
 
     def test_format_unordered_list_plus(self):
         text = '+ Item 1\n+ Item 2\n+ Item 3'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '•' in result
         assert 'Item 1' in result
 
     def test_format_ordered_list(self):
         text = '1. First\n2. Second\n3. Third'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '→' in result
         assert 'First' in result
@@ -397,7 +400,7 @@ class TestFormatMarkdownForTerminal:
 
     def test_format_nested_list(self):
         text = '- Item 1\n  - Subitem 1.1\n  - Subitem 1.2\n- Item 2'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '•' in result
         assert 'Item 1' in result
@@ -405,7 +408,7 @@ class TestFormatMarkdownForTerminal:
 
     def test_format_horizontal_rule_dashes(self):
         text = 'Before\n---\nAfter'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '─' in result
         assert 'Before' in result
@@ -413,19 +416,19 @@ class TestFormatMarkdownForTerminal:
 
     def test_format_horizontal_rule_asterisks(self):
         text = 'Before\n***\nAfter'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '─' in result
 
     def test_format_horizontal_rule_underscores(self):
         text = 'Before\n___\nAfter'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '─' in result
 
     def test_format_simple_table_two_columns(self):
         text = '| Header1 | Header2 |\n|---------|----------|\n| Value1  | Value2  |'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert 'Header1' in result
         assert 'Value1' in result
@@ -433,27 +436,27 @@ class TestFormatMarkdownForTerminal:
 
     def test_format_table_with_long_content(self):
         text = '| Name | Description |\n|------|-------------|\n| Item | This is a very long description that should be wrapped properly in the terminal |'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert 'Name' in result or 'Item' in result
         assert 'Description' in result or 'description' in result
 
     def test_format_multicolumn_table(self):
         text = '| Col1 | Col2 | Col3 |\n|------|------|------|\n| A | B | C |'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert 'Col1' in result
         assert 'A' in result or '│' in result
 
     def test_format_consecutive_blank_lines(self):
         text = 'Line 1\n\n\n\nLine 2'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '\n\n\n' not in result
 
     def test_format_trailing_spaces_removed(self):
         text = 'Line 1   \nLine 2   '
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         lines = result.split('\n')
         for line in lines:
@@ -461,19 +464,19 @@ class TestFormatMarkdownForTerminal:
 
     def test_format_code_block_with_backticks(self):
         text = '`code` and ``double`` and ```\nblock\n```'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert 'code' in result
 
     def test_format_links_removed(self):
         text = '[Link text](https://example.com)'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '[' not in result or 'Link text' in result
 
     def test_format_unicode_characters_preserved(self):
         text = 'Hello 你好 🎉 Привет'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '你好' in result
         assert '🎉' in result
@@ -497,7 +500,7 @@ This is *italic* and **bold** text.
 |--------|-------|
 | Row1   | Data1 |
 """
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert 'Main Title' in result
         assert 'Section 1' in result
@@ -507,14 +510,14 @@ This is *italic* and **bold** text.
 
     def test_format_empty_table_cells(self):
         text = '| Col1 | Col2 |\n|------|------|\n| | Empty |'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert 'Col1' in result
         assert 'Empty' in result
 
     def test_format_list_with_complex_items(self):
         text = '- Item with **bold** and *italic*\n- Another **item**'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '•' in result
         assert 'bold' in result
@@ -522,32 +525,32 @@ This is *italic* and **bold** text.
 
     def test_format_header_with_markdown_inside(self):
         text = '# Header with **bold** and *italic*'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert 'Header with' in result
         assert 'bold' in result
 
     def test_format_very_long_line(self):
         long_text = 'This is a very long line ' * 20
-        result = TextSanitizer.format_markdown_for_terminal(long_text)
+        result = MarkdownTerminalFormatter.format(long_text)
 
         assert 'This is a very long line' in result
 
     def test_format_special_markdown_chars_in_plain_text(self):
         text = 'Price is $5.99 * 2 = $11.98'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert 'Price' in result
 
     def test_format_malformed_markdown(self):
         text = '**unclosed bold\n*unclosed italic\n- Incomplete list item: '
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert isinstance(result, str)
 
     def test_format_preserves_paragraph_structure(self):
         text = 'Paragraph 1\n\nParagraph 2\n\nParagraph 3'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert 'Paragraph 1' in result
         assert 'Paragraph 2' in result
@@ -560,7 +563,7 @@ class TestTextSanitizerIntegration:
         text = '# Title\u202f(with problematic char)\n\n**Bold** and *italic*'
 
         sanitized = TextSanitizer.sanitize(text)
-        formatted = TextSanitizer.format_markdown_for_terminal(sanitized)
+        formatted = MarkdownTerminalFormatter.format(sanitized)
 
         assert 'Title' in formatted
         assert 'problematic char' in formatted
@@ -569,7 +572,7 @@ class TestTextSanitizerIntegration:
     def test_format_already_formats_sanitization(self):
         text = '# Title\u202fTest\n**Bold**'
 
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '\u202f' not in result
         assert 'Title' in result
@@ -578,7 +581,7 @@ class TestTextSanitizerIntegration:
     def test_markdown_with_unicode_content(self):
         text = '# 你好世界\n\n**中文** 和 *日本語*\n\n- 项目1\n- 項目2'
 
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert '你好世界' in result
         assert '中文' in result
@@ -609,7 +612,7 @@ This is a **critical** project with *important* details.
 - Modified: 2024-11-07
 """
 
-        result = TextSanitizer.format_markdown_for_terminal(document)
+        result = MarkdownTerminalFormatter.format(document)
 
         assert 'Project Documentation' in result
         assert 'Overview' in result
@@ -622,8 +625,8 @@ This is a **critical** project with *important* details.
     def test_wrap_text_after_formatting(self):
         markdown = '# Title\n\nThis is a long line that might need wrapping when displayed in a terminal with limited width'
 
-        formatted = TextSanitizer.format_markdown_for_terminal(markdown)
-        wrapped = TextSanitizer._wrap_text(formatted, 40)
+        formatted = MarkdownTerminalFormatter.format(markdown)
+        wrapped = MarkdownTerminalFormatter._wrap_text(formatted, 40)
 
         assert len(wrapped) > 0
         ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
@@ -639,29 +642,27 @@ class TestEdgeCasesAndErrorHandling:
     def test_extremely_large_text(self):
         large_text = 'word ' * 10000
 
-        result_wrapped = TextSanitizer._wrap_text(large_text, 80)
+        result_wrapped = MarkdownTerminalFormatter._wrap_text(large_text, 80)
         assert len(result_wrapped) > 0
 
         result_sanitized = TextSanitizer.sanitize(large_text)
         assert 'word' in result_sanitized
 
-        result_formatted = TextSanitizer.format_markdown_for_terminal(
-            large_text
-        )
+        result_formatted = MarkdownTerminalFormatter.format(large_text)
         assert 'word' in result_formatted
 
     def test_none_handling(self):
         assert TextSanitizer.sanitize(None) is None
-        assert TextSanitizer.format_markdown_for_terminal(None) is None
+        assert MarkdownTerminalFormatter.format(None) is None
 
     def test_numeric_input_handling(self):
         assert TextSanitizer.sanitize(42) == 42
-        assert TextSanitizer.format_markdown_for_terminal(3.14) == 3.14
+        assert MarkdownTerminalFormatter.format(3.14) == 3.14
 
     def test_list_input_handling(self):
         lst = [1, 2, 3]
         assert TextSanitizer.sanitize(lst) == lst
-        assert TextSanitizer.format_markdown_for_terminal(lst) == lst
+        assert MarkdownTerminalFormatter.format(lst) == lst
 
     def test_unicode_edge_cases(self):
         test_cases = [
@@ -677,27 +678,27 @@ class TestEdgeCasesAndErrorHandling:
 
     def test_mixed_line_endings(self):
         text = 'Line1\nLine2\r\nLine3\rLine4'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert 'Line' in result
 
     def test_format_with_only_markdown_syntax(self):
         text = '# ## ### #### ##### ######'
-        result = TextSanitizer.format_markdown_for_terminal(text)
+        result = MarkdownTerminalFormatter.format(text)
 
         assert isinstance(result, str)
 
     def test_wrap_text_width_larger_than_content(self):
         text = 'Short'
-        result = TextSanitizer._wrap_text(text, 1000)
+        result = MarkdownTerminalFormatter._wrap_text(text, 1000)
 
         assert result == ['Short']
 
     def test_consecutive_formatting_calls(self):
         text = '# Test\n**bold** and *italic*'
 
-        result1 = TextSanitizer.format_markdown_for_terminal(text)
-        result2 = TextSanitizer.format_markdown_for_terminal(result1)
-        result3 = TextSanitizer.format_markdown_for_terminal(result2)
+        result1 = MarkdownTerminalFormatter.format(text)
+        result2 = MarkdownTerminalFormatter.format(result1)
+        result3 = MarkdownTerminalFormatter.format(result2)
 
         assert result2 == result3

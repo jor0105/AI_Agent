@@ -1,11 +1,11 @@
 import re
 from functools import lru_cache
-from typing import Dict, Pattern
+from re import Pattern
+from typing import ClassVar
 
 
 class SensitiveDataFilter:
-    """
-    A filter to remove sensitive data from logs.
+    """A filter to remove sensitive data from logs.
 
     This filter protects against the leakage of:
     - Credentials (API keys, tokens, passwords)
@@ -33,7 +33,7 @@ class SensitiveDataFilter:
     DEFAULT_CACHE_SIZE = 1000
     DEFAULT_VISIBLE_CHARS = 4
 
-    _PATTERNS: Dict[str, Pattern] = {
+    _PATTERNS: ClassVar[dict[str, Pattern]] = {
         'jwt_token': re.compile(
             r'eyJ[a-zA-Z0-9_-]*\.eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*'
         ),
@@ -79,8 +79,8 @@ class SensitiveDataFilter:
     @classmethod
     @lru_cache(maxsize=DEFAULT_CACHE_SIZE)
     def _filter_cached(cls, text: str) -> str:
-        """
-        Removes or masks sensitive data from text (cached version).
+        """Removes or masks sensitive data from text (cached version).
+
         Uses an LRU cache for improved performance and automatic management.
 
         Args:
@@ -119,8 +119,7 @@ class SensitiveDataFilter:
 
     @classmethod
     def filter(cls, text: str) -> str:
-        """
-        Removes or masks sensitive data from a given text.
+        """Removes or masks sensitive data from a given text.
 
         Args:
             text: The text to be filtered.
@@ -147,8 +146,7 @@ class SensitiveDataFilter:
     def mask_partial(
         cls, text: str, visible_chars: int = DEFAULT_VISIBLE_CHARS
     ) -> str:
-        """
-        Partially masks a text, keeping a specified number of characters visible.
+        """Partially masks a text, keeping a specified number of characters visible.
 
         Args:
             text: The text to be masked.
@@ -171,8 +169,7 @@ class SensitiveDataFilter:
 
     @classmethod
     def is_sensitive(cls, text: str) -> bool:
-        """
-        Checks if the given text contains sensitive data.
+        """Checks if the given text contains sensitive data.
 
         Args:
             text: The text to be checked.
@@ -183,8 +180,4 @@ class SensitiveDataFilter:
         if not text:
             return False
 
-        for pattern in cls._PATTERNS.values():
-            if pattern.search(text):
-                return True
-
-        return False
+        return any(pattern.search(text) for pattern in cls._PATTERNS.values())

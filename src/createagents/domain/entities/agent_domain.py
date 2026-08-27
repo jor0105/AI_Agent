@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-
+from typing import Any
 
 from ..exceptions import (
     InvalidConfigTypeException,
@@ -9,10 +8,10 @@ from ..exceptions import (
 )
 from ..value_objects import (
     BaseTool,
-    History,
     SupportedConfigs,
     SupportedProviders,
 )
+from .history import History
 
 
 @dataclass
@@ -30,13 +29,13 @@ class Agent:
 
     provider: str
     model: str
-    name: Optional[str] = None
-    instructions: Optional[str] = None
-    config: Optional[Dict[str, Any]] = None
-    tools: Optional[List[BaseTool]] = None
+    name: str | None = None
+    instructions: str | None = None
+    config: dict[str, Any] | None = None
+    tools: list[BaseTool] | None = None
     history: History = field(default_factory=History)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Initialize history (if needed) and validate agent configuration.
 
         Raises:
@@ -45,7 +44,7 @@ class Agent:
             InvalidConfigTypeException: if a configuration value has an invalid type.
         """
         if not isinstance(self.history, History):
-            object.__setattr__(self, 'history', History())
+            self.history = History()
 
         available_providers = SupportedProviders.get_available_providers()
         if self.provider.lower() not in available_providers:

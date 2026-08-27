@@ -64,8 +64,7 @@ class TestOllamaStreamHandler:
                 },
             ),
         ]
-        client.call_api = AsyncMock(return_value=FakeStream(chunks))
-        client.stop_model = MagicMock()
+        client.stream_api = AsyncMock(return_value=FakeStream(chunks))
 
         handler = OllamaStreamHandler(client, metrics_store)
 
@@ -84,12 +83,9 @@ class TestOllamaStreamHandler:
         assert metrics_store[0].load_duration_ms == 1.0
         assert metrics_store[0].prompt_eval_duration_ms == 2.0
         assert metrics_store[0].eval_duration_ms == 3.0
-        client.stop_model.assert_called_once_with('test-model')
 
     @pytest.mark.asyncio
-    @patch(
-        'createagents.infra.adapters.Ollama.ollama_stream_handler.ToolExecutor'
-    )
+    @patch('createagents.infra.adapters.Common.tool_session.ToolExecutor')
     async def test_handle_stream_scenarios_executes_tool_calls(
         self, mock_tool_executor
     ):
@@ -104,10 +100,9 @@ class TestOllamaStreamHandler:
         stream_with_answer = FakeStream(
             [FakeChunk(content='Answer', metrics={'eval_count': 2})]
         )
-        client.call_api = AsyncMock(
+        client.stream_api = AsyncMock(
             side_effect=[stream_with_tool, stream_with_answer]
         )
-        client.stop_model = MagicMock()
 
         executor_instance = SimpleNamespace(
             execute_tool=AsyncMock(
@@ -133,4 +128,3 @@ class TestOllamaStreamHandler:
         )
         assert len(metrics_store) == 1
         assert metrics_store[0].completion_tokens == 2
-        client.stop_model.assert_called_once_with('test-model')

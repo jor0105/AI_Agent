@@ -124,8 +124,8 @@ class TestStreamingResponseDTO:
         gen = mock_generator(tokens)
         dto = StreamingResponseDTO(gen)
 
-        first_token = await dto.__anext__()
-        assert first_token == 'A'
+        first_item = await dto.__anext__()
+        assert first_item == 'A'
         assert dto._full_response == 'A'
 
         result = await dto

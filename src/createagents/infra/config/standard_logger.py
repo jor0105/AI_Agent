@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from ...domain.interfaces import LoggerInterface
+from .logging_config import LoggingConfig
 
 
 class StandardLogger(LoggerInterface):
@@ -11,7 +12,7 @@ class StandardLogger(LoggerInterface):
     the domain's LoggerInterface, following the Adapter pattern.
     """
 
-    def __init__(self, logger: logging.Logger):
+    def __init__(self, logger: logging.Logger) -> None:
         """Initialize with a Python logger instance.
 
         Args:
@@ -39,6 +40,12 @@ class StandardLogger(LoggerInterface):
         """Log a critical message."""
         self._logger.critical(message, *args, **kwargs)
 
+    def exception(self, message: str, *args: Any, **kwargs: Any) -> None:
+        """Log an error message with the active exception traceback."""
+        # This adapter intentionally delegates; the exception handler lives
+        # at the call site, not here.
+        self._logger.error(message, *args, exc_info=True, **kwargs)
+
 
 def create_logger(name: str) -> LoggerInterface:
     """Factory function to create a logger instance.
@@ -49,7 +56,5 @@ def create_logger(name: str) -> LoggerInterface:
     Returns:
         A LoggerInterface implementation.
     """
-    from .logging_config import LoggingConfig  # pylint: disable=import-outside-toplevel
-
     python_logger = LoggingConfig.get_logger(name)
     return StandardLogger(python_logger)

@@ -1,9 +1,9 @@
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from .base_command import CommandHandler
 
 if TYPE_CHECKING:
-    from ....application.facade import CreateAgent
+    from ..protocols import AgentFacade
 
 
 class ClearCommandHandler(CommandHandler):
@@ -13,16 +13,11 @@ class ClearCommandHandler(CommandHandler):
     This follows SRP by handling only clear-related functionality.
     """
 
-    def can_handle(self, user_input: str) -> bool:
-        """Check if input is a clear command."""
-        normalized = self._normalize_input(user_input)
-        return normalized in self.get_aliases()
-
-    def execute(self, agent: 'CreateAgent', user_input: str) -> None:
+    def execute(self, agent: 'AgentFacade', user_input: str) -> None:
         """Execute the clear command.
 
         Args:
-            agent: The CreateAgent instance.
+            agent: The agent facade.
             user_input: The user's input string.
         """
         agent.clear_history()
@@ -30,6 +25,6 @@ class ClearCommandHandler(CommandHandler):
             'Chat history cleared successfully!'
         )
 
-    def get_aliases(self) -> List[str]:
+    def get_aliases(self) -> list[str]:
         """Get clear command aliases."""
         return ['/clear', 'clear_history']

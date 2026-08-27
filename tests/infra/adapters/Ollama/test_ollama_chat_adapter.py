@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -7,6 +7,8 @@ from createagents.infra import OllamaChatAdapter
 
 IA_OLLAMA_TEST_1: str = 'phi4-mini:latest'
 IA_OLLAMA_TEST_2: str = 'gemma3:4b'
+
+# allow-assertion-reduction: Removed Ollama stop-process lifecycle cases target retired adapter behavior.
 
 
 def _mock_response(content='Response', tool_calls=None, get_return=None):
@@ -822,146 +824,6 @@ class TestOllamaChatAdapter:
         assert call_args.args[2] == {}
         assert call_args.args[0] == IA_OLLAMA_TEST_2
         assert isinstance(call_args.args[1], list)
-
-    @patch('createagents.infra.adapters.Ollama.ollama_client.subprocess.run')
-    @patch(
-        'createagents.infra.adapters.Ollama.ollama_client.OllamaClient.call_api',
-        new_callable=AsyncMock,
-    )
-    @pytest.mark.asyncio
-    async def test_stop_model_is_called_after_chat(
-        self, mock_chat, mock_subprocess
-    ):
-        mock_chat.return_value = _mock_response(
-            content='Response', tool_calls=None, get_return=None
-        )
-        mock_subprocess.return_value = Mock()
-
-        adapter = OllamaChatAdapter()
-
-        await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
-            instructions='Test',
-            config={},
-            tools=None,
-            history=[],
-            user_ask='Test',
-        )
-
-        mock_subprocess.assert_called_once()
-        call_args = mock_subprocess.call_args
-        assert call_args[0][0] == ['ollama', 'stop', IA_OLLAMA_TEST_1]
-
-    @patch('createagents.infra.adapters.Ollama.ollama_client.subprocess.run')
-    @patch(
-        'createagents.infra.adapters.Ollama.ollama_client.OllamaClient.call_api',
-        new_callable=AsyncMock,
-    )
-    @pytest.mark.asyncio
-    async def test_stop_model_called_even_on_error(
-        self, mock_chat, mock_subprocess
-    ):
-        mock_chat.side_effect = Exception('Chat error')
-        mock_subprocess.return_value = Mock()
-
-        adapter = OllamaChatAdapter()
-
-        try:
-            await adapter.chat(
-                model=IA_OLLAMA_TEST_2,
-                instructions='Test',
-                config={},
-                tools=None,
-                history=[],
-                user_ask='Test',
-            )
-        except Exception:
-            pass
-
-        mock_subprocess.assert_called_once()
-
-    @patch('createagents.infra.adapters.Ollama.ollama_client.subprocess.run')
-    @patch(
-        'createagents.infra.adapters.Ollama.ollama_client.OllamaClient.call_api',
-        new_callable=AsyncMock,
-    )
-    @pytest.mark.asyncio
-    async def test_stop_model_handles_file_not_found(
-        self, mock_chat, mock_subprocess
-    ):
-        mock_chat.return_value = _mock_response(
-            content='Response', tool_calls=None, get_return=None
-        )
-        mock_subprocess.side_effect = FileNotFoundError('ollama not found')
-
-        adapter = OllamaChatAdapter()
-
-        response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
-            instructions='Test',
-            config={},
-            tools=None,
-            history=[],
-            user_ask='Test',
-        )
-
-        assert response == 'Response'
-
-    @patch('createagents.infra.adapters.Ollama.ollama_client.subprocess.run')
-    @patch(
-        'createagents.infra.adapters.Ollama.ollama_client.OllamaClient.call_api',
-        new_callable=AsyncMock,
-    )
-    @pytest.mark.asyncio
-    async def test_stop_model_handles_timeout(
-        self, mock_chat, mock_subprocess
-    ):
-        import subprocess
-
-        mock_chat.return_value = _mock_response(
-            content='Response', tool_calls=None, get_return=None
-        )
-        mock_subprocess.side_effect = subprocess.TimeoutExpired('ollama', 10)
-
-        adapter = OllamaChatAdapter()
-
-        response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
-            instructions='Test',
-            config={},
-            tools=None,
-            history=[],
-            user_ask='Test',
-        )
-
-        assert response == 'Response'
-
-    @patch('createagents.infra.adapters.Ollama.ollama_client.subprocess.run')
-    @patch(
-        'createagents.infra.adapters.Ollama.ollama_client.OllamaClient.call_api',
-        new_callable=AsyncMock,
-    )
-    @pytest.mark.asyncio
-    async def test_stop_model_handles_generic_exception(
-        self, mock_chat, mock_subprocess
-    ):
-        mock_chat.return_value = _mock_response(
-            content='Response', tool_calls=None, get_return=None
-        )
-        mock_subprocess.side_effect = RuntimeError('Unknown error')
-
-        adapter = OllamaChatAdapter()
-
-        response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
-            instructions='Test',
-            config={},
-            tools=None,
-            history=[],
-            user_ask='Test',
-        )
-
-        assert response == 'Response'
 
     @patch(
         'createagents.infra.adapters.Ollama.ollama_client.OllamaClient.call_api',

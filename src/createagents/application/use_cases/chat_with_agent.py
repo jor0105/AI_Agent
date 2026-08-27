@@ -1,14 +1,19 @@
-from typing import AsyncGenerator, List, Union
+from collections.abc import AsyncGenerator
+from typing import ClassVar
 
-from ...domain import Agent, ChatException
-from ...infra import ChatMetrics, LoggingConfig
+from ...domain import (
+    Agent,
+    ChatException,
+    ChatMetrics,
+    LoggerInterface,
+    NullLogger,
+)
 from ..dtos import ChatInputDTO, ChatOutputDTO
 from ..interfaces import ChatRepository
 
 
 class ChatWithAgentUseCase:
-    """
-    Use case for handling chat interactions with an AI agent.
+    """Use case for handling chat interactions with an AI agent.
 
     This class orchestrates the process of sending a user message to an agent,
     receiving the response, sanitizing the output, and updating the agent's
@@ -16,21 +21,37 @@ class ChatWithAgentUseCase:
     the interaction.
     """
 
-    def __init__(self, chat_repository: ChatRepository):
-        """
-        Initializes the Use Case with its dependencies.
+    #: Maps a data-shape failure to its `(log label, caller-facing message)`.
+    #: Keyed by exact type; a subclass falls back to the generic entry below.
+    __DATA_ERRORS: ClassVar[dict[type[Exception], tuple[str, str]]] = {
+        ValueError: ('Validation error', 'Validation error during chat'),
+        TypeError: ('Type error', 'Type error during chat'),
+        KeyError: (
+            'Error processing response',
+            'Error processing AI response',
+        ),
+        AttributeError: ('Attribute error', 'Attribute error during chat'),
+    }
+    __DEFAULT_DATA_ERROR = ('Error', 'Error during chat')
+
+    def __init__(
+        self,
+        chat_repository: ChatRepository,
+        logger: LoggerInterface | None = None,
+    ) -> None:
+        """Initializes the Use Case with its dependencies.
 
         Args:
             chat_repository: Repository for AI communication.
+            logger: Optional logger injected by the composition root.
         """
         self.__chat_repository = chat_repository
-        self.__logger = LoggingConfig.get_logger(__name__)
+        self.__logger = logger or NullLogger()
 
     async def execute(
         self, agent: Agent, input_dto: ChatInputDTO
-    ) -> Union[ChatOutputDTO, AsyncGenerator[str, None]]:
-        """
-        Sends a message to the agent and returns the response.
+    ) -> ChatOutputDTO | AsyncGenerator[str, None]:
+        """Sends a message to the agent and returns the response.
 
         Args:
             agent: The agent instance.
@@ -83,31 +104,18 @@ class ChatWithAgentUseCase:
             return output_dto
 
         except ChatException:
-            self.__logger.error(
-                'ChatException during chat execution', exc_info=True
-            )
+            self.__logger.exception('ChatException during chat execution')
             raise
         except (ValueError, TypeError, KeyError, AttributeError) as e:
-            error_map = {
-                ValueError: (
-                    'Validation error',
-                    'Validation error during chat: {}',
-                ),
-                TypeError: ('Type error', 'Type error during chat: {}'),
-                KeyError: (
-                    'Error processing response',
-                    'Error processing AI response: {}',
-                ),
-            }
-            msg, user_msg = error_map.get(
-                type(e), ('Error', 'Error during chat: {}')
+            log_label, user_message = self.__DATA_ERRORS.get(
+                type(e), self.__DEFAULT_DATA_ERROR
             )
-            self.__logger.error('%s: %s', msg, str(e), exc_info=True)
-            raise ChatException(user_msg.format(str(e))) from e
+            self.__logger.exception('%s', log_label)
+            raise ChatException(f'{user_message}: {e!s}') from e
         except Exception as e:
-            self.__logger.error('Unexpected error: %s', str(e), exc_info=True)
+            self.__logger.exception('Unexpected error')
             raise ChatException(
-                f'Unexpected error during communication with AI: {str(e)}',
+                f'Unexpected error during communication with AI: {e!s}',
                 original_error=e,
             ) from e
 
@@ -117,8 +125,7 @@ class ChatWithAgentUseCase:
         input_dto: ChatInputDTO,
         stream: AsyncGenerator[str, None],
     ) -> AsyncGenerator[str, None]:
-        """
-        Handles streaming responses by yielding tokens and preserving chat history.
+        """Handles streaming responses by yielding tokens and preserving chat history.
 
         This method creates a wrapper generator that:
         1. Yields tokens as they arrive from the underlying stream
@@ -162,28 +169,19 @@ class ChatWithAgentUseCase:
             )
 
         except ChatException:
-            self.__logger.error(
-                'ChatException during streaming', exc_info=True
-            )
+            self.__logger.exception('ChatException during streaming')
             raise
         except Exception as e:
-            self.__logger.error(
-                'Error during streaming: %s', str(e), exc_info=True
-            )
+            self.__logger.exception('Error during streaming')
             raise ChatException(
-                f'Error during streaming: {str(e)}',
+                f'Error during streaming: {e!s}',
                 original_error=e,
             ) from e
 
-    def get_metrics(self) -> List[ChatMetrics]:
-        """
-        Returns the metrics collected by the chat repository.
+    def get_metrics(self) -> list[ChatMetrics]:
+        """Returns the metrics collected by the chat repository.
 
         Returns:
-            A list of metrics if the repository supports it; otherwise, an empty list.
+            A list of metrics collected during interactions.
         """
-        if hasattr(self.__chat_repository, 'get_metrics'):
-            metrics = self.__chat_repository.get_metrics()
-            if isinstance(metrics, list):
-                return metrics
-        return []
+        return self.__chat_repository.get_metrics()

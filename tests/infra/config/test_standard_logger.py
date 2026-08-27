@@ -79,7 +79,7 @@ class TestStandardLogger:
         assert hasattr(logger, 'error')
         assert hasattr(logger, 'critical')
 
-    @patch('createagents.infra.config.logging_config.LoggingConfig')
+    @patch('createagents.infra.config.standard_logger.LoggingConfig')
     def test_scenario_create_logger_factory(self, mock_logging_config):
         mock_python_logger = Mock(spec=logging.Logger)
         mock_logging_config.get_logger.return_value = mock_python_logger

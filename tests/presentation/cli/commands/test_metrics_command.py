@@ -2,7 +2,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from createagents.infra import ChatMetrics
+from createagents.domain import ChatMetrics
 from createagents.presentation.cli.commands.metrics_command import (
     MetricsCommandHandler,
 )
@@ -46,7 +46,7 @@ class TestMetricsCommandHandler:
         handler = MetricsCommandHandler(renderer)
 
         with patch(
-            'createagents.presentation.cli.commands.metrics_command.TextSanitizer.format_markdown_for_terminal',
+            'createagents.presentation.cli.commands.base_command.MarkdownTerminalFormatter.format',
             return_value='formatted-metrics',
         ) as mock_formatter:
             handler.execute(agent, '/metrics')

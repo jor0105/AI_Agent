@@ -151,7 +151,7 @@ class TestAgent:
         ]
         providers = ['openai', 'openai', 'ollama', 'ollama']
 
-        for model, provider in zip(models, providers):
+        for model, provider in zip(models, providers, strict=True):
             agent = Agent(
                 provider=provider,
                 model=model,

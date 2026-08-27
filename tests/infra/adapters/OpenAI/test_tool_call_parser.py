@@ -1,5 +1,5 @@
 import json
-from typing import Any, List
+from typing import Any
 from unittest.mock import Mock
 
 import pytest
@@ -15,7 +15,7 @@ class MockOutputItem:
 
 
 class MockResponse:
-    def __init__(self, output: List[Any]):
+    def __init__(self, output: list[Any]):
         self.output = output
 
 

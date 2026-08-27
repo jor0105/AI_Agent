@@ -465,8 +465,8 @@ class TestLoggingIntegration:
         assert isinstance(result, str)
         assert len(result) > 0
 
-    def test_resolve_log_file_path_with_valid_string(self):
-        test_path = '/tmp/test.log'
+    def test_resolve_log_file_path_with_valid_string(self, tmp_path):
+        test_path = str(tmp_path / 'test.log')
         result = LoggingConfig._resolve_log_file_path(test_path)
 
         assert result == test_path
@@ -576,10 +576,10 @@ class TestLoggingIntegration:
         assert isinstance(LoggingConfig.DEFAULT_BACKUP_COUNT, int)
         assert isinstance(LoggingConfig.DEFAULT_LOG_PATH, str)
 
-    def test_resolve_log_file_path_handles_path_like_objects(self):
+    def test_resolve_log_file_path_handles_path_like_objects(self, tmp_path):
         from pathlib import Path
 
-        test_path = Path('/tmp/test.log')
+        test_path = Path(tmp_path / 'test.log')
         result = LoggingConfig._resolve_log_file_path(str(test_path))
 
         assert result == str(test_path)

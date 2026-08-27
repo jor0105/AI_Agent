@@ -1,45 +1,47 @@
 from .adapters import (
+    AvailableTools,
+    AvailableToolsRegistry,
     CurrentDateTool,
     OllamaChatAdapter,
-    OllamaToolCallParser,
     OllamaToolSchemaFormatter,
     OpenAIChatAdapter,
     ToolCallParser,
     ToolSchemaFormatter,
 )
 from .config import (
-    AvailableTools,
-    ChatMetrics,
     EnvironmentConfig,
     JSONFormatter,
     LoggingConfig,
     MetricsCollector,
     SensitiveDataFilter,
     SensitiveDataFormatter,
+    StandardLogger,
+    create_logger,
     retry_with_backoff,
 )
 from .factories import ChatAdapterFactory
 
 __all__ = [
-    # Configs
-    'EnvironmentConfig',
-    'LoggingConfig',
-    'JSONFormatter',
-    'SensitiveDataFormatter',
-    'ChatMetrics',
-    'MetricsCollector',
-    'retry_with_backoff',
-    'SensitiveDataFilter',
-    'AvailableTools',
-    # Adapters
-    'OllamaChatAdapter',
-    'OllamaToolCallParser',
-    'OllamaToolSchemaFormatter',
-    'OpenAIChatAdapter',
-    'ToolCallParser',
-    'ToolSchemaFormatter',
     # Tools
-    'CurrentDateTool',
+    'AvailableTools',
+    'AvailableToolsRegistry',
     # Factories
     'ChatAdapterFactory',
+    'CurrentDateTool',
+    # Configs
+    'EnvironmentConfig',
+    'JSONFormatter',
+    'LoggingConfig',
+    'MetricsCollector',
+    # Adapters
+    'OllamaChatAdapter',
+    'OllamaToolSchemaFormatter',
+    'OpenAIChatAdapter',
+    'SensitiveDataFilter',
+    'SensitiveDataFormatter',
+    'StandardLogger',
+    'ToolCallParser',
+    'ToolSchemaFormatter',
+    'create_logger',
+    'retry_with_backoff',
 ]

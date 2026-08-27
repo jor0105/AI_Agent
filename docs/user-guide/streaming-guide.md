@@ -2,16 +2,16 @@
 
 Este guia explica como receber respostas do agente em tempo real.
 
----
+______________________________________________________________________
 
 ## 💡 O que é Streaming?
 
-Streaming permite que você veja a resposta aparecendo **palavra por palavra** em tempo real, como se o agente estivesse digitando. Isso deixa a experiência mais natural e interativa.
+Streaming permite que você veja a resposta aparecendo **token por token (em fragmentos de texto)** em tempo real, conforme o agente gera a resposta. Isso deixa a experiência mais natural e interativa.
 
-**Sem streaming**: Você espera 5 segundos e recebe a resposta completa de uma vez.
-**Com streaming**: As palavras aparecem imediatamente, conforme o agente gera a resposta.
+**Sem streaming**: Você aguarda o processamento e recebe a resposta completa de uma vez.
+**Com streaming**: Os fragmentos de texto aparecem progressivamente no terminal ou na interface.
 
----
+______________________________________________________________________
 
 ## 🚀 Como Usar
 
@@ -25,66 +25,80 @@ Use `await` para esperar a resposta completa:
 import asyncio
 from createagents import CreateAgent
 
+
 async def main():
-    agent = CreateAgent(provider="openai", model="gpt-4")
+    agent = CreateAgent(provider='openai', model='gpt-4')
 
     # Espera a resposta completa
-    resposta = await agent.chat("Escreva um poema")
+    resposta = await agent.chat('Escreva um poema')
     print(resposta)
+
 
 asyncio.run(main())
 ```
 
-### 2️⃣ Ver Palavra por Palavra (Streaming em Tempo Real)
+### 2️⃣ Ver Token por Token (Streaming em Tempo Real)
 
-Use `async for` para ver cada palavra aparecer:
+Use `async for` para processar cada token gerado (requer `config={'stream': True}`):
 
 ```python
 import asyncio
 from createagents import CreateAgent
 
+
 async def main():
-    agent = CreateAgent(provider="openai", model="gpt-4")
+    agent = CreateAgent(
+        provider='openai',
+        model='gpt-4',
+        config={'stream': True},
+    )
 
-    resposta = await agent.chat("Conte uma história")
+    resposta = await agent.chat('Conte uma história')
 
-    # Mostra palavra por palavra
-    async for palavra in resposta:
-        print(palavra, end='', flush=True)
+    # Mostra token por token
+    async for token in resposta:
+        print(token, end='', flush=True)
     print()  # Nova linha no final
+
 
 asyncio.run(main())
 ```
 
 > 💡 **Dica**: Use a opção 2 para chatbots ou interfaces onde você quer mostrar o agente "pensando".
 
----
+______________________________________________________________________
 
 ## 📚 Exemplos Práticos
 
 ### Exemplo 1: Chatbot Interativo
 
-Crie um chatbot que mostra as palavras aparecendo:
+Crie um chatbot que mostra os tokens aparecendo em tempo real:
 
 ```python
 import asyncio
 from createagents import CreateAgent
 
+
 async def chat_interface():
-    agent = CreateAgent(provider="openai", model="gpt-4")
+    agent = CreateAgent(
+        provider='openai',
+        model='gpt-4',
+        config={'stream': True},
+    )
 
     while True:
-        user_input = input("Você: ")
+        user_input = input('Você: ')
         if user_input.lower() in ['sair', 'exit']:
             break
 
-        print("Agente: ", end='', flush=True)
+        print('Agente: ', end='', flush=True)
         resposta = await agent.chat(user_input)
 
-        # Mostra palavra por palavra
-        async for palavra in resposta:
-            print(palavra, end='', flush=True)
-        print("\n")
+        # Mostra token por token
+        async for token in resposta:
+            print(token, end='', flush=True)
+        print('\n')
+
 
 asyncio.run(chat_interface())
 ```
@@ -97,35 +111,40 @@ Para perguntas diretas, use `await` (mais simples):
 import asyncio
 from createagents import CreateAgent
 
+
 async def perguntas_simples():
-    agent = CreateAgent(provider="openai", model="gpt-4")
+    agent = CreateAgent(provider='openai', model='gpt-4')
 
     # Pergunta direta
-    resposta = await agent.chat("Qual a capital do Brasil?")
-    print(f"Resposta: {resposta}")
+    resposta = await agent.chat('Qual a capital do Brasil?')
+    print(f'Resposta: {resposta}')
+
 
 asyncio.run(perguntas_simples())
 ```
 
----
+______________________________________________________________________
 
 ## ⚙️ Ativando e Desativando Streaming
 
-### Ativar Streaming (Padrão)
+### Ativar Streaming
 
-Por padrão, o streaming já vem ativado. Você não precisa fazer nada!
+Para utilizar streaming em tempo real, passe `config={"stream": True}` na criação do agente:
 
 ```python
 import asyncio
 from createagents import CreateAgent
 
-async def main():
-    # Streaming já está ativo
-    agent = CreateAgent(provider="openai", model="gpt-4")
 
-    resposta = await agent.chat("Conte uma história")
-    async for palavra in resposta:
-        print(palavra, end='', flush=True)
+async def main():
+    agent = CreateAgent(
+        provider='openai', model='gpt-4', config={'stream': True}
+    )
+
+    resposta = await agent.chat('Conte uma história')
+    async for token in resposta:
+        print(token, end='', flush=True)
+
 
 asyncio.run(main())
 ```
@@ -136,43 +155,51 @@ Se preferir esperar a resposta completa, desative o streaming:
 
 ```python
 import asyncio
+from createagents import CreateAgent
+
 
 async def main():
     # Desabilita streaming
     agent = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        config={"stream": False}
+        provider='openai', model='gpt-4', config={'stream': False}
     )
 
     # Recebe tudo de uma vez
-    resposta = await agent.chat("Olá")
+    resposta = await agent.chat('Olá')
     print(resposta)
+
 
 asyncio.run(main())
 ```
 
----
+______________________________________________________________________
 
 ### Usar com Ollama (Modelos Locais)
 
 ```python
 import asyncio
+from createagents import CreateAgent
+
 
 async def ollama_streaming():
-    agent = CreateAgent(provider="ollama", model="llama3.2")
+    agent = CreateAgent(
+        provider='ollama',
+        model='llama3.2',
+        config={'stream': True},
+    )
 
-    resposta = await agent.chat("Explique machine learning")
-    async for palavra in resposta:
-        print(palavra, end='', flush=True)
+    resposta = await agent.chat('Explique machine learning')
+    async for token in resposta:
+        print(token, end='', flush=True)
     print()
+
 
 asyncio.run(ollama_streaming())
 ```
 
 **Funciona igual!** Não importa se usa OpenAI ou Ollama, o streaming funciona da mesma forma.
 
----
+______________________________________________________________________
 
 ## 🛠️ Usando Ferramentas
 
@@ -180,103 +207,86 @@ O streaming funciona normalmente mesmo quando o agente usa ferramentas:
 
 ```python
 import asyncio
+from createagents import CreateAgent
+
 
 async def exemplo_com_ferramentas():
     agent = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        tools=["currentdate"]
+        provider='openai',
+        model='gpt-4',
+        tools=['currentdate'],
+        config={'stream': True},
     )
 
-    print("Perguntando sobre datas...\n")
-    resposta = await agent.chat("Que dia é hoje?")
+    print('Perguntando sobre datas...\n')
+    resposta = await agent.chat('Que dia é hoje?')
 
     # O agente usa a ferramenta e responde em streaming
-    async for palavra in resposta:
-        print(palavra, end='', flush=True)
+    async for token in resposta:
+        print(token, end='', flush=True)
     print()
+
 
 asyncio.run(exemplo_com_ferramentas())
 ```
 
----
+______________________________________________________________________
 
 ## 📊 Streaming e Métricas
 
-Métricas são coletadas automaticamente, independentemente do modo de consumo:
+As métricas de execução e a gravação da resposta no histórico de conversação são consolidadas automaticamente assim que o fluxo de streaming é totalmente consumido (após o término do `async for` ou ao executar `await response`):
 
 ```python
 import asyncio
+from createagents import CreateAgent
+
 
 async def streaming_with_metrics():
-    from createagents import CreateAgent
+    agent = CreateAgent(
+        provider='openai',
+        model='gpt-4',
+        config={'stream': True},
+    )
 
-    agent = CreateAgent(provider="openai", model="gpt-4")
-
-    # Streaming
-    response = await agent.chat("Conte uma piada")
+    # Streaming em tempo real
+    response = await agent.chat('Conte uma piada')
     async for token in response:
-        print(token, end='')
-    print("\n")
+        print(token, end='', flush=True)
+    print('\n')
 
-    # Métricas ainda são gravadas
+    # Métricas consolidadas após consumo total do stream
     metrics = agent.get_metrics()
-    print(f"\nLatência: {metrics[-1].latency_ms}ms")
-    print(f"Tokens: {metrics[-1].tokens_used}")
+    if metrics:
+        print(f'\nLatência: {metrics[-1].latency_ms}ms')
+        print(f'Tokens: {metrics[-1].tokens_used}')
+
 
 asyncio.run(streaming_with_metrics())
 ```
 
----
+______________________________________________________________________
 
-## � Dicas
+## 💡 Dicas
 
 ### 1. Para Perguntas Rápidas
 
-Use `await` para receber a resposta completa:
-
-```python
-resposta = await agent.chat("Qual a capital da França?")
-print(resposta)
-```
-
-### 2. Para Chatbots e Interfaces
-
-Use `async for` para mostrar palavra por palavra:
-
-```python
-resposta = await agent.chat("Escreva um artigo")
-async for palavra in resposta:
-    print(palavra, end='', flush=True)
-```
-
-### 3. Lembre-se do `await`
-
-Sempre use `await` ao chamar `agent.chat()`:
-
-```python
-# ❌ Errado
-resposta = agent.chat("mensagem")  # Não funciona!
-
-# ✅ Correto
-resposta = await agent.chat("mensagem")  # Funciona!
-```
-
-### 4. Use `asyncio.run()`
-
-Sempre envolva seu código em uma função `async` e execute com `asyncio.run()`:
+Use `await` para receber a resposta completa envolvendo em uma função `async`:
 
 ```python
 import asyncio
+from createagents import CreateAgent
+
 
 async def main():
-    resposta = await agent.chat("mensagem")
+    agent = CreateAgent(provider='openai', model='gpt-4')
+    resposta = await agent.chat('Explique o que é Python')
     print(resposta)
+
 
 asyncio.run(main())
 ```
 
----
+______________________________________________________________________
 
 ## 📚 Próximos Passos
 
@@ -284,6 +294,6 @@ asyncio.run(main())
 - [Exemplos Práticos](examples-user.md) - Mais exemplos de uso
 - [FAQ](faq-user.md) - Perguntas frequentes
 
----
+______________________________________________________________________
 
-**Versão:** 0.1.3 | **Atualização:** 01/12/2025
+**Versão:** 0.2.0 | **Atualização:** 2026-08-25

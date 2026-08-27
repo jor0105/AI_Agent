@@ -12,7 +12,8 @@ IA_OLLAMA_TEST_2: str = (
 
 
 def _check_ollama_available():
-    import subprocess
+    # Integration-only probe for an optional local Ollama installation.
+    import subprocess  # nosec B404
 
     if os.getenv('CI'):
         pytest.skip(
@@ -20,7 +21,7 @@ def _check_ollama_available():
         )
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603, B607
             ['ollama', 'list'], capture_output=True, timeout=5
         )
         if result.returncode != 0:
@@ -30,25 +31,29 @@ def _check_ollama_available():
 
 
 def _check_model_available(model: str):
-    import subprocess
+    # Integration-only probe for an optional local Ollama installation.
+    import subprocess  # nosec B404
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603, B607
             ['ollama', 'list'], capture_output=True, text=True, timeout=5
         )
         if model not in result.stdout:
             pytest.skip(
                 f'Model {model} is not available in Ollama. Run: ollama pull {model}'
             )
-    except Exception as e:
-        pytest.skip(f'Could not verify available models: {e}')
+    except (OSError, subprocess.SubprocessError) as error:
+        pytest.skip(
+            f'Could not verify available models: {type(error).__name__}'
+        )
 
 
 @pytest.fixture(scope='session', autouse=True)
 def teardown_ollama_models():
     yield
 
-    import subprocess
+    # Integration-only teardown of optional local Ollama models.
+    import subprocess  # nosec B404
 
     if os.getenv('CI'):
         return
@@ -56,16 +61,18 @@ def teardown_ollama_models():
     models = [IA_OLLAMA_TEST_1, IA_OLLAMA_TEST_2]
 
     try:
-        subprocess.run(['ollama', '--version'], capture_output=True, timeout=3)
+        subprocess.run(  # nosec B603, B607
+            ['ollama', '--version'], capture_output=True, timeout=3
+        )
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return
 
     for m in models:
         try:
-            subprocess.run(
+            subprocess.run(  # nosec B603, B607
                 ['ollama', 'stop', m], capture_output=True, timeout=10
             )
-        except Exception:
+        except (OSError, subprocess.SubprocessError):
             continue
 
 
@@ -560,7 +567,9 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_currentdate_tool_get_date(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_1)
-        from createagents.infra.config.available_tools import AvailableTools
+        from createagents.infra.adapters.Tools.available_tools import (
+            AvailableTools,
+        )
 
         adapter = OllamaChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -582,7 +591,9 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_currentdate_tool_get_time(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_1)
-        from createagents.infra.config.available_tools import AvailableTools
+        from createagents.infra.adapters.Tools.available_tools import (
+            AvailableTools,
+        )
 
         adapter = OllamaChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -604,7 +615,9 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_currentdate_tool_multiple_actions(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_1)
-        from createagents.infra.config.available_tools import AvailableTools
+        from createagents.infra.adapters.Tools.available_tools import (
+            AvailableTools,
+        )
 
         adapter = OllamaChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -639,7 +652,9 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_currentdate_tool_different_timezones(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_1)
-        from createagents.infra.config.available_tools import AvailableTools
+        from createagents.infra.adapters.Tools.available_tools import (
+            AvailableTools,
+        )
 
         adapter = OllamaChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -666,7 +681,9 @@ class TestOllamaChatAdapterToolsIntegration:
         _check_model_available(IA_OLLAMA_TEST_1)
         import os
 
-        from createagents.infra.config.available_tools import AvailableTools
+        from createagents.infra.adapters.Tools.available_tools import (
+            AvailableTools,
+        )
 
         adapter = OllamaChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -698,7 +715,9 @@ class TestOllamaChatAdapterToolsIntegration:
         _check_model_available(IA_OLLAMA_TEST_1)
         import os
 
-        from createagents.infra.config.available_tools import AvailableTools
+        from createagents.infra.adapters.Tools.available_tools import (
+            AvailableTools,
+        )
 
         adapter = OllamaChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -728,7 +747,9 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_tools_and_configs_combined(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_1)
-        from createagents.infra.config.available_tools import AvailableTools
+        from createagents.infra.adapters.Tools.available_tools import (
+            AvailableTools,
+        )
 
         adapter = OllamaChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -760,7 +781,9 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_multiple_tool_calls_in_conversation(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_1)
-        from createagents.infra.config.available_tools import AvailableTools
+        from createagents.infra.adapters.Tools.available_tools import (
+            AvailableTools,
+        )
 
         adapter = OllamaChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -797,7 +820,9 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_tools_and_think_config(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_2)
-        from createagents.infra.config.available_tools import AvailableTools
+        from createagents.infra.adapters.Tools.available_tools import (
+            AvailableTools,
+        )
 
         adapter = OllamaChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -824,7 +849,9 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_tools_and_top_k_config(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_1)
-        from createagents.infra.config.available_tools import AvailableTools
+        from createagents.infra.adapters.Tools.available_tools import (
+            AvailableTools,
+        )
 
         adapter = OllamaChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
@@ -851,7 +878,9 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_tools_and_all_configs_ollama(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_1)
-        from createagents.infra.config.available_tools import AvailableTools
+        from createagents.infra.adapters.Tools.available_tools import (
+            AvailableTools,
+        )
 
         adapter = OllamaChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())

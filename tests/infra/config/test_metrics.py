@@ -4,7 +4,8 @@ from datetime import datetime
 
 import pytest
 
-from createagents.infra import ChatMetrics, MetricsCollector
+from createagents.domain import ChatMetrics
+from createagents.infra import MetricsCollector
 
 
 @pytest.mark.unit
@@ -299,6 +300,7 @@ class TestMetricsCollector:
                 collector.add(
                     ChatMetrics(model=f'model-{i}', latency_ms=100.0)
                 )
+            # Capture worker failures for the assertion after all futures finish.
             except Exception as e:
                 errors.append(str(e))
 
@@ -324,6 +326,7 @@ class TestMetricsCollector:
                 metrics = collector.get_all()
                 with lock:
                     results.append(len(metrics))
+            # Capture worker failures for the assertion after all futures finish.
             except Exception as e:
                 with lock:
                     errors.append(str(e))
@@ -352,6 +355,7 @@ class TestMetricsCollector:
                 summary = collector.get_summary()
                 with lock:
                     results.append(summary['total_requests'])
+            # Capture worker failures for the assertion after all futures finish.
             except Exception as e:
                 with lock:
                     errors.append(str(e))
@@ -374,6 +378,7 @@ class TestMetricsCollector:
         def clear_metrics():
             try:
                 collector.clear()
+            # Capture worker failures for the assertion after all futures finish.
             except Exception as e:
                 errors.append(str(e))
 
@@ -395,6 +400,7 @@ class TestMetricsCollector:
                 collector.add(
                     ChatMetrics(model=f'model-{i}', latency_ms=100.0)
                 )
+            # Capture worker failures for the assertion after all futures finish.
             except Exception as e:
                 with lock:
                     errors.append(('add', str(e)))
@@ -404,6 +410,7 @@ class TestMetricsCollector:
                 metrics = collector.get_all()
                 with lock:
                     read_results.append(len(metrics))
+            # Capture worker failures for the assertion after all futures finish.
             except Exception as e:
                 with lock:
                     errors.append(('read', str(e)))
@@ -427,6 +434,7 @@ class TestMetricsCollector:
                 collector.add(
                     ChatMetrics(model=f'model-{i}', latency_ms=100.0)
                 )
+            # Capture worker failures for the assertion after all futures finish.
             except Exception as e:
                 errors.append(str(e))
 
@@ -501,6 +509,7 @@ class TestMetricsCollector:
                     collector.get_all()
                 else:
                     collector.get_summary()
+            # Capture worker failures for the assertion after all futures finish.
             except Exception as e:
                 errors.append(str(e))
 

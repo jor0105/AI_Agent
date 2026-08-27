@@ -2,7 +2,7 @@
 
 Documentação completa da API pública do **Create Agents AI**.
 
----
+______________________________________________________________________
 
 ## 🤖 CreateAgent
 
@@ -11,28 +11,29 @@ O controller principal para interação com agentes de IA.
 ### Construtor
 
 ```python
-CreateAgent(
+def __init__(
+    self,
     provider: str,
     model: str,
     name: Optional[str] = None,
     instructions: Optional[str] = None,
     config: Optional[Dict[str, Any]] = None,
     tools: Optional[Sequence[Union[str, BaseTool]]] = None,
-    history_max_size: int = 10
-)
+    history_max_size: int = 10,
+) -> None: ...
 ```
 
 **Parâmetros:**
 
-| Parâmetro          | Tipo   | Descrição                                                | Obrigatório |
-| ------------------ | ------ | -------------------------------------------------------- | ----------- |
-| `provider`         | `str`  | Provider de IA: `"openai"` ou `"ollama"`                 | ✅ Sim      |
-| `model`            | `str`  | Nome do modelo (ex: `"gpt-4.1-mini"`, `"llama2"`)        | ✅ Sim      |
-| `name`             | `str`  | Nome do agente                                           | ❌ Não      |
-| `instructions`     | `str`  | Instruções/personalidade do agente                       | ❌ Não      |
-| `config`           | `dict` | Configurações do modelo (temperature, max_tokens, etc)   | ❌ Não      |
-| `tools`            | `list` | Lista de ferramentas: `["currentdate", "readlocalfile"]` | ❌ Não      |
-| `history_max_size` | `int`  | Tamanho máximo do histórico (padrão: 10)                 | ❌ Não      |
+| Parâmetro          | Tipo   | Descrição                                                                             | Obrigatório |
+| ------------------ | ------ | ------------------------------------------------------------------------------------- | ----------- |
+| `provider`         | `str`  | Provider de IA: `"openai"` ou `"ollama"`                                              | ✅ Sim      |
+| `model`            | `str`  | Nome do modelo (ex: `"gpt-4.1-mini"`, `"llama2"`)                                     | ✅ Sim      |
+| `name`             | `str`  | Nome do agente                                                                        | ❌ Não      |
+| `instructions`     | `str`  | Instruções/personalidade do agente                                                    | ❌ Não      |
+| `config`           | `dict` | Configurações do modelo (temperature, max_tokens, etc)                                | ❌ Não      |
+| `tools`            | `list` | Lista de ferramentas (ex: `["currentdate"]`; `"readlocalfile"` requer `[file-tools]`) | ❌ Não      |
+| `history_max_size` | `int`  | Tamanho máximo do histórico (padrão: 10)                                              | ❌ Não      |
 
 **Exemplo:**
 
@@ -40,16 +41,16 @@ CreateAgent(
 from createagents import CreateAgent
 
 agent = CreateAgent(
-    provider="openai",
-    model="gpt-4.1-mini",
-    instructions="Você é um assistente técnico",
-    config={"temperature": 0.7, "max_tokens": 2000},
-    tools=["currentdate"],
-    history_max_size=20
+    provider='openai',
+    model='gpt-4.1-mini',
+    instructions='Você é um assistente técnico',
+    config={'temperature': 0.7, 'max_tokens': 2000},
+    tools=['currentdate'],
+    history_max_size=20,
 )
 ```
 
----
+______________________________________________________________________
 
 ### Métodos
 
@@ -58,7 +59,7 @@ agent = CreateAgent(
 Envia mensagem ao agente e retorna resposta.
 
 ```python
-async def chat(message: str) -> Union[str, StreamingResponseDTO]
+async def chat(message: str) -> Union[str, StreamingResponseDTO]: ...
 ```
 
 **Parâmetros:**
@@ -72,21 +73,23 @@ async def chat(message: str) -> Union[str, StreamingResponseDTO]
 ```python
 import asyncio
 
+
 async def main():
-    resposta = await agent.chat("Como criar uma função em Python?")
+    resposta = await agent.chat('Como criar uma função em Python?')
     print(resposta)
+
 
 asyncio.run(main())
 ```
 
----
+______________________________________________________________________
 
 #### get_configs()
 
 Retorna configurações e histórico do agente.
 
 ```python
-def get_configs() -> Dict[str, Any]
+def get_configs() -> Dict[str, Any]: ...
 ```
 
 **Retorna:** `dict` com:
@@ -96,42 +99,46 @@ def get_configs() -> Dict[str, Any]
 - `provider`: Provider (openai/ollama)
 - `instructions`: Instruções
 - `history`: Lista de mensagens
-- `tools`: Ferramentas disponíveis
+- `history_max_size`: Tamanho máximo do histórico
+- `tools`: Lista com nomes das ferramentas configuradas e ativas no agente
 - `config`: Configurações do modelo
 
 **Exemplo:**
 
 ```python
 config = agent.get_configs()
-print(f"Modelo: {config['model']}")
-print(f"Histórico: {len(config['history'])} mensagens")
+print(f'Modelo: {config["model"]}')
+print(f'Histórico: {len(config["history"])} mensagens')
+print(f'Tools ativas no agente: {config["tools"]}')
 ```
 
----
+______________________________________________________________________
 
 #### clear_history()
 
 Limpa o histórico de mensagens.
 
 ```python
-def clear_history() -> None
+def clear_history() -> None: ...
 ```
 
 **Exemplo:**
 
 ```python
 agent.clear_history()
-print("Histórico limpo!")
+print('Histórico limpo!')
 ```
 
----
+______________________________________________________________________
 
 #### get_all_available_tools()
 
-Retorna todas as ferramentas disponíveis para este agente específico (ferramentas do sistema + ferramentas customizadas).
+Retorna o catálogo de todas as ferramentas disponíveis no ambiente para este agente (ferramentas do sistema + ferramentas customizadas registradas).
+
+> **Nota:** Para verificar quais ferramentas estão **efetivamente ativas no agente** para chamadas de chat, consulte `agent.get_configs()['tools']`.
 
 ```python
-def get_all_available_tools() -> Dict[str, str]
+def get_all_available_tools() -> Dict[str, str]: ...
 ```
 
 **Retorna:** `dict` mapeando nome da ferramenta para descrição
@@ -145,60 +152,57 @@ def get_all_available_tools() -> Dict[str, str]
 **Exemplo:**
 
 ```python
-from createagents import BaseTool
+from createagents import BaseTool, CreateAgent
+
 
 # Ferramenta customizada
 class MyTool(BaseTool):
-    name = "my_tool"
-    description = "Minha ferramenta personalizada"
+    name = 'my_tool'
+    description = 'Minha ferramenta personalizada'
 
     parameters = {
-        "type": "object",
-        "properties": {
-            "input": {
-                "type": "string",
-                "description": "Texto de entrada para a ferramenta"
+        'type': 'object',
+        'properties': {
+            'input': {
+                'type': 'string',
+                'description': 'Texto de entrada para a ferramenta',
             },
-            "limit": {
-                "type": "integer",
-                "description": "(Opcional) Limite de itens a retornar"
-            }
+            'limit': {
+                'type': 'integer',
+                'description': '(Opcional) Limite de itens a retornar',
+            },
         },
-        "required": ["input"]
+        'required': ['input'],
     }
 
     def execute(self, **kwargs) -> str:
         # Implementação da ferramenta (exemplo)
-        input_val = kwargs.get("input", "")
-        limit = kwargs.get("limit", None)
-        return f"Resultado para: {input_val}" + (f" (limit={limit})" if limit is not None else "")
+        input_val = kwargs.get('input', '')
+        limit = kwargs.get('limit', None)
+        return f'Resultado para: {input_val}' + (
+            f' (limit={limit})' if limit is not None else ''
+        )
+
 
 # Criar agente com ferramentas
 agent = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    tools=["currentdate", MyTool()]
+    provider='openai', model='gpt-4', tools=['currentdate', MyTool()]
 )
 
 # Listar todas as ferramentas
 tools = agent.get_all_available_tools()
 for name, description in tools.items():
-    print(f"- {name}: {description}")
-
-# Saída:
-# - currentdate: Get the current date and/or time...
-# - readlocalfile: Use this tool to read local files...
-# - my_tool: Minha ferramenta personalizada
+    print(f'- {name}: {description}')
 ```
 
----
+______________________________________________________________________
 
 #### get_system_available_tools()
 
 Retorna apenas as ferramentas do sistema (built-in) disponíveis globalmente.
 
 ```python
-def get_system_available_tools() -> Dict[str, str]
+def get_system_available_tools() -> Dict[str, str]: ...
 ```
 
 **Retorna:** `dict` mapeando nome da ferramenta do sistema para descrição
@@ -212,48 +216,46 @@ def get_system_available_tools() -> Dict[str, str]
 **Exemplo:**
 
 ```python
-agent = CreateAgent(provider="openai", model="gpt-4")
+from createagents import CreateAgent
+
+agent = CreateAgent(provider='openai', model='gpt-4')
 
 # Listar apenas ferramentas do sistema
 system_tools = agent.get_system_available_tools()
 
-print("Ferramentas do sistema disponíveis:")
+print('Ferramentas do sistema disponíveis:')
 for name, description in system_tools.items():
-    print(f"- {name}: {description[:50]}...")
+    print(f'- {name}: {description[:50]}...')
 
 # Verificar se ferramenta opcional está disponível
-if "readlocalfile" in system_tools:
-    print("✅ ReadLocalFileTool está instalada")
+if 'readlocalfile' in system_tools:
+    print('✅ ReadLocalFileTool está instalada')
 else:
-    print("❌ Execute: pip install createagents[file-tools]")
-
-# Saída:
-# - currentdate: Get the current date and/or time...
-# - readlocalfile: Use this tool to read local files...
+    print('❌ Execute: pip install createagents[file-tools]')
 ```
 
 **Diferença entre os métodos:**
 
 | Método                         | Inclui Ferramentas do Sistema | Inclui Ferramentas Customizadas | Quando Usar                                            |
 | ------------------------------ | ----------------------------- | ------------------------------- | ------------------------------------------------------ |
-| `get_all_available_tools()`    | ✅ Sim                        | ✅ Sim                          | Ver todas as ferramentas que o agente pode usar        |
+| `get_all_available_tools()`    | ✅ Sim                        | ✅ Sim                          | Ver todas as ferramentas disponíveis no ambiente       |
 | `get_system_available_tools()` | ✅ Sim                        | ❌ Não                          | Verificar quais ferramentas opcionais estão instaladas |
 
----
+______________________________________________________________________
 
 #### get_metrics()
 
 Retorna métricas de performance.
 
 ```python
-def get_metrics() -> List[ChatMetrics]
+def get_metrics() -> List[ChatMetrics]: ...
 ```
 
 **Retorna:** `List[ChatMetrics]` com:
 
-- `response_time` (float): Tempo de resposta em segundos
-- `tokens_used` (int): Tokens consumidos
-- `status` (str): Status da requisição
+- `latency_ms` (float): Latência total em milissegundos
+- `tokens_used` (int | None): Tokens consumidos
+- `success` (bool): Status de sucesso da requisição
 - `timestamp` (datetime): Momento da execução
 
 **Exemplo:**
@@ -261,86 +263,59 @@ def get_metrics() -> List[ChatMetrics]
 ```python
 metrics = agent.get_metrics()
 for m in metrics:
-    print(f"Tempo: {m.response_time:.2f}s, Tokens: {m.tokens_used}")
+    print(
+        f'Tempo: {m.latency_ms:.2f}ms, Tokens: {m.tokens_used}, Sucesso: {m.success}'
+    )
 ```
 
----
+______________________________________________________________________
 
 #### export_metrics_json()
 
-Exporta métricas em formato JSON.
+Exporta o histórico de métricas em formato JSON (string ou arquivo).
 
 ```python
-def export_metrics_json(filepath: Optional[str] = None) -> str
+def export_metrics_json(filepath: Optional[str] = None) -> str: ...
 ```
 
-**Parâmetros:**
+- **`filepath`** (str, opcional): Caminho do arquivo destino.
+- **Retorna:** `str` (conteúdo JSON).
 
-- `filepath` (str, opcional): Caminho para salvar
-
-**Retorna:** JSON string
-
-**Exemplo:**
-
-```python
-# Salvar em arquivo
-agent.export_metrics_json("metrics.json")
-
-# Obter como string
-json_data = agent.export_metrics_json()
-```
-
----
+______________________________________________________________________
 
 #### export_metrics_prometheus()
 
-Exporta métricas em formato Prometheus.
+Exporta métricas formatadas para coleta pelo Prometheus (string ou arquivo).
 
 ```python
-def export_metrics_prometheus(filepath: Optional[str] = None) -> str
+def export_metrics_prometheus(filepath: Optional[str] = None) -> str: ...
 ```
 
-**Parâmetros:**
+- **`filepath`** (str, opcional): Caminho do arquivo destino.
+- **Retorna:** `str` (formato Prometheus).
 
-- `filepath` (str, opcional): Caminho para salvar
-
-**Retorna:** String formato Prometheus
-
-**Exemplo:**
-
-```python
-agent.export_metrics_prometheus("metrics.prom")
-```
-
----
+______________________________________________________________________
 
 #### start_cli()
 
-Inicia sessão interativa de chat no terminal.
+Inicia sessão interativa de chat no terminal com interface ANSI, comandos (`/help`, `/metrics`, `/configs`, `/tools`, `/clear`), streaming e indicador de status.
 
 ```python
-def start_cli() -> None
+def start_cli() -> None: ...
 ```
-
-**Descrição:**
-
-Lança uma interface CLI completa com:
-
-- Interface colorida e formatada
-- Comandos: `/help`, `/metrics`, `/configs`, `/tools`, `/clear`, `/chat`
-- Streaming em tempo real
-- Indicadores de status
 
 **Exemplo:**
 
 ```python
-agent = CreateAgent(provider="openai", model="gpt-4")
-agent.start_cli()  # Inicia CLI interativa
+from createagents import CreateAgent
+
+agent = CreateAgent(provider='openai', model='gpt-4', config={'stream': True})
+agent.start_cli()  # Inicia CLI interativa com streaming
 ```
 
 > 📚 [Guia completo da CLI](../user-guide/cli-usage.md)
 
----
+______________________________________________________________________
 
 ## 🛠️ Ferramentas (Tools)
 
@@ -356,16 +331,17 @@ Obtém data/hora em qualquer timezone.
 
 ```python
 import asyncio
+from createagents import CreateAgent
+
 
 async def main():
     agent = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        tools=["currentdate"]
+        provider='openai', model='gpt-4', tools=['currentdate']
     )
 
-    resposta = await agent.chat("Que dia é hoje?")
+    resposta = await agent.chat('Que dia é hoje?')
     print(resposta)
+
 
 asyncio.run(main())
 ```
@@ -378,61 +354,64 @@ asyncio.run(main())
 - `timestamp`: Unix timestamp
 - `date_with_weekday`: Data com dia da semana
 
----
+______________________________________________________________________
 
 #### ReadLocalFileTool
 
-Lê arquivos locais em múltiplos formatos.
+Lê arquivos locais em múltiplos formatos com teto fixo de segurança de 100 MiB (104.857.600 bytes).
 
 **Nome:** `"readlocalfile"`
 
 **Requer:** `pip install createagents[file-tools]`
 
-**Formatos:**
+**Formatos Suportados (32 extensões):**
 
-- Texto: TXT, MD, CSV, JSON, YAML
-- Documentos: PDF
-- Planilhas: Excel (XLS, XLSX), Parquet
+- **Texto e código:** TXT, LOG, MD, PY, JS, HTML, CSS, JSON, XML, YAML, YML, RST, INI, CFG, CONF, SH, BASH, ZSH
+- **Tabelas e dados:** CSV, Excel (XLSX, XLSM e legado XLS com `xlrd`), Parquet
+- **Documentos:** PDF, Word (DOC, DOCX), PowerPoint (PPT, PPTX), OpenDocument (ODT), EPUB, MSG, RTF
 
 **Uso:**
 
 ```python
 import asyncio
+from createagents import CreateAgent
+
 
 async def main():
     agent = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        tools=["readlocalfile"]
+        provider='openai', model='gpt-4', tools=['readlocalfile']
     )
 
-    resposta = await agent.chat("Leia o arquivo report.pdf")
+    resposta = await agent.chat('Leia o arquivo report.pdf')
     print(resposta)
+
 
 asyncio.run(main())
 ```
 
 **Limites:**
 
-- Tamanho máximo: 100MB
-- Tokens máximos: Depende da AI utilizada
+- Tamanho máximo de arquivo: 100 MiB (104.857.600 bytes)
+- Tokens máximos: Depende da janela de contexto do modelo utilizado
 
----
+______________________________________________________________________
 
 ## 📊 Configurações do Modelo
 
 Parâmetros para controlar o comportamento do modelo (OpenAI/Ollama):
 
 ```python
+from createagents import CreateAgent
+
 config = {
-    "temperature": 0.7,   # 0.0–2.0: Criatividade
-    "max_tokens": 2000,   # >0: Limite de tokens
-    "top_p": 0.9,         # 0.0–1.0: Nucleus sampling
-    "think": True,        # Ollama: bool / OpenAI: str ["low", "medium" or "high"]
-    "top_k": 40,          # >0: (Ollama)
+    'temperature': 0.7,  # 0.0–2.0: Criatividade
+    'max_tokens': 2000,  # >0: Limite de tokens
+    'top_p': 0.9,  # 0.0–1.0: Nucleus sampling
+    'think': True,  # Ollama: bool / OpenAI: str ["low", "medium" or "high"]
+    'top_k': 40,  # >0: (Ollama)
 }
 
-agent = CreateAgent(provider="openai", model="gpt-4.1-mini", config=config)
+agent = CreateAgent(provider='openai', model='gpt-4o-mini', config=config)
 ```
 
 **Parâmetros suportados:**
@@ -443,9 +422,10 @@ agent = CreateAgent(provider="openai", model="gpt-4.1-mini", config=config)
 | `max_tokens`  | >0 (int)    | Limite de tokens na resposta                                                                              |
 | `top_p`       | 0.0–1.0     | Nucleus sampling                                                                                          |
 | `think`       | bool ou str | Ollama: bool (ativa/desativa), OpenAI: string de opções avançadas ("low", "medium" ou "high" disponíveis) |
-| `top_k`       | >0 (int)    | Número de tokens considerados no sampling                                                                 |
+| `top_k`       | >0 (int)    | Número de tokens considerados no sampling (Ollama)                                                        |
+| `stream`      | bool        | Ativa streaming de tokens em tempo real (`StreamingResponseDTO`)                                          |
 
----
+______________________________________________________________________
 
 ## 💡 Exemplos de Uso
 
@@ -455,10 +435,12 @@ agent = CreateAgent(provider="openai", model="gpt-4.1-mini", config=config)
 import asyncio
 from createagents import CreateAgent
 
+
 async def main():
-    agent = CreateAgent(provider="openai", model="gpt-4")
-    resposta = await agent.chat("Olá!")
+    agent = CreateAgent(provider='openai', model='gpt-4o-mini')
+    resposta = await agent.chat('Olá!')
     print(resposta)
+
 
 asyncio.run(main())
 ```
@@ -467,16 +449,19 @@ asyncio.run(main())
 
 ```python
 import asyncio
+from createagents import CreateAgent
+
 
 async def main():
     agent = CreateAgent(
-        provider="openai",
-        model="gpt-4",
-        tools=["currentdate", "readlocalfile"]
+        provider='openai',
+        model='gpt-4o-mini',
+        tools=['currentdate'],  # use 'readlocalfile' com [file-tools]
     )
 
-    resposta = await agent.chat("Que dia é hoje?")
+    resposta = await agent.chat('Que dia é hoje?')
     print(resposta)
+
 
 asyncio.run(main())
 ```
@@ -485,11 +470,14 @@ asyncio.run(main())
 
 ```python
 import asyncio
+from createagents import CreateAgent
+
 
 async def main():
-    agent = CreateAgent(provider="ollama", model="llama3.2")
-    resposta = await agent.chat("Explique IA")
+    agent = CreateAgent(provider='ollama', model='llama3.2')
+    resposta = await agent.chat('Explique IA')
     print(resposta)
+
 
 asyncio.run(main())
 ```
@@ -497,10 +485,12 @@ asyncio.run(main())
 ### CLI Interativa
 
 ```python
-agent = CreateAgent(provider="openai", model="gpt-4")
+from createagents import CreateAgent
+
+agent = CreateAgent(provider='openai', model='gpt-4')
 agent.start_cli()  # Interface completa no terminal
 ```
 
----
+______________________________________________________________________
 
-**Versão:** 0.2.0 | **Atualização:** 02/12/2025
+**Versão:** 0.2.0 | **Atualização:** 2026-08-25

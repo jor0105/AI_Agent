@@ -221,7 +221,7 @@ class TestChatAdapterFactoryIntegration:
 
         ChatAdapterFactory.clear_cache()
 
-        mock_get_api_key.side_effect = EnvironmentError('API key not found')
+        mock_get_api_key.side_effect = OSError('API key not found')
 
         with pytest.raises(ChatException, match='Error configuring OpenAI'):
             ChatAdapterFactory.create(provider='openai', model='gpt-5-mini')

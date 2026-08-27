@@ -40,7 +40,6 @@ class TestOllamaHandler:
                 metrics={'prompt_eval_count': 2, 'eval_count': 3},
             )
         )
-        client.stop_model = MagicMock()
 
         handler = OllamaHandler(client, metrics_store)
 
@@ -55,10 +54,9 @@ class TestOllamaHandler:
         assert len(metrics_store) == 1
         assert metrics_store[0].success is True
         assert metrics_store[0].tokens_used == 5
-        client.stop_model.assert_called_once_with('test-model')
 
     @pytest.mark.asyncio
-    @patch('createagents.infra.adapters.Ollama.ollama_handler.ToolExecutor')
+    @patch('createagents.infra.adapters.Common.tool_session.ToolExecutor')
     async def test_execute_tool_loop_scenarios_executes_tool_calls(
         self, mock_tool_executor
     ):
@@ -74,7 +72,6 @@ class TestOllamaHandler:
         client.call_api = AsyncMock(
             side_effect=[response_with_tool, final_response]
         )
-        client.stop_model = MagicMock()
 
         executor_instance = SimpleNamespace(
             execute_tool=AsyncMock(
@@ -98,4 +95,3 @@ class TestOllamaHandler:
         )
         assert len(metrics_store) == 1
         assert metrics_store[0].tokens_used == 2
-        client.stop_model.assert_called_once_with('test-model')

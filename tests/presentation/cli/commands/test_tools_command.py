@@ -24,7 +24,7 @@ class TestToolsCommandHandler:
         handler = ToolsCommandHandler(renderer)
 
         with patch(
-            'createagents.presentation.cli.commands.tools_command.TextSanitizer.format_markdown_for_terminal',
+            'createagents.presentation.cli.commands.base_command.MarkdownTerminalFormatter.format',
             return_value='no-tools',
         ) as mock_formatter:
             handler.execute(agent, '/tools')
@@ -44,7 +44,7 @@ class TestToolsCommandHandler:
         handler = ToolsCommandHandler(renderer)
 
         with patch(
-            'createagents.presentation.cli.commands.tools_command.TextSanitizer.format_markdown_for_terminal',
+            'createagents.presentation.cli.commands.base_command.MarkdownTerminalFormatter.format',
             return_value='tools-list',
         ) as mock_formatter:
             handler.execute(agent, '/tools')

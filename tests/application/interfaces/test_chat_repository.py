@@ -35,6 +35,9 @@ class TestChatRepository:
             ):
                 return f'Response to: {user_ask}'
 
+            def get_metrics(self):
+                return []
+
         repo = ConcreteRepository()
         assert isinstance(repo, ChatRepository)
 
@@ -55,6 +58,9 @@ class TestChatRepository:
                 self, model, instructions, config, tools, history, user_ask
             ):
                 return 'Complete response'
+
+            def get_metrics(self):
+                return []
 
         repo = StringRepository()
         result = await repo.chat(
@@ -81,6 +87,9 @@ class TestChatRepository:
                     yield 'token3'
 
                 return generator()
+
+            def get_metrics(self):
+                return []
 
         repo = StreamingRepository()
         result = await repo.chat(
@@ -116,6 +125,9 @@ class TestChatRepository:
                     'user_ask': user_ask,
                 }
                 return 'ok'
+
+            def get_metrics(self):
+                return []
 
         repo = ParameterCheckRepository()
         tool = TestToolForRepo()

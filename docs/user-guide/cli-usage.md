@@ -2,7 +2,7 @@
 
 A CLI (Command-Line Interface) do CreateAgents AI oferece uma interface interativa profissional para conversar com seus agentes de IA.
 
----
+______________________________________________________________________
 
 ## 🚀 Início Rápido
 
@@ -11,33 +11,33 @@ from createagents import CreateAgent
 
 # Criar agente
 agent = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    name="Assistente",
-    instructions="Você é um assistente prestativo",
+    provider='openai',
+    model='gpt-4',
+    name='Assistente',
+    instructions='Você é um assistente prestativo',
 )
 
 # Iniciar CLI interativa
 agent.start_cli()
 ```
 
----
+______________________________________________________________________
 
 ## ✨ Recursos
 
-- **🎨 Interface Colorida**: Sintaxe highlight e formatação markdown
-- **⚡ Streaming em Tempo Real**: Respostas aparecem token por token
-- **🎯 Comandos Integrados**: 7 comandos para controle total
-- **🔧 Indicadores de Status**: Mostra quando o agente está pensando
-- **📊 Métricas em Tempo Real**: Visualize performance instantaneamente
+- **🎨 Interface Formatada**: Renderização ANSI de elementos Markdown (cabeçalhos, negrito, itálico, listas e tabelas)
+- **⚡ Suporte a Streaming**: Respostas exibidas token a token quando `config={'stream': True}` está ativo
+- **🎯 Comandos Integrados**: 5 comandos úteis (`/help`, `/metrics`, `/configs`, `/tools`, `/clear`) e comandos de saída (`exit`/`quit`)
+- **🔧 Indicadores de Status**: Exibe `🤖 AI is thinking...` durante chamadas e processamento
+- **📊 Métricas da Sessão**: Visualize a tabela de métricas acumuladas via `/metrics`
 
----
+______________________________________________________________________
 
 ## 📋 Comandos Disponíveis
 
 ### `/help` - Ajuda
 
-Exibe lista de comandos disponíveis.
+Exibe a lista de comandos disponíveis e instruções de uso.
 
 ```
 Você: /help
@@ -45,92 +45,129 @@ Você: /help
 
 **Aliases**: `/help`, `help`
 
+**Exemplo de saída**:
+
+```text
+Available Commands:
+
+• /metrics  → Show agent performance metrics and statistics
+• /configs  → Display current agent configuration settings
+• /tools    → List all available tools and their descriptions
+• /clear    → Clear conversation history and start fresh
+• /help     → Show this help message
+
+Type 'exit' or 'quit' to close the application.
+```
+
 ### `/metrics` - Métricas
 
-Mostra estatísticas de performance do agente:
+Mostra estatísticas de performance das interações com o agente em formato tabular:
 
-- Número de chamadas
-- Tokens usados (prompt + completion)
-- Latência média
-- Taxa de sucesso
-- Métricas Ollama: load_duration, prompt_eval_duration, eval_duration
+- Modelo utilizado
+- Duração / Latência em segundos
+- Tokens de entrada (Prompt), saída (Completion) e total
 
 ```
 Você: /metrics
 ```
 
-**Aliases**: `/metrics`, `metrics`
+**Aliases**: `/metrics`, `get_metrics`
 
 **Exemplo de saída**:
 
-```
-📊 Métricas de Performance
+```text
+## Performance Metrics
 
-Chamada #1 | ✅ Sucesso
-  └─ Modelo: gpt-4
-  └─ Latência: 1,245ms
-  └─ Tokens: 150 (prompt: 45, completion: 105)
-
-Chamada #2 | ✅ Sucesso
-  └─ Modelo: gpt-4
-  └─ Latência: 982ms
-  └─ Tokens: 230 (prompt: 110, completion: 120)
-
-📈 Estatísticas Gerais
-  Total de chamadas: 2
-  Taxa de sucesso: 100%
-  Latência média: 1,113ms
-  Total de tokens: 380
+| Model | Duration | Tokens (In/Out/Total) |
+|-------|----------|-----------------------|
+| gpt-4 | 1.25s    | 45 / 105 / 150        |
+| gpt-4 | 0.98s    | 110 / 120 / 230       |
 ```
 
 ### `/configs` - Configurações
 
-Mostra configurações atuais do agente:
+Mostra as configurações atuais do agente:
 
 - Nome
 - Provider e modelo
 - Instruções
-- Parâmetros de configuração
-- Ferramentas disponíveis
-- Tamanho do histórico
+- Parâmetros extras de configuração
+- Ferramentas configuradas na instância
+- Histórico com prévia de mensagens e contagem
 
 ```
 Você: /configs
 ```
 
-**Aliases**: `/configs`, `configs`
+**Aliases**: `/configs`, `get_configs`
+
+**Exemplo de saída**:
+
+```text
+## Agent Configuration
+
+**provider:** openai
+**model:** gpt-4
+**name:** None
+**instructions:** None
+**config:** {}
+**tools:** None
+**history:** 2 messages in history
+
+  - **user:** Olá!
+  - **assistant:** Olá! Como posso ajudar você hoje?
+
+**history_max_size:** 10
+```
+
+> 💡 **Nota**: `/configs` exibe as ferramentas **configuradas na instância atual** (`tools: None` por padrão). Se você instanciar o agente com `tools=['currentdate']`, elas serão listadas ali. Para consultar o **catálogo de ferramentas disponíveis no ambiente**, utilize o comando `/tools`.
 
 ### `/tools` - Ferramentas
 
-Lista todas as ferramentas disponíveis para o agente.
+Lista todas as ferramentas disponíveis no ambiente (sistema e customizadas) com suas descrições.
 
 ```
 Você: /tools
 ```
 
-**Aliases**: `/tools`, `tools`
+**Aliases**: `/tools`, `get_tools`
 
-**Exemplo de saída**:
+**Exemplo de saída (Instalação básica):**
 
+```text
+## Available Tools
+
+**currentdate**
+Get the current date and/or time in a specific timezone. Essential for answering 'What time is it?' or 'What day is it?' questions.
 ```
-🛠️ Ferramentas Disponíveis
 
-• currentdate
-  └─ Retorna a data e hora atual em qualquer timezone
+**Exemplo de saída (Com o extra `[file-tools]` instalado):**
 
-• readlocalfile
-  └─ Lê e extrai conteúdo de arquivos locais (PDF, Excel, CSV, etc)
+```text
+## Available Tools
+
+**currentdate**
+Get the current date and/or time in a specific timezone. Essential for answering 'What time is it?' or 'What day is it?' questions.
+
+**readlocalfile**
+Use this tool to read local files from the system. Supports text files (txt, md, py, etc.), CSV, Excel, PDF and Parquet formats. The tool validates file size in tokens to prevent overload. Input must include the absolute or relative file path and optionally the maximum number of tokens allowed (default: 30000).
 ```
 
 ### `/clear` - Limpar Histórico
 
-Limpa todo o histórico de conversação e inicia uma nova sessão.
+Limpa todo o histórico de conversação do agente.
 
 ```
 Você: /clear
 ```
 
-**Aliases**: `/clear`, `clear`
+**Aliases**: `/clear`, `clear_history`
+
+**Exemplo de saída**:
+
+```text
+Chat history cleared successfully!
+```
 
 ### Chat Normal
 
@@ -140,7 +177,7 @@ Qualquer texto que não seja um comando é enviado como mensagem ao agente.
 Você: Explique Clean Architecture
 ```
 
-O agente responderá com streaming em tempo real.
+Se o agente for configurado com `config={'stream': True}`, a resposta é transmitida em tempo real (token a token). Sem a opção de streaming, a resposta completa é renderizada após o término do processamento.
 
 ### `exit` / `quit` - Sair
 
@@ -156,45 +193,44 @@ ou
 Você: quit
 ```
 
----
+______________________________________________________________________
 
 ## 🎨 Interface e Formatação
 
 ### Cores e Destaque
 
-A CLI usa um esquema de cores profissional:
+A CLI usa o seguinte esquema de cores ANSI no terminal:
 
-- **Prompts**: Cor primária (cyan)
-- **Respostas do Agente**: Verde
-- **Mensagens do Sistema**: Amarelo
-- **Erros**: Vermelho
-- **Comandos**: Magenta
+- **Mensagens do Usuário**: Caixa alinhada à direita em Azul (`ColorScheme.BLUE`)
+- **Respostas e Indicador de Processamento da IA**: Caixa alinhada à esquerda e texto de thinking em Roxo (`ColorScheme.PURPLE`)
+- **Mensagens de Sistema, Menus e Comandos**: Cyan (`ColorScheme.CYAN`)
+- **Marcadores de Sucesso**: Verde (`ColorScheme.GREEN`)
+- **Avisos e Interrupções de Sessão**: Amarelo (`ColorScheme.YELLOW`)
+- **Erros do Sistema**: Vermelho (`ColorScheme.RED`)
 
-### Formatação Markdown
+### Formatação Markdown no Terminal
 
-A renderização suporta:
+O `MarkdownTerminalFormatter` converte elementos Markdown para visualização no terminal (não inclui syntax highlighting de código):
 
-- **Negrito**: `**texto**`
-- _Itálico_: `*texto*`
-- `Código inline`: `` `código` ``
-- Blocos de código com syntax highlighting
-- Listas e cabeçalhos
+- **Cabeçalhos**: Níveis `#` e `##` em azul com barra de destaque; `###` e `####` em roxo; `#####` e `######` em cyan
+- **Negrito**: `**texto**` ou `__texto__` com estilo ANSI bold
+- **Itálico**: `*texto*` ou `_texto_` com estilo ANSI italic
+- **Listas não-ordenadas**: Marcadores `•` em verde
+- **Listas ordenadas**: Setas `→` em azul
+- **Tabelas Markdown**: Formatadas automaticamente como pares rótulo-valor ou colunas com separadores
+- **Sanitização de texto**: Sanitização automática de caracteres especiais para evitar travamento de renderização
 
 ### Indicadores de Status
 
-Durante o processamento:
+Durante o processamento inicial e execução de ferramentas:
 
-```
-⏳ Processando...
-```
-
-Durante streaming:
-
-```
-✨ [Agente está digitando...]
+```text
+🤖 AI is thinking...
 ```
 
----
+Se o streaming estiver ativo (`config={'stream': True}`), o indicador é limpo assim que o primeiro token chega e os fragmentos de texto fluem na tela.
+
+______________________________________________________________________
 
 ## 💡 Exemplos de Uso
 
@@ -204,10 +240,11 @@ Durante streaming:
 from createagents import CreateAgent
 
 code_assistant = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    name="Code Expert",
-    instructions="Você é um especialista em Python. Sempre forneça exemplos."
+    provider='openai',
+    model='gpt-4',
+    name='Code Expert',
+    instructions='Você é um especialista em Python. Sempre forneça exemplos.',
+    config={'stream': True},  # Habilita streaming no chat
 )
 
 # Iniciar CLI interativa
@@ -221,7 +258,7 @@ Você: Como criar um decorator em Python?
 [Resposta em streaming...]
 
 Você: /metrics
-[Exibe estatísticas da chamada]
+[Exibe tabela com estatísticas acumuladas até o momento]
 
 Você: /clear
 [Limpa histórico para novo tópico]
@@ -233,9 +270,9 @@ Você: /clear
 from createagents import CreateAgent
 
 agent_with_tools = CreateAgent(
-    provider="openai",
-    model="gpt-4",
-    tools=["currentdate", "readlocalfile"]
+    provider='openai',
+    model='gpt-4',
+    tools=['currentdate'],  # 'readlocalfile' requer [file-tools]
 )
 
 # Iniciar CLI
@@ -250,9 +287,6 @@ Você: /tools
 
 Você: Que dia é hoje?
 [Agente usa CurrentDateTool automaticamente]
-
-Você: Leia o arquivo report.pdf
-[Agente usa ReadLocalFileTool]
 ```
 
 ### Exemplo 3: Ollama Local
@@ -261,16 +295,14 @@ Você: Leia o arquivo report.pdf
 from createagents import CreateAgent
 
 local_agent = CreateAgent(
-    provider="ollama",
-    model="llama3.2",
-    name="Assistente Local"
+    provider='ollama', model='llama3.2', name='Assistente Local'
 )
 
 # Iniciar CLI
 local_agent.start_cli()
 ```
 
----
+______________________________________________________________________
 
 ## 🔧 Personalização
 
@@ -281,7 +313,7 @@ A CLI é iniciada através do método `start_cli()` da facade `CreateAgent`:
 ```python
 from createagents import CreateAgent
 
-agent = CreateAgent(provider="openai", model="gpt-4")
+agent = CreateAgent(provider='openai', model='gpt-4')
 agent.start_cli()  # Inicia loop interativo
 ```
 
@@ -291,7 +323,7 @@ Internamente, este método:
 2. Instancia a aplicação CLI com o agente
 3. Executa o loop principal
 
----
+______________________________________________________________________
 
 ## 🐛 Troubleshooting
 
@@ -321,7 +353,7 @@ pip install --upgrade createagents
 2. Para Ollama, verifique se o modelo está carregado
 3. Considere usar um modelo menor/mais rápido
 
----
+______________________________________________________________________
 
 ## 📚 Próximos Passos
 
@@ -329,6 +361,6 @@ pip install --upgrade createagents
 - [Arquitetura CLI (Desenvolvedores)](../dev-guide/cli-architecture.md)
 - [API Reference](../reference/commands.md)
 
----
+______________________________________________________________________
 
-**Versão:** 0.1.3 | **Atualização:** 01/12/2025
+**Versão:** 0.2.0 | **Atualização:** 2026-08-25

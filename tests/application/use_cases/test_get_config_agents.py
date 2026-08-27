@@ -311,7 +311,7 @@ class TestGetAgentConfigUseCase:
             assert output.history[i]['content'] == expected_content
 
     def test_execute_returns_correct_history_max_size(self):
-        from createagents.domain.value_objects import History
+        from createagents.domain.entities import History
 
         use_case = GetAgentConfigUseCase()
         agent = Agent(
@@ -340,7 +340,7 @@ class TestGetAgentConfigUseCase:
         assert output.history_max_size == 10
 
     def test_execute_to_dict_includes_history_max_size(self):
-        from createagents.domain.value_objects import History
+        from createagents.domain.entities import History
 
         use_case = GetAgentConfigUseCase()
         agent = Agent(
@@ -361,7 +361,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
 
         for max_size in [1, 5, 10, 20, 50, 100]:
-            from createagents.domain.value_objects import History
+            from createagents.domain.entities import History
 
             agent = Agent(
                 provider='openai',
@@ -376,7 +376,7 @@ class TestGetAgentConfigUseCase:
             assert output.history_max_size == max_size
 
     def test_execute_history_max_size_reflects_agent_state(self):
-        from createagents.domain.value_objects import History
+        from createagents.domain.entities import History
 
         use_case = GetAgentConfigUseCase()
         agent = Agent(
@@ -620,7 +620,7 @@ class TestGetAgentConfigUseCase:
         assert 'tools' in result
         assert 'history_max_size' in result
 
-        from createagents.domain.value_objects import History
+        from createagents.domain.entities import History
 
         use_case = GetAgentConfigUseCase()
         agent = Agent(

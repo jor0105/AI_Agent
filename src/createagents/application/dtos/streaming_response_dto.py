@@ -1,4 +1,4 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
 
 
 class StreamingResponseDTO:
@@ -8,7 +8,7 @@ class StreamingResponseDTO:
     Can be awaited to get the complete response string automatically.
     """
 
-    def __init__(self, generator: AsyncGenerator[str, None]):
+    def __init__(self, generator: AsyncGenerator[str, None]) -> None:
         """Initialize with a token generator.
 
         Args:
@@ -18,41 +18,41 @@ class StreamingResponseDTO:
         self._consumed = False
         self._full_response = ''
 
-    def __aiter__(self):
+    def __aiter__(self) -> 'StreamingResponseDTO':
         """Allow async iteration over tokens."""
         return self
 
-    async def __anext__(self):
+    async def __anext__(self) -> str:
         """Get next token asynchronously."""
         if self._consumed:
             raise StopAsyncIteration
 
         try:
             token = await self._generator.__anext__()
-            self._full_response += token
-            return token
         except StopAsyncIteration:
             self._consumed = True
             raise
+        self._full_response += token
+        return token
 
-    def __await__(self):
+    def __await__(self) -> Generator[object, None, str]:
         """Allow awaiting to get complete response string.
 
         This method enables transparent usage:
-            response = await agent.chat("message")  # Returns StreamingResponseDTO
+            response = await agent.chat("message")  # StreamingResponseDTO
             text = await response  # Auto-consumes and returns complete string
 
         The CLI can still use async for without awaiting again.
         """
 
-        async def _consume():
+        async def _consume() -> str:
             """Consume all tokens and return complete response."""
             if self._consumed:
                 return self._full_response
 
-            # Consume all tokens from the generator
+            # Tokens are accumulated in _full_response by __anext__
             async for _ in self:
-                pass  # Tokens are accumulated in _full_response by __anext__
+                pass
 
             return self._full_response
 
@@ -71,5 +71,8 @@ class StreamingResponseDTO:
     def __repr__(self) -> str:
         """Return representation."""
         if self._consumed:
-            return f'StreamingResponseDTO(consumed, length={len(self._full_response)})'
+            return (
+                'StreamingResponseDTO('
+                f'consumed, length={len(self._full_response)})'
+            )
         return 'StreamingResponseDTO(active)'

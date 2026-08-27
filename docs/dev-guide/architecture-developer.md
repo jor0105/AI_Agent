@@ -2,7 +2,7 @@
 
 Documentação completa da arquitetura do **Create Agents AI**, baseada em **Clean Architecture** e **princípios SOLID**.
 
----
+______________________________________________________________________
 
 ## 📐 Estrutura de Camadas
 
@@ -13,22 +13,27 @@ Documentação completa da arquitetura do **Create Agents AI**, baseada em **Cle
 └──────────────┬──────────────────────┘
                │
 ┌──────────────▼──────────────────────┐
-│        APPLICATION                  │  Facade (CreateAgent)
-│    (Lógica da Aplicação)            │  Use Cases, DTOs, Services
+│           MAIN                      │  Facade (CreateAgent),
+│    (Composition Root)               │  AgentComposer, Factories
 └──────────────┬──────────────────────┘
                │
 ┌──────────────▼──────────────────────┐
-│          DOMAIN                     │  Entities, Rules, Interfaces
-│    (Regras de Negócio)              │  Agent, ToolExecutor, LoggerInterface
-└──────────────▲──────────────────────┘
+│        APPLICATION                  │  Use Cases, DTOs,
+│    (Lógica da Aplicação)            │  Ports/Interfaces (ChatRepository)
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│          DOMAIN                     │  Entities (Agent, History),
+│    (Regras de Negócio)              │  Value Objects (ChatMetrics, Message),
+└──────────────▲──────────────────────┘  Domain Services, LoggerInterface
                │
 ┌──────────────┴──────────────────────┐
-│      INFRASTRUCTURE                 │  Adapters, Handlers, Config
-│    (Detalhes Técnicos)              │  OpenAI, Ollama, Tools, Metrics
+│      INFRASTRUCTURE                 │  Adapters, Clients, Handlers,
+│    (Detalhes Técnicos)              │  OpenAI, Ollama, Tools, Config
 └─────────────────────────────────────┘
 ```
 
----
+______________________________________________________________________
 
 ## 🎯 Camadas
 
@@ -52,47 +57,60 @@ Documentação completa da arquitetura do **Create Agents AI**, baseada em **Cle
 - **I/O:** `InputReader` — leitura de entrada do usuário
 - **Registry:** `CommandRegistry` — registro e resolução de comandos
 
----
+______________________________________________________________________
 
-### 2. Application (Aplicação)
+### 2. Main (Composition Root & Facade)
+
+**Localização:** `src/createagents/main/`
+
+**Responsabilidade:** Compor o grafo de dependências e expor a fachada pública do pacote.
+
+**Componentes:**
+
+- **Facade (`main/facade/`):** `CreateAgent` — ponto de entrada unificado que expõe `chat` (async), `get_configs`, `get_all_available_tools`, `clear_history`, `export_metrics_*` e `start_cli`.
+- **Composer (`main/composers/`):** `AgentComposer` — raiz de composição que instancia os use cases de aplicação, resolve o adapter de provider via fábrica de infraestrutura e injeta as dependências.
+
+______________________________________________________________________
+
+### 3. Application (Aplicação)
 
 **Localização:** `src/createagents/application/`
 
-**Responsabilidade:** Orquestrar casos de uso do sistema.
+**Responsabilidade:** Orquestrar casos de uso do sistema, dependendo apenas do domínio.
 
 **Componentes:**
 
-- **Facade / Controller:** `CreateAgent` — fachada simples que cria agentes e expõe métodos como `chat` (async), `get_configs`, `get_all_available_tools`, `clear_history`, `export_metrics_*`.
-- **Services:** `AgentService` — serviço que encapsula `Agent` com logging integrado
-- **Use Cases (application/use_cases):**
-  - `CreateAgentUseCase` — criação e validação de agentes (invocado por `AgentComposer`).
-  - `ChatWithAgentUseCase` — orquestra mensagens **assíncronas** entre `Agent` e `ChatRepository` (adapters).
+- **Use Cases (`application/use_cases`):**
+  - `CreateAgentUseCase` — cria e valida agentes, resolvendo ferramentas via `ToolRegistry`.
+  - `ChatWithAgentUseCase` — orquestra mensagens **assíncronas** entre `Agent` e a porta `ChatRepository`.
   - `GetAgentConfigUseCase` — retorna as configurações do agente.
-  - `GetAllAvailableToolsUseCase` / `GetSystemAvailableToolsUseCase` — listagem de tools disponíveis.
-- **DTOs (application/dtos):** Objetos de transferência:
-  - `CreateAgentInputDTO`, `ChatInputDTO`, `AgentConfigOutputDTO` — comunicação entre controller/use-cases
-  - **`StreamingResponseDTO`** — wrapper para AsyncGenerator que permite iteração e await de respostas em streaming
-- **Interfaces (application/interfaces):** `ChatRepository` — contrato que os adapters implementam com suporte **assíncrono**
+  - `GetSystemAvailableToolsUseCase` — lista as ferramentas disponíveis no ambiente.
+- **DTOs (`application/dtos`):** Objetos de transferência de dados:
+  - `CreateAgentInputDTO`, `ChatInputDTO`, `AgentConfigOutputDTO`
+  - **`StreamingResponseDTO`** — wrapper para `AsyncGenerator` que permite iteração assíncrona (`async for`) e `await` com cache do texto completo.
+- **Interfaces / Ports (`application/interfaces`):**
+  - `ChatRepository` — porta para adapters de provedores LLM
+  - `ToolRegistry` — porta para catálogo de ferramentas
 
----
+______________________________________________________________________
 
-### 3. Domain (Domínio)
+### 4. Domain (Domínio)
 
 **Localização:** `src/createagents/domain/`
 
-**Responsabilidade:** Regras de negócio puras, independentes de tecnologia.
+**Responsabilidade:** Regras de negócio puras, independentes de infraestrutura ou apresentação.
 
 **Componentes:**
 
-- **Entities:** `Agent` (entidade principal)
-- **Value Objects:** `Message`, `MessageRole`, `History`, `SupportedConfigs`, `SupportedProviders`, `BaseTool` (ferramentas), `ChatResponse`
-- **Domain Services:** `ToolExecutor` (execução **assíncrona** de ferramentas), `ToolExecutionResult`
-- **Interfaces (domain/interfaces):** **`LoggerInterface`** — abstração de logging no domínio (DIP - Dependency Inversion Principle)
-- **Exceptions:** `domain.exceptions` (ex.: `AgentException`, `InvalidAgentConfigException`, `UnsupportedConfigException`)
+- **Entities:** `Agent` (entidade principal), `History` (entidade de histórico de conversação)
+- **Value Objects:** `Message`, `MessageRole`, `ChatMetrics`, `SupportedConfigs`, `SupportedProviders`, `BaseTool`
+- **Domain Services:** `ToolExecutor` (execução assíncrona/síncrona de ferramentas), `ToolExecutionResult`
+- **Interfaces (`domain/interfaces`):** `LoggerInterface` — abstração de logging do domínio
+- **Exceptions:** `domain.exceptions` (`AgentException`, `InvalidAgentConfigException`, etc.)
 
----
+______________________________________________________________________
 
-### 4. Infrastructure (Infraestrutura)
+### 5. Infrastructure (Infraestrutura)
 
 **Localização:** `src/createagents/infra/`
 
@@ -110,14 +128,17 @@ Documentação completa da arquitetura do **Create Agents AI**, baseada em **Cle
   - `OpenAIClient` — cliente HTTP para OpenAI
   - `OllamaClient` — cliente HTTP para Ollama
 - **Common Adapters:**
-  - `MetricsRecorder` — gravação centralizada de métricas (OpenAI e Ollama)
+  - `MetricsRecorder` — base abstrata da gravação de métricas; `OpenAIMetricsRecorder` e `OllamaMetricsRecorder` implementam apenas a leitura de uso específica de cada provider
+  - `BaseStreamHandler` / `StreamUsageTotals` — orçamento de iterações de tools e acumulação de métricas no streaming
 - **Tools:**
+  - `AvailableTools` — catálogo das tools nativas, com carga preguiçosa das que dependem de extras
+  - `AvailableToolsRegistry` — adapta o catálogo à porta `ToolRegistry`
   - `CurrentDateTool` — ferramenta de data/hora
   - `ReadLocalFileTool` — leitura de arquivos (PDF, Excel, CSV, Parquet, JSON, YAML, TXT)
-- **Factory:** `ChatAdapterFactory` — criação de adapters baseada em provider
-- **Config:** `EnvironmentConfig`, `LoggingConfig`, `StandardLogger` (implementação de `LoggerInterface`), `ChatMetrics`
+- **Factory:** `ChatAdapterFactory` — resolve o provider para o adapter concreto. Cada chamada devolve uma instância nova: o adapter é dono das métricas da conversa, então compartilhá-lo faria um agente reportar as métricas de outro.
+- **Config:** `EnvironmentConfig`, `LoggingConfig`, `StandardLogger` (implementação de `LoggerInterface`)
 
----
+______________________________________________________________________
 
 ## 🎨 Princípios SOLID
 
@@ -126,8 +147,8 @@ Documentação completa da arquitetura do **Create Agents AI**, baseada em **Cle
 Cada classe tem uma única responsabilidade:
 
 ```python
-Agent          # Representa um agente
-History        # Gerencia histórico
+Agent  # Representa um agente
+History  # Gerencia histórico
 ChatWithAgentUseCase  # Orquestra conversa
 ```
 
@@ -138,7 +159,11 @@ Aberto para extensão, fechado para modificação:
 ```python
 # Adicionar novo provider sem modificar código existente
 class ClaudeAdapter(ChatRepository):
-    def chat(self, ...): pass
+    async def chat(self, *args, **kwargs):
+        pass
+
+    def get_metrics(self) -> list[ChatMetrics]:
+        return []
 ```
 
 ### Liskov Substitution (LSP)
@@ -159,7 +184,19 @@ Interfaces específicas e focadas:
 ```python
 class ChatRepository(ABC):
     @abstractmethod
-    def chat(self, ...) -> str:
+    async def chat(
+        self,
+        model: str,
+        instructions: str | None,
+        config: dict[str, Any] | None,
+        tools: list[BaseTool] | None,
+        history: list[dict[str, str]],
+        user_ask: str,
+    ) -> str | AsyncGenerator[str, None]:
+        pass
+
+    @abstractmethod
+    def get_metrics(self) -> list[ChatMetrics]:
         pass
 ```
 
@@ -172,13 +209,16 @@ class ChatWithAgentUseCase:
     def __init__(self, chat_repository: ChatRepository):  # Interface
         self.__chat_repository = chat_repository
 
+
 # Exemplo com LoggerInterface (DIP no domínio)
 class ToolExecutor:
-    def __init__(self, logger: LoggerInterface):  # Abstração
-        self._logger = logger  # Não depende de StandardLogger diretamente
+    def __init__(
+        self, tools: list[BaseTool], logger: LoggerInterface
+    ):  # Abstrações
+        self.__logger = logger  # Não depende de StandardLogger diretamente
 ```
 
----
+______________________________________________________________________
 
 ## 🔧 Padrões de Design
 
@@ -187,11 +227,28 @@ class ToolExecutor:
 ```python
 class ChatRepository(ABC):
     @abstractmethod
-    def chat(self, ...) -> str:
+    async def chat(
+        self,
+        model: str,
+        instructions: str | None,
+        config: dict[str, Any] | None,
+        tools: list[BaseTool] | None,
+        history: list[dict[str, str]],
+        user_ask: str,
+    ) -> str | AsyncGenerator[str, None]:
         pass
 
+    @abstractmethod
+    def get_metrics(self) -> list[ChatMetrics]:
+        pass
+
+
 class OpenAIChatAdapter(ChatRepository):
-    def chat(self, ...): # Implementação
+    async def chat(self, *args, **kwargs):  # Implementação assíncrona
+        ...
+
+    def get_metrics(self) -> list[ChatMetrics]:
+        return []
 ```
 
 ### Factory Pattern
@@ -202,18 +259,16 @@ class ChatAdapterFactory:
     def create(
         cls,
         provider: str,
-        model: str,
     ) -> ChatRepository:
-
         provider_lower = provider.lower()
         adapter: ChatRepository
 
-        if provider_lower == "openai":
+        if provider_lower == 'openai':
             adapter = OpenAIChatAdapter()
-        elif provider_lower == "ollama":
+        elif provider_lower == 'ollama':
             adapter = OllamaChatAdapter()
         else:
-            raise ValueError(f"Invalid provider: {provider}.")
+            raise ValueError(f'Invalid provider: {provider}.')
         return adapter
 ```
 
@@ -222,10 +277,9 @@ class ChatAdapterFactory:
 ```python
 # CreateAgent é uma fachada simplificada
 class CreateAgent:
-    def __init__(self, provider, model, ...):
-        # Esconde complexidade da criação
-        self.__agent = AgentComposer.create_agent(...)
-        self.__chat_use_case = AgentComposer.create_chat_use_case(...)
+    def __init__(self, provider: str, model: str, *args, **kwargs):
+        # Esconde a complexidade da composição
+        pass
 ```
 
 ### Value Object Pattern
@@ -237,53 +291,68 @@ class Message:
     content: str
 ```
 
----
+______________________________________________________________________
 
 ## 🔄 Fluxo de Dados
 
-### Fluxo Síncrono (await response)
+### 1. Fluxo Padrão Não-Streaming (`config={'stream': False}`)
 
 ```
 User → CreateAgent.chat()
     → ChatWithAgentUseCase.execute() [async]
         → ChatRepository.chat() [async]
-            → OpenAIHandler / OllamaHandler
-                → StreamHandler (processa streaming)
+            → OpenAIChatAdapter / OllamaChatAdapter
+                → OpenAIHandler / OllamaHandler (chamada HTTP direta)
                     → API Externa (OpenAI / Ollama)
-                    ← Tokens em streaming
-                ← Response completo
-            ← AsyncGenerator
-        ← StreamingResponseDTO
-    ← await response (string completa)
+                    ← Resposta completa da API
+                ← Mensagem gerada + métricas consolidadas
+            ← str (resposta final)
+        ← str
+    ← str
 ```
 
-### Fluxo Assíncrono (async for)
+### 2. Fluxo Streaming com Consumo Completo (`await response`)
 
 ```
-User → CreateAgent.chat()
+User → CreateAgent.chat() (com config={'stream': True})
     → ChatWithAgentUseCase.execute() [async]
         → ChatRepository.chat() [async]
-            → StreamHandler.handle_streaming()
-                → async for token in api_stream:
-                    → yield token  # Streaming em tempo real
+            → OpenAIStreamHandler / OllamaStreamHandler
+                → API Externa (OpenAI / Ollama)
+                ← Chunks em streaming
             ← AsyncGenerator[str]
-        ← StreamingResponseDTO
-    → async for token in response:
-        → print(token, end='')  # Exibe token por token
+        ← StreamingResponseDTO(generator)
+    ← await response
+        → _consume() itera sobre o gerador, preenche _full_response e grava no cache
+        ← str (resposta completa em cache)
 ```
 
-### Fluxo CLI
+### 3. Fluxo Streaming com Iteração Progressiva (`async for`)
+
+```
+User → CreateAgent.chat() (com config={'stream': True})
+    → ChatWithAgentUseCase.execute() [async]
+        → ChatRepository.chat() [async]
+            → OpenAIStreamHandler / OllamaStreamHandler
+                → API Externa (OpenAI / Ollama)
+                ← Chunks em streaming
+            ← AsyncGenerator[str]
+        ← StreamingResponseDTO(generator)
+    → async for token in response:
+        → print(token, end='', flush=True)  # Exibe token por token
+```
+
+### 4. Fluxo CLI
 
 ```
 Terminal → ChatCLIApplication.run()
     → CommandRegistry.find_handler(user_input)
         → CommandHandler.execute()
             → CreateAgent.chat() [se ChatCommandHandler]
-                → async for token in response:
-                    → TerminalRenderer.render_token()
+                → await TerminalRenderer.render_ai_message_streaming(response)
 ```
 
----
+______________________________________________________________________
 
 ## 💡 Benefícios da Arquitetura
 
@@ -299,7 +368,9 @@ use_case = ChatWithAgentUseCase(mock_repo)
 
 ```python
 # Trocar provider sem mudar código
-agent = CreateAgent(provider="ollama", model="llama2")
+from createagents import CreateAgent
+
+agent = CreateAgent(provider='ollama', model='llama3.2')
 ```
 
 ### 📈 Escalabilidade
@@ -314,32 +385,49 @@ agent = CreateAgent(provider="ollama", model="llama2")
 - Responsabilidades claras
 - Fácil localizar e corrigir bugs
 
----
+______________________________________________________________________
 
 ## 🔄 Padrões Assíncronos
 
 ### Streaming com AsyncGenerator
 
 ```python
-# Handler retorna AsyncGenerator
-async def handle_streaming(self, ...) -> AsyncGenerator[str, None]:
-    async for chunk in api_response:
-        yield chunk  # Stream em tempo real
+from collections.abc import AsyncGenerator, Generator
 
-# DTO encapsula AsyncGenerator
+
 class StreamingResponseDTO:
-    def __init__(self, generator: AsyncGenerator[str, None]):
+    """DTO para encapsular geradores assíncronos com suporte a cache e await."""
+
+    def __init__(self, generator: AsyncGenerator[str, None]) -> None:
         self._generator = generator
+        self._consumed: bool = False
+        self._full_response: str = ''
 
-    async def __anext__(self):  # Permite async for
-        return await self._generator.__anext__()
+    def __aiter__(self) -> 'StreamingResponseDTO':
+        return self
 
-    def __await__(self):  # Permite await
-        async def _consume():
-            return ''.join([token async for token in self])
+    async def __anext__(self) -> str:
+        if self._consumed:
+            raise StopAsyncIteration
+        try:
+            token = await self._generator.__anext__()
+        except StopAsyncIteration:
+            self._consumed = True
+            raise
+        self._full_response += token
+        return token
+
+    def __await__(self) -> Generator[object, None, str]:
+        async def _consume() -> str:
+            if self._consumed:
+                return self._full_response
+            async for _ in self:
+                pass
+            return self._full_response
+
         return _consume().__await__()
 ```
 
----
+______________________________________________________________________
 
-**Versão:** 0.1.3 | **Atualização:** 01/12/2025
+**Versão:** 0.2.0 | **Atualização:** 2026-08-25

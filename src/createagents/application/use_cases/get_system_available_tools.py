@@ -1,6 +1,5 @@
-from typing import Dict
-
-from ...infra import AvailableTools, LoggingConfig
+from ...domain import LoggerInterface, NullLogger
+from ..interfaces import ToolRegistry
 
 
 class GetSystemAvailableToolsUseCase:
@@ -10,12 +9,22 @@ class GetSystemAvailableToolsUseCase:
     available and can be added to any agent.
     """
 
-    def __init__(self):
-        self.__logger = LoggingConfig.get_logger(__name__)
+    def __init__(
+        self,
+        tool_registry: ToolRegistry,
+        logger: LoggerInterface | None = None,
+    ) -> None:
+        """Initialize the use case.
 
-    def execute(self) -> Dict[str, str]:
+        Args:
+            tool_registry: Port that exposes the framework's tool catalog.
+            logger: Optional logger injected by the composition root.
         """
-        Returns a dictionary of available system tools.
+        self.__tool_registry = tool_registry
+        self.__logger = logger or NullLogger()
+
+    def execute(self) -> dict[str, str]:
+        """Returns a dictionary of available system tools.
 
         System tools are built-in tools provided by the AI Agent framework.
 
@@ -23,6 +32,6 @@ class GetSystemAvailableToolsUseCase:
             Dict[str, str]: Dictionary mapping system tool names to descriptions.
         """
         self.__logger.debug('Retrieving available system tools.')
-        system_tools: Dict[str, str] = AvailableTools.get_system_tools()
+        system_tools: dict[str, str] = self.__tool_registry.get_system_tools()
         self.__logger.info('Retrieved %s system tool(s).', len(system_tools))
         return system_tools

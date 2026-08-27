@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from ....domain import BaseTool
 from ...config import LoggingConfig
@@ -29,7 +29,7 @@ class OllamaToolSchemaFormatter:
     _logger = LoggingConfig.get_logger(__name__)
 
     @staticmethod
-    def format_tools_for_ollama(tools: List[BaseTool]) -> List[Dict[str, Any]]:
+    def format_tools_for_ollama(tools: list[BaseTool]) -> list[dict[str, Any]]:
         """Convert BaseTool instances to Ollama's native tool format.
 
         Args:

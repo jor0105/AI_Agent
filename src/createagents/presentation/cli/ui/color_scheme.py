@@ -20,7 +20,6 @@ class ColorScheme:
     BOLD: str = '\033[1m'
     DIM: str = '\033[2m'
     ITALIC: str = '\033[3m'
-    UNDERLINE: str = '\033[4m'
 
     # Control sequences
     CLEAR_SCREEN: str = '\033[2J\033[H'
@@ -46,11 +45,6 @@ class ColorScheme:
     def get_success_color(cls) -> str:
         """Get color for success messages."""
         return cls.GREEN
-
-    @classmethod
-    def get_info_color(cls) -> str:
-        """Get color for info messages."""
-        return cls.GRAY
 
     @classmethod
     def get_error_color(cls) -> str:

@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 from createagents.infra.adapters.OpenAI.openai_client import OpenAIClient
+from createagents.infra.config import DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT
 
 IA_OPENAI_TEST_1: str = 'gpt-5-nano'
 IA_OPENAI_TEST_2: str = 'gpt-5-mini'
@@ -25,7 +26,11 @@ class TestOpenAIClient:
 
         assert client is not None
         mock_get_api_key.assert_called_once_with('OPENAI_API_KEY')
-        mock_get_client.assert_called_once_with('test-api-key')
+        mock_get_client.assert_called_once_with(
+            'test-api-key',
+            timeout=DEFAULT_TIMEOUT,
+            max_retries=DEFAULT_MAX_RETRIES,
+        )
 
     @patch(
         'createagents.infra.adapters.OpenAI.openai_client.EnvironmentConfig.get_api_key'

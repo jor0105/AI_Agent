@@ -1,81 +1,318 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
+#
+# Hook stages
+# -----------
+# pre-commit: fast, deterministic checks over the staged change
+# commit-msg: Conventional Commits validation
+# pre-push: full type checks, unit tests, and dependency audit before push
+---
+minimum_pre_commit_version: "3.2.0"
+
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+default_stages: [pre-commit]
+default_language_version:
+  python: python3.12
+
+# The central harness owns validation of its projected .agents/ content.
+# Repository hooks continue to validate product and repository-owned files.
+exclude: |
+  (?x)^(
+    site/|
+    dist/|
+    \.benchmarks/|
+    \.venv/|
+    \.agents/
+  )
+
 repos:
+  # --------------------------------------------------------------------------
+  # 0. Commit Message Validation
+  # --------------------------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: validate-commit-msg
+        name: validate-commit-msg
+        entry: bash .agents/scripts/validate-commit-msg.sh
+        language: system
+        stages: [commit-msg]
+
   # --------------------------------------------------------------------------
   # 1. Basic File Checks
   # --------------------------------------------------------------------------
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # v6.0.0
     hooks:
       - id: trailing-whitespace
+        # Mutating hooks must never change generated harness projections.
+        exclude: |
+          (?x)^(
+            \.agents/|
+            \.claude/|
+            \.codex/|
+            \.opencode/|
+            \.github/prompts/
+          )
       - id: end-of-file-fixer
+        exclude: |
+          (?x)^(
+            \.agents/|
+            \.claude/|
+            \.codex/|
+            \.opencode/|
+            \.github/prompts/
+          )
+      - id: mixed-line-ending
+        exclude: |
+          (?x)^(
+            \.agents/|
+            \.claude/|
+            \.codex/|
+            \.opencode/|
+            \.github/prompts/
+          )
       - id: check-yaml
       - id: check-toml
+      - id: check-json
       - id: check-merge-conflict
-      - id: check-added-large-files
       - id: debug-statements
       - id: check-ast
+      # Files > 500KB are blocked. uv.lock is a machine-generated lockfile
+      # of ~850KB and is the single canonical exception.
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+        exclude: ^uv\.lock$
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: check-symlinks
+      - id: destroyed-symlinks
+      - id: forbid-submodules
+      - id: name-tests-test
+        args: ["--pytest-test-first"]
 
   # --------------------------------------------------------------------------
-  # 2. Project Integrity (Poetry)
+  # 2. Project Integrity & Governance
   # --------------------------------------------------------------------------
-  - repo: https://github.com/python-poetry/poetry
-    rev: 2.2.1
-    hooks:
-      - id: poetry-check
-      - id: poetry-lock
-
-  # --------------------------------------------------------------------------
-  # 3. Security Checks
-  # --------------------------------------------------------------------------
-  # Static Analysis for Security (Bandit)
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.9.2
-    hooks:
-      - id: bandit
-        args: ["-c", "pyproject.toml"]
-        additional_dependencies: ["bandit[toml]"]
-        exclude: ^tests/
-
-  # Dependency Vulnerabilities (pip-audit)
-  # Runs locally using the project's environment
   - repo: local
     hooks:
-      - id: pip-audit
-        name: pip-audit
-        entry: poetry run pip-audit --ignore-vuln GHSA-f83h-ghpp-7wcc
+      - id: lockfile-sync
+        name: lockfile-sync
+        entry: >-
+          uv run --locked --no-sync python
+          scripts/quality_gates/check_lockfile_sync.py
+        language: system
+        files: ^(?:pyproject\.toml|uv\.lock)$
+        pass_filenames: false
+
+      # This gate runs only when its configuration or policy code changes.
+      - id: quality-gate-policy
+        name: quality-gate-policy
+        entry: >-
+          uv run --locked --no-sync python
+          scripts/quality_gates/quality_gate_policy.py
+        language: system
+        files: ^(?:\.pre-commit-config\.yaml|scripts/quality_gates/(?:hook_config|hook_policy|quality_gate_policy)\.py)$
+        pass_filenames: false
+
+      - id: validate-agents-md
+        name: validate-agents-md
+        entry: >-
+          uv run --locked --no-sync python
+          .agents/skills/agents-md-author/scripts/validate_agents_md.py
+        language: system
+        files: ^AGENTS\.md$
+        pass_filenames: false
+
+      - id: validate-agent-protocols
+        name: validate-agent-protocols
+        entry: >-
+          uv run --locked --no-sync python
+          .agents/scripts/validate-agent-protocols.py
+        language: system
+        files: ^\.github/.*$
+        pass_filenames: false
+
+  # --------------------------------------------------------------------------
+  # 2.1. AI Agent Diff Sanity & Test Integrity (Fail-Closed)
+  # --------------------------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: diff-sanity
+        name: diff-sanity
+        entry: >-
+          uv run --locked --no-sync python
+          scripts/quality_gates/check_diff_sanity.py
         language: system
         pass_filenames: false
         always_run: true
 
+      - id: test-integrity
+        name: test-integrity
+        entry: >-
+          uv run --locked --no-sync python
+          scripts/quality_gates/check_test_integrity.py
+        language: system
+        files: ^(?:tests|test)/
+        pass_filenames: false
+
   # --------------------------------------------------------------------------
-  # 4. Formatting & Linting (Ruff replaces isort/flake8)
+  # 3. Security and Supply Chain Checks
+  # --------------------------------------------------------------------------
+  # Bandit follows CI and scans product source. Test fixtures and local gate
+  # infrastructure have different threat models and remain covered by tests.
+  - repo: local
+    hooks:
+      - id: bandit-src
+        name: bandit (src)
+        entry: uv run --locked --no-sync bandit -q -c pyproject.toml
+        language: system
+        types: [python]
+        files: ^src/.*\.py$
+
+  # gitleaks is the single secret scanner. detect-secrets was dropped: it
+  # needed a 9-file baseline of test fixtures that gitleaks does not flag,
+  # and that baseline was itself detected as a secret. Allowlist entries,
+  # when needed, go in .gitleaksignore.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 2ca41cc1372d1e939a6a879f18cdc19fc1cac1ce  # frozen: v8.30.0
+    hooks:
+      - id: gitleaks
+        # Never echo a detected secret into local or CI logs.
+        args: ["--redact"]
+
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: 451b56af716f9f0d0c2b816503a3fd0cf8b036fa  # v1.29.0
+    hooks:
+      - id: zizmor
+
+  # --------------------------------------------------------------------------
+  # 4. Formatting, Linting and Documentation
   # --------------------------------------------------------------------------
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.6
+    rev: aab412d509121cb5f7533134b7e67f9fab59c682  # frozen: v0.16.4
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: [--fix, --exit-non-zero-on-fix]
+        exclude: |
+          (?x)^(
+            \.agents/|
+            \.claude/|
+            \.codex/|
+            \.opencode/|
+            \.github/prompts/
+          )
       - id: ruff-format
+        exclude: |
+          (?x)^(
+            \.agents/|
+            \.claude/|
+            \.codex/|
+            \.opencode/|
+            \.github/prompts/
+          )
+
+  - repo: https://github.com/hukkin/mdformat
+    rev: 2d496dbc18e31b83a1596685347ffe0b6041daf0  # frozen: 1.0.0
+    hooks:
+      - id: mdformat
+        args: ["--number"]
+        additional_dependencies: ["mdformat-gfm==1.0.0"]
+        # Harness projections and client mirrors are generated artifacts.
+        # Formatting them directly would invalidate their declared hashes.
+        exclude: |
+          (?x)^(
+            \.agents/|
+            \.claude/|
+            \.codex/|
+            \.opencode/|
+            \.github/prompts/|
+            openspec/
+          )
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: cba56bcde1fdd01c1deb3f945e69764c291a6530  # v1.38.0
+    hooks:
+      - id: yamllint
+        args: ["--strict"]
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: 914e7df21a07ef503a81201c76d2b11c789d3fca  # v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: 57b21406f092110c18776e39b0bda50d37c945c8  # v2.4.3
+    hooks:
+      - id: codespell
+        # Source/test code and comments are English; user documentation is
+        # Portuguese and is intentionally outside this spelling gate.
+        files: ^(src|tests)/.*\.py$
+        args: ["--ignore-words=.codespellignore"]
 
   # --------------------------------------------------------------------------
-  # 5. Type Checking
+  # 4.1. Import Graph
   # --------------------------------------------------------------------------
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.18.2
+  # Until these two existed, the layering rules in AGENTS.md were prose that
+  # only code review enforced. They are complementary: import-linter checks
+  # the *direction* between layers, the cycle detector checks that no module
+  # graph closes back on itself. Neither one implies the other.
+  - repo: local
     hooks:
-      - id: mypy
-        args: [--ignore-missing-imports, --pretty]
-        additional_dependencies: [types-requests, types-toml]
+      # Layer contracts live in [tool.importlinter] in pyproject.toml.
+      - id: import-linter
+        name: import-linter
+        entry: uv run --locked --no-sync lint-imports
+        language: system
+        files: ^(src/.*\.py|pyproject\.toml)$
+        pass_filenames: false
 
-  # --------------------------------------------------------------------------
-  # 6. Documentation
-  # --------------------------------------------------------------------------
-  - repo: https://github.com/PyCQA/pydocstyle
-    rev: 6.3.0
-    hooks:
+      - id: import-cycles
+        name: import-cycles
+        entry: >-
+          uv run --locked --no-sync python scripts/check-import-cycles.py
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+
       - id: pydocstyle
-        args:
-          - --convention=google
-          - --match-dir=^src
-          - --add-ignore=D104,D100,D101,D102,D103,D105,D107,D205,D212,D417,D415
+        name: pydocstyle
+        entry: >-
+          uv run --locked --no-sync pydocstyle src --convention=google
+          --add-ignore=D100,D104,D107
+        language: system
+        files: ^(src/.*\.py|pyproject\.toml)$
+        pass_filenames: false
+
+  # --------------------------------------------------------------------------
+  # 5. Slow or Network-Bound Checks
+  # --------------------------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: mypy-pre-push
+        name: mypy-pre-push
+        entry: uv run --locked --no-sync mypy src --pretty
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
+      # Same selection and coverage gate as pytest coverage and CI.
+      - id: pytest-unit
+        name: pytest-unit
+        entry: >-
+          uv run --locked --no-sync pytest -q -m "not integration and not slow"
+          --cov=src --cov-fail-under=85
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
+      - id: pip-audit
+        name: pip-audit
+        entry: uv run --locked --no-sync pip-audit --timeout 60
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

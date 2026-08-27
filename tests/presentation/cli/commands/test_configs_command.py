@@ -33,7 +33,7 @@ class TestConfigsCommandHandler:
         }
 
         with patch(
-            'createagents.presentation.cli.commands.configs_command.TextSanitizer.format_markdown_for_terminal',
+            'createagents.presentation.cli.commands.base_command.MarkdownTerminalFormatter.format',
             return_value='formatted-configs',
         ) as mock_formatter:
             handler.execute(agent, '/configs')

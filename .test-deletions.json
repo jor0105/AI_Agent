@@ -1,0 +1,9 @@
+{
+  "allowed_deletions": {
+    "tests/application/services/test_agent_service.py": "Superseded by Agent and AgentComposer coverage after AgentService removal.",
+    "tests/application/use_cases/test_get_all_available_tools.py": "Superseded by the current system-tool and facade coverage after the tool registry refactor.",
+    "tests/domain/value_objects/test_chat_response.py": "Superseded by provider-native tool-call and ChatMetrics coverage after the response model refactor.",
+    "tests/infra/adapters/Ollama/test_ollama_tool_call_parser.py": "Superseded by native Ollama tool-call handler and invoker coverage.",
+    "tests/infra/config/test_available_tools.py": "Relocated and superseded by adapter tool-catalog coverage after the configuration refactor."
+  }
+}

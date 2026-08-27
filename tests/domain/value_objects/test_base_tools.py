@@ -1,5 +1,3 @@
-from typing import Optional
-
 import pytest
 
 from createagents.domain import BaseTool
@@ -61,7 +59,7 @@ class ComplexParametersTool(BaseTool):
     }
 
     def execute(
-        self, query: str, limit: int = 10, filters: Optional[dict] = None
+        self, query: str, limit: int = 10, filters: dict | None = None
     ) -> str:
         return f'Query: {query}, Limit: {limit}, Filters: {filters}'
 

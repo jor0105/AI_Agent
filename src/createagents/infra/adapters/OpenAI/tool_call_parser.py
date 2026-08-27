@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ...config import LoggingConfig
 
@@ -60,7 +60,7 @@ class ToolCallParser:
             return False
 
     @staticmethod
-    def extract_tool_calls(response: Any) -> List[Dict[str, Any]]:
+    def extract_tool_calls(response: Any) -> list[dict[str, Any]]:
         """Extract tool calls from OpenAI Responses API response.
 
         Args:
@@ -127,7 +127,7 @@ class ToolCallParser:
     @staticmethod
     def format_tool_results_for_llm(
         tool_call_id: str, tool_name: str, result: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Format tool execution result for sending back to OpenAI Responses API.
 
         Args:
@@ -167,7 +167,7 @@ class ToolCallParser:
     @staticmethod
     def get_assistant_message_with_tool_calls(
         response: Any,
-    ) -> Optional[List[Dict[str, Any]]]:
+    ) -> list[dict[str, Any]] | None:
         """Extract the output items from response for adding to input history.
 
         For Responses API, we need to append specific output items to maintain context.

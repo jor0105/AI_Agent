@@ -1,7 +1,41 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any
 
 from ...domain import BaseTool, InvalidBaseToolException
+
+
+def _validate_tool_reference(tool: str | BaseTool) -> None:
+    """Check that a tool reference is usable, without resolving it.
+
+    A reference is either the registered name of a system tool or a ready
+    `BaseTool` instance. Turning a name into an instance needs the tool
+    catalog, which lives in the infrastructure layer, so it is done by
+    `CreateAgentUseCase` through the `ToolRegistry` port instead.
+
+    Args:
+        tool: The tool name or instance supplied by the caller.
+
+    Raises:
+        InvalidBaseToolException: If the reference is neither a non-empty
+            string nor a well-formed `BaseTool`.
+    """
+    if isinstance(tool, str):
+        if not tool.strip():
+            raise InvalidBaseToolException(tool)
+        return
+
+    if not isinstance(tool, BaseTool):
+        raise InvalidBaseToolException(tool)
+
+    if not callable(getattr(tool, 'execute', None)):
+        raise InvalidBaseToolException(tool)
+
+    if not isinstance(tool.name, str) or not tool.name.strip():
+        raise InvalidBaseToolException(tool)
+
+    if not isinstance(tool.description, str) or not tool.description.strip():
+        raise InvalidBaseToolException(tool)
 
 
 @dataclass
@@ -10,22 +44,21 @@ class CreateAgentInputDTO:
 
     provider: str
     model: str
-    name: Optional[str] = None
-    instructions: Optional[str] = None
-    config: Optional[Dict[str, Any]] = None
-    tools: Optional[Sequence[Union[str, BaseTool]]] = None
+    name: str | None = None
+    instructions: str | None = None
+    config: dict[str, Any] | None = None
+    tools: Sequence[str | BaseTool] | None = None
     history_max_size: int = 10
 
     def validate(self) -> None:
-        """Validate and transform the DTO data.
+        """Validate the DTO data.
 
-        This method validates all fields and converts string tool names
-        to BaseTool instances. After calling this method, the 'tools'
-        attribute will only contain BaseTool instances (or None).
+        Tool references are checked for shape only; `CreateAgentUseCase`
+        resolves names into instances afterwards.
 
         Raises:
             ValueError: If any field validation fails.
-            InvalidBaseToolException: If a tool is invalid or not found.
+            InvalidBaseToolException: If a tool reference is malformed.
         """
         if not isinstance(self.provider, str) or not self.provider.strip():
             raise ValueError(
@@ -55,37 +88,8 @@ class CreateAgentInputDTO:
         if self.config is not None and not isinstance(self.config, dict):
             raise ValueError("The 'config' field must be a dictionary (dict).")
 
-        if self.tools:
-            from ...infra import AvailableTools  # pylint: disable=import-outside-toplevel
-
-            validated_tools: List[BaseTool] = []
-            for tool in self.tools:
-                if isinstance(tool, str):
-                    available_tool = AvailableTools.get_tool_instance(
-                        tool.lower()
-                    )
-                    if available_tool:
-                        validated_tools.append(available_tool)
-                    else:
-                        raise InvalidBaseToolException(tool)
-                elif isinstance(tool, BaseTool):
-                    required_method = 'execute'
-                    if not hasattr(tool, required_method) or not callable(
-                        getattr(tool, required_method)
-                    ):
-                        raise InvalidBaseToolException(tool)
-                    if not isinstance(tool.name, str) or not tool.name.strip():
-                        raise InvalidBaseToolException(tool)
-                    if (
-                        not isinstance(tool.description, str)
-                        or not tool.description.strip()
-                    ):
-                        raise InvalidBaseToolException(tool)
-                    validated_tools.append(tool)
-                else:
-                    raise InvalidBaseToolException(tool)
-
-            object.__setattr__(self, 'tools', validated_tools)
+        for tool in self.tools or ():
+            _validate_tool_reference(tool)
 
         if (
             not isinstance(self.history_max_size, int)
@@ -102,14 +106,14 @@ class AgentConfigOutputDTO:
 
     provider: str
     model: str
-    name: Optional[str]
-    instructions: Optional[str]
-    config: Optional[Dict[str, Any]]
-    tools: Optional[List[BaseTool]]
-    history: List[Dict[str, str]]
+    name: str | None
+    instructions: str | None
+    config: dict[str, Any] | None
+    tools: list[BaseTool] | None
+    history: list[dict[str, str]]
     history_max_size: int = 10
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the DTO to a dictionary.
 
         Returns:
@@ -155,7 +159,7 @@ class ChatOutputDTO:
 
     response: str
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert the DTO to a dictionary.
 
         Returns:

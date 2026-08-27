@@ -34,7 +34,7 @@ class TestChatCommandHandler:
 
         with (
             patch(
-                'createagents.presentation.cli.commands.chat_command.TextSanitizer.format_markdown_for_terminal',
+                'createagents.presentation.cli.commands.chat_command.MarkdownTerminalFormatter.format',
                 return_value='formatted',
             ) as mock_formatter,
             patch(
@@ -64,7 +64,7 @@ class TestChatCommandHandler:
 
         with (
             patch(
-                'createagents.presentation.cli.commands.chat_command.TextSanitizer.format_markdown_for_terminal'
+                'createagents.presentation.cli.commands.chat_command.MarkdownTerminalFormatter.format'
             ) as mock_formatter,
             patch(
                 'asyncio.run',
@@ -91,4 +91,4 @@ class TestChatCommandHandler:
         renderer.clear_thinking_indicator.assert_called_once_with()
         renderer.render_ai_message.assert_called_once()
         args, _ = renderer.render_ai_message.call_args
-        assert 'Error: boom' == args[0]
+        assert args[0] == 'Error: boom'

@@ -1,5 +1,3 @@
-from unittest.mock import Mock, patch
-
 import pytest
 
 from createagents.application import (
@@ -51,7 +49,7 @@ class TestCreateAgentInputDTO:
             provider='openai', model='', name='Test', instructions='Test'
         )
 
-        with pytest.raises(ValueError, match="'model'.*required"):
+        with pytest.raises(ValueError, match=r"'model'.*required"):
             dto.validate()
 
     def test_validate_whitespace_model(self):
@@ -59,7 +57,7 @@ class TestCreateAgentInputDTO:
             provider='openai', model='   ', name='Test', instructions='Test'
         )
 
-        with pytest.raises(ValueError, match="'model'.*required"):
+        with pytest.raises(ValueError, match=r"'model'.*required"):
             dto.validate()
 
     def test_validate_empty_name(self):
@@ -67,7 +65,7 @@ class TestCreateAgentInputDTO:
             provider='openai', model='gpt-5-nano', name='', instructions='Test'
         )
 
-        with pytest.raises(ValueError, match="'name'.*valid"):
+        with pytest.raises(ValueError, match=r"'name'.*valid"):
             dto.validate()
 
     def test_validate_whitespace_name(self):
@@ -78,7 +76,7 @@ class TestCreateAgentInputDTO:
             instructions='Test',
         )
 
-        with pytest.raises(ValueError, match="'name'.*valid"):
+        with pytest.raises(ValueError, match=r"'name'.*valid"):
             dto.validate()
 
     def test_validate_empty_instructions(self):
@@ -86,7 +84,7 @@ class TestCreateAgentInputDTO:
             provider='openai', model='gpt-5-nano', name='Test', instructions=''
         )
 
-        with pytest.raises(ValueError, match="'instructions'.*valid"):
+        with pytest.raises(ValueError, match=r"'instructions'.*valid"):
             dto.validate()
 
     def test_validate_whitespace_instructions(self):
@@ -97,7 +95,7 @@ class TestCreateAgentInputDTO:
             instructions='   ',
         )
 
-        with pytest.raises(ValueError, match="'instructions'.*valid"):
+        with pytest.raises(ValueError, match=r"'instructions'.*valid"):
             dto.validate()
 
     def test_validate_none_name(self):
@@ -208,7 +206,7 @@ class TestCreateAgentInputDTO:
         )
 
         with pytest.raises(
-            ValueError, match='history_max_size.*positive integer'
+            ValueError, match=r'history_max_size.*positive integer'
         ):
             dto.validate()
 
@@ -222,7 +220,7 @@ class TestCreateAgentInputDTO:
         )
 
         with pytest.raises(
-            ValueError, match='history_max_size.*positive integer'
+            ValueError, match=r'history_max_size.*positive integer'
         ):
             dto.validate()
 
@@ -235,7 +233,7 @@ class TestCreateAgentInputDTO:
             config='invalid',
         )
 
-        with pytest.raises(ValueError, match="'config'.*dictionary"):
+        with pytest.raises(ValueError, match=r"'config'.*dictionary"):
             dto.validate()
 
     def test_validate_non_int_history_max_size(self):
@@ -258,7 +256,7 @@ class TestCreateAgentInputDTO:
             instructions='Test',
         )
 
-        with pytest.raises(ValueError, match="'provider'.*required"):
+        with pytest.raises(ValueError, match=r"'provider'.*required"):
             dto.validate()
 
     def test_validate_empty_provider(self):
@@ -269,7 +267,7 @@ class TestCreateAgentInputDTO:
             instructions='Test',
         )
 
-        with pytest.raises(ValueError, match="'provider'.*required"):
+        with pytest.raises(ValueError, match=r"'provider'.*required"):
             dto.validate()
 
     def test_validate_whitespace_provider(self):
@@ -280,35 +278,39 @@ class TestCreateAgentInputDTO:
             instructions='Test',
         )
 
-        with pytest.raises(ValueError, match="'provider'.*required"):
+        with pytest.raises(ValueError, match=r"'provider'.*required"):
             dto.validate()
 
 
 @pytest.mark.unit
 class TestCreateAgentInputDTOWithTools:
-    def test_validate_with_string_tool_names(self):
-        mock_tool = Mock()
-        mock_tool.name = 'web_search'
-        mock_tool.description = 'A web search tool'
-        mock_tool.execute = Mock()
+    def test_validate_keeps_string_tool_names_unresolved(self):
+        """The DTO checks shape only; CreateAgentUseCase resolves names."""
+        dto = CreateAgentInputDTO(
+            provider='openai',
+            model='gpt-5-nano',
+            name='Test',
+            instructions='Test',
+            tools=['web_search'],
+        )
 
-        with patch(
-            'createagents.infra.config.available_tools.AvailableTools.get_tool_instance'
-        ) as mock_get_tool:
-            mock_get_tool.return_value = mock_tool
+        dto.validate()
 
-            dto = CreateAgentInputDTO(
-                provider='openai',
-                model='gpt-5-nano',
-                name='Test',
-                instructions='Test',
-                tools=['web_search'],
-            )
+        assert dto.tools == ['web_search']
 
+    def test_validate_rejects_blank_tool_names(self):
+        from createagents.domain.exceptions import InvalidBaseToolException
+
+        dto = CreateAgentInputDTO(
+            provider='openai',
+            model='gpt-5-nano',
+            name='Test',
+            instructions='Test',
+            tools=['   '],
+        )
+
+        with pytest.raises(InvalidBaseToolException):
             dto.validate()
-
-            assert dto.tools == [mock_tool]
-            mock_get_tool.assert_called_with('web_search')
 
     def test_validate_with_base_tool_instances(self):
         from createagents.domain.value_objects import BaseTool
@@ -427,24 +429,19 @@ class TestCreateAgentInputDTOWithTools:
         with pytest.raises(InvalidBaseToolException):
             dto.validate()
 
-    def test_validate_with_invalid_tool_string_not_found(self):
-        from createagents.domain.exceptions import InvalidBaseToolException
+    def test_validate_accepts_unknown_names_and_defers_lookup(self):
+        """An unregistered name is a use-case concern, not a shape error."""
+        dto = CreateAgentInputDTO(
+            provider='openai',
+            model='gpt-5-nano',
+            name='Test',
+            instructions='Test',
+            tools=['nonexistent_tool_12345'],
+        )
 
-        with patch(
-            'createagents.infra.config.available_tools.AvailableTools.get_tool_instance'
-        ) as mock_get_tool:
-            mock_get_tool.return_value = None
+        dto.validate()
 
-            dto = CreateAgentInputDTO(
-                provider='openai',
-                model='gpt-5-nano',
-                name='Test',
-                instructions='Test',
-                tools=['nonexistent_tool_12345'],
-            )
-
-            with pytest.raises(InvalidBaseToolException):
-                dto.validate()
+        assert dto.tools == ['nonexistent_tool_12345']
 
     def test_validate_with_mixed_tool_types(self):
         from createagents.domain.value_objects import BaseTool
@@ -765,13 +762,13 @@ class TestChatInputDTO:
     def test_validate_empty_message(self):
         dto = ChatInputDTO(message='')
 
-        with pytest.raises(ValueError, match="'message'.*required"):
+        with pytest.raises(ValueError, match=r"'message'.*required"):
             dto.validate()
 
     def test_validate_whitespace_message(self):
         dto = ChatInputDTO(message='   ')
 
-        with pytest.raises(ValueError, match="'message'.*required"):
+        with pytest.raises(ValueError, match=r"'message'.*required"):
             dto.validate()
 
     def test_validate_long_message(self):
@@ -798,7 +795,7 @@ class TestChatInputDTO:
     def test_empty_string_after_numeric_validation(self):
         dto = ChatInputDTO(message='')
 
-        with pytest.raises(ValueError, match="'message'.*required"):
+        with pytest.raises(ValueError, match=r"'message'.*required"):
             dto.validate()
 
 

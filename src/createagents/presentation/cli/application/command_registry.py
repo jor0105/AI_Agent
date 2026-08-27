@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from ..commands import CommandHandler
 
 
@@ -12,9 +10,9 @@ class CommandRegistry:
     - OCP: New commands can be added without modifying this class
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the command registry."""
-        self._handlers: List[CommandHandler] = []
+        self._handlers: list[CommandHandler] = []
 
     def register(self, handler: CommandHandler) -> None:
         """Register a command handler.
@@ -24,7 +22,7 @@ class CommandRegistry:
         """
         self._handlers.append(handler)
 
-    def find_handler(self, user_input: str) -> Optional[CommandHandler]:
+    def find_handler(self, user_input: str) -> CommandHandler | None:
         """Find appropriate handler for user input.
 
         Searches through registered handlers in order and returns the first
@@ -41,7 +39,7 @@ class CommandRegistry:
                 return handler
         return None
 
-    def get_all_handlers(self) -> List[CommandHandler]:
+    def get_all_handlers(self) -> list[CommandHandler]:
         """Get all registered handlers.
 
         Returns:

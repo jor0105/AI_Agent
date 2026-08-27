@@ -1,22 +1,27 @@
 import json
 import os
-from typing import List
 
 import pytest
 
-from createagents.application import CreateAgent
 from createagents.application.interfaces import ChatRepository
-from createagents.domain import BaseTool, InvalidAgentConfigException
+from createagents.domain import (
+    BaseTool,
+    ChatMetrics,
+    InvalidAgentConfigException,
+    InvalidProviderException,
+)
 from createagents.infra import (
     AvailableTools,
     ChatAdapterFactory,
-    ChatMetrics,
 )
+from createagents.main import CreateAgent
 
 IA_OLLAMA_TEST_1: str = 'granite4:latest'
 IA_OLLAMA_TEST_2: str = 'gpt-oss:120b-cloud'
 IA_OPENAI_TEST_1: str = 'gpt-4.1-mini'
 IA_OPENAI_TEST_2: str = 'gpt-5-nano'
+
+# allow-assertion-reduction: Replaced broad exception swallowing with specific public-contract assertions during facade relocation.
 
 
 def _get_openai_api_key():
@@ -30,15 +35,17 @@ def _get_openai_api_key():
 
     try:
         api_key = EnvironmentConfig.get_api_key(ClientOpenAI.API_OPENAI_NAME)
-        return api_key
-    except EnvironmentError:
+    except OSError:
         pytest.skip(
             f'Skipping integration test: {ClientOpenAI.API_OPENAI_NAME} not found in .env file'
         )
+    else:
+        return api_key
 
 
 def _check_ollama_available():
-    import subprocess
+    # Integration-only probe for an optional local Ollama installation.
+    import subprocess  # nosec B404
 
     if os.getenv('CI'):
         pytest.skip(
@@ -46,7 +53,7 @@ def _check_ollama_available():
         )
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603, B607
             ['ollama', 'list'], capture_output=True, timeout=5
         )
         if result.returncode != 0:
@@ -56,18 +63,21 @@ def _check_ollama_available():
 
 
 def _check_ollama_model_available(model: str):
-    import subprocess
+    # Integration-only probe for an optional local Ollama installation.
+    import subprocess  # nosec B404
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603, B607
             ['ollama', 'list'], capture_output=True, text=True, timeout=5
         )
         if model not in result.stdout:
             pytest.skip(
                 f'Model {model} is not available in Ollama. Run: ollama pull {model}'
             )
-    except Exception as e:
-        pytest.skip(f'Could not verify available models: {e}')
+    except (OSError, subprocess.SubprocessError) as error:
+        pytest.skip(
+            f'Could not verify available models: {type(error).__name__}'
+        )
 
 
 class _SimpleTool(BaseTool):
@@ -81,7 +91,7 @@ class _SimpleTool(BaseTool):
 
 class _StubChatRepository(ChatRepository):
     def __init__(self):
-        self._metrics: List[ChatMetrics] = []
+        self._metrics: list[ChatMetrics] = []
         self._call_count = 0
 
     async def chat(
@@ -204,7 +214,7 @@ class TestCreateAgentInitializationErrors:
         assert configs['instructions'] is None
 
     def test_initialization_with_invalid_provider_raises_error(self):
-        with pytest.raises(Exception):
+        with pytest.raises(InvalidProviderException):
             CreateAgent(
                 provider='invalid_provider_xyz',
                 model='gpt-5-mini',
@@ -406,11 +416,8 @@ class TestCreateAgentChatOpenAI:
             instructions='Answer any question',
         )
 
-        try:
-            response = await agent.chat('')
-            assert isinstance(response, str)
-        except Exception:
-            pass
+        with pytest.raises(ValueError, match='message'):
+            await agent.chat('')
 
     @pytest.mark.asyncio
     async def test_chat_with_long_message_openai(self):

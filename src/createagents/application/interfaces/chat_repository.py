@@ -1,7 +1,10 @@
-from abc import ABC, abstractmethod
-from typing import Any, Dict, AsyncGenerator, List, Optional, Union
+from __future__ import annotations
 
-from ...domain import BaseTool
+from abc import ABC, abstractmethod
+from collections.abc import AsyncGenerator
+from typing import Any
+
+from ...domain import BaseTool, ChatMetrics
 
 
 class ChatRepository(ABC):
@@ -11,12 +14,12 @@ class ChatRepository(ABC):
     async def chat(
         self,
         model: str,
-        instructions: Optional[str],
-        config: Optional[Dict[str, Any]],
-        tools: Optional[List[BaseTool]],
-        history: List[Dict[str, str]],
+        instructions: str | None,
+        config: dict[str, Any] | None,
+        tools: list[BaseTool] | None,
+        history: list[dict[str, str]],
         user_ask: str,
-    ) -> Union[str, AsyncGenerator[str, None]]:
+    ) -> str | AsyncGenerator[str, None]:
         """Send a message to the chat model and get a response.
 
         Args:
@@ -31,4 +34,12 @@ class ChatRepository(ABC):
             Union[str, AsyncGenerator[str, None]]: The model's response.
                 - str: Complete response (if stream=False)
                 - AsyncGenerator: Token stream (if stream=True)
+        """
+
+    @abstractmethod
+    def get_metrics(self) -> list[ChatMetrics]:
+        """Return the collected metrics for this repository.
+
+        Returns:
+            List of ChatMetrics collected during interactions.
         """

@@ -19,7 +19,6 @@ class LoggerInterface(ABC):
             *args: Positional arguments for string formatting.
             **kwargs: Keyword arguments (e.g., exc_info, extra).
         """
-        pass
 
     @abstractmethod
     def info(self, message: str, *args: Any, **kwargs: Any) -> None:
@@ -30,7 +29,6 @@ class LoggerInterface(ABC):
             *args: Positional arguments for string formatting.
             **kwargs: Keyword arguments (e.g., exc_info, extra).
         """
-        pass
 
     @abstractmethod
     def warning(self, message: str, *args: Any, **kwargs: Any) -> None:
@@ -41,7 +39,6 @@ class LoggerInterface(ABC):
             *args: Positional arguments for string formatting.
             **kwargs: Keyword arguments (e.g., exc_info, extra).
         """
-        pass
 
     @abstractmethod
     def error(self, message: str, *args: Any, **kwargs: Any) -> None:
@@ -52,7 +49,6 @@ class LoggerInterface(ABC):
             *args: Positional arguments for string formatting.
             **kwargs: Keyword arguments (e.g., exc_info, extra).
         """
-        pass
 
     @abstractmethod
     def critical(self, message: str, *args: Any, **kwargs: Any) -> None:
@@ -63,4 +59,18 @@ class LoggerInterface(ABC):
             *args: Positional arguments for string formatting.
             **kwargs: Keyword arguments (e.g., exc_info, extra).
         """
-        pass
+
+    def exception(self, message: str, *args: Any, **kwargs: Any) -> None:
+        """Log an error message with the active exception traceback.
+
+        Must only be called from inside an exception handler. The default
+        implementation delegates to `error` with `exc_info` enabled, so
+        existing implementations remain valid without overriding it.
+
+        Args:
+            message: The message to log.
+            *args: Positional arguments for string formatting.
+            **kwargs: Keyword arguments (e.g., extra).
+        """
+        kwargs.setdefault('exc_info', True)
+        self.error(message, *args, **kwargs)
