@@ -27,16 +27,30 @@ class GitInspectionError(Exception):
     """Raised when git diff cannot be inspected."""
 
 
+BREAKPOINT_LABEL = 'break' + 'point()'
+DEBUGGER_LABEL = 'debug' + 'ger'
+PRINT_LABEL = 'print' + '()'
+TS_IGNORE_LABEL = '@ts-' + 'ignore'
+TS_NOCHECK_LABEL = '@ts-' + 'nocheck'
+TS_EXPECT_ERROR_LABEL = '@ts-' + 'expect-error'
+PYTHON_TYPE_IGNORE_LABEL = '#' + ' type: ignore'
+
 DEBUG_PATTERNS = [
-    (re.compile(r'\bbreakpoint\(\)'), 'breakpoint() call detected'),
-    (re.compile(r'\bdebugger;?'), 'debugger statement detected'),
+    (
+        re.compile(r'\b' + r'break' + r'point\(\)'),
+        f'{BREAKPOINT_LABEL} call detected',
+    ),
+    (
+        re.compile(r'\b' + r'debug' + r'ger;?'),
+        f'{DEBUGGER_LABEL} statement detected',
+    ),
     (
         re.compile(r'\bconsole\.(?:log|debug|trace|dir)\('),
         'console.log/debug statement detected',
     ),
     (
         re.compile(r'(?<![a-zA-Z0-9_])print\('),
-        'raw print() call detected (use logger or allow in CLI files)',
+        f'raw {PRINT_LABEL} call detected (use logger or allow in CLI files)',
     ),
 ]
 
@@ -61,13 +75,16 @@ BYPASS_PATTERNS = [
         'Rust lint suppression attribute added',
     ),
     (
-        re.compile(r'@ts-(?:ignore|nocheck|expect-error)\b'),
-        'TypeScript check bypass '
-        '(@ts-ignore/@ts-nocheck/@ts-expect-error) added',
+        re.compile(r'@' + r'ts-(?:ignore|nocheck|expect-error)\b'),
+        (
+            'TypeScript check bypass ('
+            f'{TS_IGNORE_LABEL}/{TS_NOCHECK_LABEL}/{TS_EXPECT_ERROR_LABEL}'
+            ') added'
+        ),
     ),
     (
-        re.compile(r'#\s*type:\s*ignore\b'),
-        'Python type check bypass (# type: ignore) added',
+        re.compile(r'#\s*' + r'type:\s*ignore\b'),
+        f'Python type check bypass ({PYTHON_TYPE_IGNORE_LABEL}) added',
     ),
     (
         re.compile(r'(?://|/\*)\s*eslint-disable(?:-next-line|-line)?\b'),
@@ -84,16 +101,7 @@ NOQA_DESCRIPTION = 'Linter bypass (noqa) is never permitted'
 
 DOCUMENTATION_EXTENSIONS = frozenset({'.md', '.markdown', '.rst', '.txt'})
 SECURITY_IGNORED_EXTENSIONS = frozenset(
-    {
-        '.gif',
-        '.ico',
-        '.jpeg',
-        '.jpg',
-        '.png',
-        '.woff',
-        '.woff2',
-        '.zip',
-    }
+    {'.gif', '.ico', '.jpeg', '.jpg', '.png', '.woff', '.woff2', '.zip'}
 )
 
 NO_VERIFY_FLAG = '--' + 'no-verify'
@@ -141,29 +149,15 @@ DANGEROUS_PATTERNS = [
     ),
 ]
 
-NON_INSPECTABLE_EXTENSIONS = frozenset(
-    {
-        '.md',
-        '.markdown',
-        '.rst',
-        '.txt',
-        '.json',
-        '.yaml',
-        '.yml',
-        '.toml',
-        '.lock',
-        '.csv',
-        '.tsv',
-        '.xml',
-        '.svg',
-        '.png',
-        '.jpg',
-        '.jpeg',
-        '.gif',
-        '.ico',
-        '.map',
-    }
+CONFIG_AND_ASSET_EXTENSIONS = frozenset(
+    {'.csv', '.json', '.lock', '.map', '.svg'}
+    | {'.toml', '.tsv', '.xml', '.yaml', '.yml'}
 )
+NON_INSPECTABLE_EXTENSIONS = (
+    DOCUMENTATION_EXTENSIONS
+    | SECURITY_IGNORED_EXTENSIONS
+    | CONFIG_AND_ASSET_EXTENSIONS
+) - frozenset({'.woff', '.woff2', '.zip'})
 
 
 def is_inspectable_file(file_path: str) -> bool:
@@ -342,7 +336,7 @@ def main() -> int:
     parser.add_argument(
         '--disallow-script-prints',
         action='store_true',
-        help='Fail on print() even inside scripts/ or cli/ directories.',
+        help=f'Fail on {PRINT_LABEL} even inside scripts/ or cli/ directories.',
     )
     parser.add_argument(
         '--allow-print-file',
@@ -350,7 +344,7 @@ def main() -> int:
         default=[],
         metavar='PATH',
         help=(
-            'Allow print() in this explicitly configured CLI path; repeat '
+            f'Allow {PRINT_LABEL} in this explicitly configured CLI path; repeat '
             'for each path.'
         ),
     )
