@@ -22,7 +22,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12", "3.13", "3.14"]
+        include:
+          - python-version: "3.12"
+            install_extras: true
+            run_mypy: true
+          - python-version: "3.13"
+            install_extras: true
+            run_mypy: true
+          - python-version: "3.14"
+            install_extras: false
+            run_mypy: false
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
@@ -43,7 +52,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --all-extras
+        run: |
+          if [[ "${{ matrix.install_extras }}" == "true" ]]; then
+            uv sync --all-extras
+          else
+            # The optional document stack currently has no spaCy wheel for
+            # CPython 3.14; validate the core package on that interpreter.
+            uv sync
+          fi
 
       # --------------------------------------------------------------------------
       # 1. Project Integrity Checks
@@ -71,6 +87,7 @@ jobs:
         run: uv run pre-commit run --all-files --show-diff-on-failure
 
       - name: Type check with mypy
+        if: matrix.run_mypy == true
         run: uv run mypy src --pretty
 
       - name: Docstring style check
