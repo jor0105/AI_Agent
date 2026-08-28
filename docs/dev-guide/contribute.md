@@ -64,7 +64,7 @@ quota de OpenAI ou Ollama nos checks locais padrão.
 Além dos hooks, execute os gates direcionados quando a alteração os afetar:
 
 ```bash
-uv run --locked --no-sync mypy src --ignore-missing-imports --pretty
+uv run --locked --no-sync mypy src --pretty
 uv run --locked --no-sync pydocstyle src --convention=google --add-ignore=D100,D104,D107
 uv run --locked --no-sync bandit -c pyproject.toml -r src -ll
 uv run --locked --no-sync pip-audit
@@ -90,16 +90,22 @@ uv lock
 uv sync --locked
 ```
 
-O `quality-gate-policy` roda somente quando a configuração de hooks ou o seu
-próprio código muda. Ele exige pins imutáveis para hooks remotos, impede
-sincronização/resolução de dependências no hook e preserva os gates essenciais.
+O `quality-gate-policy` roda quando a configuração de hooks, o seu próprio
+código ou `.gitleaksignore` muda. Ele exige pins imutáveis para hooks remotos,
+impede sincronização/resolução de dependências no hook e preserva os gates
+essenciais.
 As configurações do Ruff, pytest e Bandit permanecem canônicas nos seus
 arquivos de ferramenta, sem uma política duplicada. Mudanças em
-`.gitleaksignore` exigem revisão de segurança. As projeções geradas do harness e
-seus mirrors não recebem auto-fix; o gate de projeção confirma o hash staged.
+`.gitleaksignore` exigem revisão de segurança. O `diff-sanity` bloqueia
+`print()` por padrão, inclusive em scripts e na CLI; saídas legítimas devem
+ser autorizadas por arquivo com `--allow-print-file=<path>`. Bypasses exigem o
+marcador explícito `allow-bypass: <motivo>`, e `# noqa` nunca é aceito. As
+projeções geradas do harness e seus mirrors não recebem auto-fix; a validação
+do hash staged pertence ao harness central.
 
-O limite de linhas é uma auditoria estrutural sob demanda, para refactors
-amplos, e não bloqueia cada commit:
+O limite de linhas é validado no pre-commit pelo hook `check-max-lines`
+contra o baseline de dívida técnica (`.max-lines-baseline.json`), e também pode
+ser executado sob demanda para auditorias estruturais:
 
 ```bash
 uv run --locked --no-sync python .agents/scripts/check-max-lines.py
@@ -146,7 +152,7 @@ ______________________________________________________________________
 
 ## 🤖 Adicionar um Provedor
 
-1. Crie o adapter em `src/createagents/infra/adapters/NomeProvedor/`.
+1. Crie o adapter em `src/createagents/infra/adapters/nome_provedor/`.
 2. Implemente a porta `ChatRepository` da aplicação.
 3. Registre o provider em
    `src/createagents/infra/factories/chat_adapter_factory.py`.

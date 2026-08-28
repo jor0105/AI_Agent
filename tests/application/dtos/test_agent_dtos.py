@@ -42,7 +42,7 @@ class TestCreateAgentInputDTO:
             instructions='Test instructions',
         )
 
-        dto.validate()
+        assert dto.validate() is None
 
     def test_validate_empty_model(self):
         dto = CreateAgentInputDTO(
@@ -150,7 +150,7 @@ class TestCreateAgentInputDTO:
             instructions='Detailed instructions here',
         )
 
-        dto.validate()
+        assert dto.validate() is None
 
     def test_validate_with_config(self):
         dto = CreateAgentInputDTO(
@@ -757,7 +757,7 @@ class TestChatInputDTO:
 
     def test_validate_success(self):
         dto = ChatInputDTO(message='Valid message')
-        dto.validate()
+        assert dto.validate() is None
 
     def test_validate_empty_message(self):
         dto = ChatInputDTO(message='')
@@ -774,23 +774,21 @@ class TestChatInputDTO:
     def test_validate_long_message(self):
         long_message = 'A' * 10000
         dto = ChatInputDTO(message=long_message)
-        dto.validate()
+        assert dto.validate() is None
 
     def test_validate_multiline_message(self):
         multiline = 'Line 1\nLine 2\nLine 3'
         dto = ChatInputDTO(message=multiline)
-
-        dto.validate()
+        assert dto.validate() is None
 
     def test_validate_special_characters(self):
         special = 'Hello! 你好 🎉'
         dto = ChatInputDTO(message=special)
-
-        dto.validate()
+        assert dto.validate() is None
 
     def test_validate_with_numeric_string_message(self):
         dto = ChatInputDTO(message='12345')
-        dto.validate()
+        assert dto.validate() is None
 
     def test_empty_string_after_numeric_validation(self):
         dto = ChatInputDTO(message='')
@@ -911,9 +909,9 @@ class TestDTOsIntegration:
             instructions='Test',
         )
 
-        dto.validate()
-        dto.validate()
-        dto.validate()
+        assert dto.validate() is None
+        assert dto.validate() is None
+        assert dto.validate() is None
 
     def test_config_preservation_through_dtos(self):
         original_config = {

@@ -70,7 +70,7 @@ Tests hitting external APIs must be marked with `@pytest.mark.integration` and a
 Run targeted gates when applicable:
 
 ```bash
-uv run --locked --no-sync mypy src --ignore-missing-imports --pretty
+uv run --locked --no-sync mypy src --pretty
 uv run --locked --no-sync pydocstyle src --convention=google --add-ignore=D100,D104,D107
 uv run --locked --no-sync bandit -c pyproject.toml -r src -ll
 uv run --locked --no-sync pip-audit
@@ -88,9 +88,11 @@ uv lock
 uv sync --locked
 ```
 
-The `quality-gate-policy` runs only when hook configuration or policy code changes. It enforces immutable pins for remote hooks, forbids dependency sync within hooks, and preserves essential gates. Tool configurations for Ruff, pytest, and Bandit remain canonical in their respective configuration files without duplication. Modifications to `.gitleaksignore` require security review. Generated harness projections do not receive auto-formatting; the projection gate validates the staged hash.
+The `quality-gate-policy` runs when hook configuration, policy code, or `.gitleaksignore` changes. It enforces immutable pins for remote hooks, forbids dependency sync within hooks, and preserves essential gates. Tool configurations for Ruff, pytest, and Bandit remain canonical in their respective configuration files without duplication. Modifications to `.gitleaksignore` require security review. `diff-sanity` blocks `print()` by default, including in scripts and the CLI; legitimate output must be authorized per file with `--allow-print-file=<path>`. Bypasses require the explicit `allow-bypass: <reason>` marker, and `# noqa` is never accepted. Generated harness projections do not receive auto-formatting; staged hash validation belongs to the central harness.
 
-Line length checks can be run as an on-demand structural audit for large refactors:
+Line length checks are validated in pre-commit by the `check-max-lines` hook
+against the technical debt baseline (`.max-lines-baseline.json`), and can also
+be run on demand for structural audits:
 
 ```bash
 uv run --locked --no-sync python .agents/scripts/check-max-lines.py
@@ -134,7 +136,7 @@ ______________________________________________________________________
 
 ## 🤖 Adding a Provider
 
-1. Create adapter in `src/createagents/infra/adapters/<ProviderName>/`.
+1. Create adapter in `src/createagents/infra/adapters/<provider_name>/`.
 2. Implement application port `ChatRepository`.
 3. Register provider in `src/createagents/infra/factories/chat_adapter_factory.py`.
 4. Add unit tests in `tests/infra/adapters/`, mirroring the touched layer.

@@ -31,7 +31,8 @@ ______________________________________________________________________
 2. **Safe Mechanical Auto-Fix**: Formatação padronizada e organização de imports (executada com staging explícito).
 3. **Syntax / Fast Static**: Compilação/interpretação de arquivos alterados (`py_compile`, `tsc --noEmit`, `go vet`).
 4. **Secret Scanning**: Detecção de chaves de API e credenciais no diff staged (`gitleaks protect --staged`).
-5. **Diff Sanity (AI Traps)**: Bloqueio estrito por padrão de debuggers (`console.log`, `breakpoint()`), stubs (`throw new Error("TODO")`, `pass  # TODO`) e bypasses (`@ts-ignore`, `# type: ignore`, `# noqa`). O `# noqa` é proibido sem exceção, inclusive com `allow-bypass` ou justificativa; as demais exceções exigem razão explícita e não vazia (`allow-bypass: <reason>`).
+5. **Diff Sanity (AI Traps)**: Bloqueio estrito por padrão de debuggers (`console.log`, `breakpoint()`), stubs (`throw new Error("TODO")`, `pass  # TODO`) e supressões de compilador/linter em código ou configuração (`@ts-ignore`, `@ts-nocheck`, `@ts-expect-error`, `# type: ignore`, `# noqa` e equivalentes). Arquivos `.md`, `.markdown`, `.rst` e `.txt` podem citar esses marcadores como conteúdo explicativo, inclusive em blocos de código documental; a citação não é executável. Os marcadores continuam proibidos em código, scripts, fixtures, docstrings, YAML, JSON, TOML, manifests e workflows.
+   - **Operational Text Safety**: O mesmo gate inspeciona o texto adicionado em qualquer formato textual, sem exceções por diretório. Pipelines que enviam downloads diretamente a um shell, comandos que desativam hooks, variáveis de ambiente que saltam hooks, configurações que continuam após erro e fallbacks shell que forçam sucesso são violações, inclusive quando aparecem em documentação ou projeções geradas.
 6. **Test Integrity**: Bloqueio sem exceção de testes focados (`.only`, `fit`, `fdescribe`), bloqueio por padrão de skips (`@pytest.mark.skip`, `it.skip` — exigem razão com `allow-skip: <reason>`), perda líquida de asserções (`allow-assertion-reduction: <reason>`) e deleções de arquivos de teste (exigem política staged em `.test-deletions.json` com razão por arquivo ou `--allow-deleted-tests`).
 7. **Monorepo-Safe Lockfile Validation**: Garantia de que cada manifesto modificado (`pyproject.toml`, `package.json`, etc.) tenha seu lockfile local atualizado, ou o lockfile da raiz caso o manifesto pertença comprovadamente aos membros declarados de um workspace compartilhado na raiz. Para `package.json`, um arquivo que só contém metadados e não declara dependências não exige lockfile. Quando o gerenciador local fornece uma verificação determinística de coerência (`uv lock --check`, `poetry check --lock`, `cargo check --locked` ou uma verificação Go explicitamente configurada, como `go mod tidy -diff` quando suportada pela versão do projeto), um lockfile existente e confirmado como coerente também satisfaz o gate; ausência da ferramenta ou falha ao iniciar/executar o subprocesso é erro de infraestrutura (`ERROR`, código 2), enquanto lockfile ausente ou comando nativo retornando não zero continua sendo violação (`FAIL`, código 1). Este gate valida o estado existente; não atualiza dependências.
 8. **Circular Imports / Dependencies (obrigatório)**: Todo projeto com código importável deve ter um gate explícito no pre-commit para detectar ciclos diretos e indiretos (`A → B → A` e `A → B → C → A`) no grafo afetado. Um ciclo novo falha; ciclos históricos somente podem ser mantidos por baseline não-crescente. A ausência de uma ferramenta dedicada não autoriza remover o gate: reutilize o compilador, o analisador arquitetural ou o comando de dependências que o projeto já possui e, se não houver nenhum mecanismo determinístico disponível, interrompa a configuração com `ERROR` em vez de declarar `PASS`.
@@ -78,6 +79,21 @@ paridade staged entre manifesto e lockfile usando o gate compartilhado; não
 invente um comando de atualização para preencher a lacuna. Se o projeto
 declarar uma verificação nativa, mas a ferramenta não puder ser iniciada, o
 resultado é `ERROR`, código 2, conforme a política fail-closed.
+
+### Fronteira entre documentação e supressão executável
+
+O `diff-sanity` classifica a extensão do arquivo, não o diretório que o
+contém. Em `.md`, `.markdown`, `.rst` e `.txt`, uma ocorrência de marcador de
+supressão pode ser uma citação explicativa em prosa ou em um bloco de código
+documental. Essa exceção também cobre Markdown em mudanças OpenSpec e arquivos
+sob `tools/` ou projeções, desde que o formato seja documental.
+
+Em qualquer outro formato textual, os mesmos marcadores são tratados como
+supressão executável e bloqueados, mesmo dentro de uma string, docstring,
+fixture, configuração ou manifesto. A análise de debuggers e stubs permanece
+restrita a arquivos de código; a análise de operações perigosas permanece
+universal e lê o texto bruto adicionado. Assim, o conteúdo explicativo não
+permite transformar uma operação de bypass em uma exceção.
 
 ### O que Pertence ao Pre-push e CI (Fora do Pre-commit)
 
@@ -169,7 +185,7 @@ Compare o estado atual com a matriz de slots conceituais 80/20 (detalhada em [ga
 
 Copie ou referencie os scripts portáteis da skill (sem dependências externas) na pasta `scripts/` do projeto:
 
-- `check_diff_sanity.py`: Bloqueia `console.log`, `breakpoint()`, `print` órfão, `throw new Error("TODO")`, `@ts-ignore`, `# type: ignore` e `# noqa` novos. O `# noqa` nunca aceita exceção, allow-bypass ou justificativa; as demais categorias usam apenas razões explícitas. Para uma CLI que precisa emitir saída com `print()`, configure cada arquivo explicitamente com `--allow-print-file <path>` no hook; não isente um diretório inteiro. Consulte [agent-anti-patterns.md](references/agent-anti-patterns.md).
+- `check_diff_sanity.py`: Bloqueia `console.log`, `breakpoint()`, `print` órfão, `throw new Error("TODO")`, supressões de compilador/linter e operações perigosas recém-adicionadas. Marcadores de supressão são bloqueados em todos os formatos não documentais, inclusive com justificativa; os formatos `.md`, `.markdown`, `.rst` e `.txt` permitem somente a citação não executável. Para uma CLI que precisa emitir saída com `print()`, configure cada arquivo explicitamente com `--allow-print-file <path>` no hook; não isente um diretório inteiro. Consulte [agent-anti-patterns.md](references/agent-anti-patterns.md).
 - `check_test_integrity.py`: Bloqueia `.only`/`fit` sem exceção, bloqueia skips e perda de asserções sem razão e exige policy staged em `.test-deletions.json` para deleção de testes.
 - `check_lockfile_sync.py`, `lockfile_checks.py`, `staged_changes.py` e `workspace_members.py`: Copie os quatro arquivos juntos para `scripts/`; o primeiro é o CLI, o segundo centraliza a leitura de manifests e as verificações nativas de coerência, o terceiro preserva relações de rename/copy no índice e o quarto fornece a leitura indexada e o matching conservador de membros. O conjunto bloqueia commit de manifesto alterado sem o respectivo lockfile atualizado, comprovando pertencimento aos membros do workspace. O CLI deve analisar o conteúdo staged de `package.json`, dispensar manifests sem dependências declaradas e consultar o gerenciador nativo quando ele puder comprovar a coerência do lockfile. Ele não deve executar atualizadores, resolvers ou sincronizadores de ambiente. Não imponha timeout universal ao comando: escolha escopo e estágio com base no custo observado do projeto.
 
@@ -216,7 +232,7 @@ ______________________________________________________________________
 
 ## Formato de Diagnóstico Acionável
 
-Quando um gate falhar, o relatório emitido para o agente deve conter arquivo, linha, motivo da falha e o comando local para reprodução. Para corrigir um bypass, corrija o código, use o escopo apropriado ou configure a regra de lint explicitamente para o arquivo; `# noqa` nunca é uma alternativa:
+Quando um gate falhar, o relatório emitido para o agente deve conter arquivo, linha, motivo da falha e o comando local para reprodução. Para corrigir uma supressão, corrija o código ou documente o comportamento sem inseri-la no formato executável; nenhuma justificativa transforma um marcador de supressão em autorização:
 
 ```text
 ======================================================================
@@ -323,7 +339,7 @@ ______________________________________________________________________
 ## Evals de workflow
 
 - [ ] Assert: `check_diff_sanity.py` falha com exit code 2 quando o git falha ou fora de um repo git.
-- [ ] Assert: `check_diff_sanity.py` bloqueia `@ts-ignore` e `# type: ignore` por padrão com exit code 1 e rejeita allow sem razão.
+- [ ] Assert: `check_diff_sanity.py` bloqueia `@ts-ignore`, `@ts-nocheck`, `@ts-expect-error` e `# type: ignore` em código e configuração com exit code 1, mesmo com uma razão, e aceita suas citações somente nos formatos documentais declarados.
 - [ ] Assert: `check_diff_sanity.py` bloqueia `# noqa`, `# noqa: BLE001`, `# noqa: F401` com razão e `# noqa` acompanhado de `allow-bypass`, sempre com exit code 1.
 - [ ] Assert: `check_diff_sanity.py` bloqueia `throw new Error("TODO")` mesmo quando acompanhado de comentário de debug.
 - [ ] Assert: `check_test_integrity.py` bloqueia `.only` e `fit` sem exceção e bloqueia `skip` sem razão explícita.

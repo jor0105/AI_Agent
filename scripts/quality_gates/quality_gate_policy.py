@@ -15,6 +15,9 @@ from hook_policy import PRE_COMMIT_PATH, _validate_pre_commit_config
 RELEVANT_PATHS = frozenset(
     {
         PRE_COMMIT_PATH,
+        '.gitleaksignore',
+        'scripts/quality_gates/check_test_contracts.py',
+        'scripts/quality_gates/test_contract_ast.py',
         'scripts/quality_gates/hook_config.py',
         'scripts/quality_gates/hook_policy.py',
         'scripts/quality_gates/quality_gate_policy.py',

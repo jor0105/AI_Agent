@@ -22,7 +22,7 @@ class TestChatRepository:
 
     def test_scenario_concrete_implementation_must_implement_chat(self):
         class IncompleteRepository(ChatRepository):
-            pass
+            __slots__ = ()
 
         with pytest.raises(TypeError):
             IncompleteRepository()
@@ -101,9 +101,7 @@ class TestChatRepository:
             user_ask='Test',
         )
 
-        tokens = []
-        async for token in result:
-            tokens.append(token)
+        tokens = [token async for token in result]
 
         assert tokens == ['token1', 'token2', 'token3']
 

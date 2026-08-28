@@ -51,7 +51,7 @@ file-tools = [
     "unstructured[pdf,docx,pptx]>=0.16.9,<1.0.0",
     "pandas>=2.2.3,<3.0.0",
     "openpyxl>=3.1.5,<4.0.0",
-    "pyarrow>=18.1.0,<19.0.0",
+    "pyarrow>=23.0.1,<24.0.0",
     "chardet>=5.2.0,<6.0.0"
 ]
 all = [
@@ -59,7 +59,7 @@ all = [
     "unstructured[pdf,docx,pptx]>=0.16.9,<1.0.0",
     "pandas>=2.2.3,<3.0.0",
     "openpyxl>=3.1.5,<4.0.0",
-    "pyarrow>=18.1.0,<19.0.0",
+    "pyarrow>=23.0.1,<24.0.0",
     "chardet>=5.2.0,<6.0.0"
 ]
 
@@ -136,13 +136,20 @@ match = "(?!test_).*\\.py"
 python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
-ignore_missing_imports = true
+disallow_any_unimported = true
+disallow_any_generics = true
+disallow_subclassing_any = true
 # Every definition in `src` is annotated, so mypy checks all bodies instead
 # of silently skipping untyped ones.
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
 check_untyped_defs = true
 no_implicit_optional = true
+no_implicit_reexport = true
+strict_equality = true
+extra_checks = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 
@@ -152,6 +159,9 @@ exclude_dirs = [".venv"]
 [tool.ruff]
 # Blue style: 79 characters line length
 line-length = 79
+# The internal harness is generated development tooling, not package code.
+# Its own verification entry points remain responsible for that boundary.
+extend-exclude = [".agents"]
 
 [tool.ruff.lint]
 # Pinned explicitly so the result does not drift with Ruff's default ruleset
@@ -172,7 +182,7 @@ select = [
     "ERA",           # commented-out code
     "TRY",           # exception handling
     "RUF",           # ruff-specific
-    "T20",           # flake8-print: disallow print/pprint in library code
+    "T201",          # flake8-print: disallow print/pprint in library code
     "PGH",           # pygrep-hooks: disallow blanket type: ignore and noqa
 ]
 ignore = [
@@ -183,26 +193,23 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# CLI presentation, scripts, and harness tools are responsible for terminal output
-"src/createagents/presentation/cli/**" = ["T20"]
-"src/createagents/presentation/cli/ui/terminal_renderer.py" = ["RUF001"]
+# The public Message contract intentionally reports invalid roles as ValueError.
 "src/createagents/domain/value_objects/message.py" = ["TRY004"]
-"src/createagents/domain/services/tool_executor.py" = ["BLE001", "LOG004", "LOG014"]
-"src/createagents/infra/adapters/Common/base_stream_handler.py" = ["LOG004", "LOG014"]
-"src/createagents/infra/config/standard_logger.py" = ["LOG004", "LOG014"]
+# These boundaries must isolate failures from third-party tools and callbacks.
+"src/createagents/domain/services/tool_executor.py" = ["BLE001"]
 "src/createagents/infra/config/retry.py" = ["BLE001"]
-".agents/**" = ["T20"]
-".github/hooks/**" = ["T20"]
-"scripts/**" = ["T20"]
-# Tests may use fixtures, looser typing, repetitive setup and standard
-# exceptions as subjects under test.
-"tests/**" = [
-    "PERF",
-    "RUF012", "RUF015", "RUF005", "RUF001",
-    "SIM105", "SIM117", "SIM118", "SIM222",
-    "RET", "UP015", "C401", "C403", "B007", "G201",
-    "T20",
-]
+# The renderer is the only product module whose explicit terminal output is
+# part of its interface.
+"src/createagents/presentation/cli/ui/terminal_renderer.py" = ["T201"]
+# These entry-point scripts report gate results to their callers via stdout.
+"scripts/check-import-cycles.py" = ["T201"]
+"scripts/quality_gates/check_diff_sanity.py" = ["T201"]
+"scripts/quality_gates/check_harness_projection.py" = ["T201"]
+"scripts/quality_gates/check_lockfile_sync.py" = ["T201"]
+"scripts/quality_gates/check_test_contracts.py" = ["T201"]
+"scripts/quality_gates/check_test_integrity.py" = ["T201"]
+"scripts/quality_gates/quality_gate_policy.py" = ["T201"]
+# Concurrency tests collect all worker failures for assertions after joins.
 "tests/domain/value_objects/test_history.py" = ["BLE001"]
 "tests/infra/config/test_environment.py" = ["BLE001"]
 "tests/infra/config/test_environment_thread_safety.py" = ["BLE001"]

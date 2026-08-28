@@ -115,7 +115,7 @@ class TestAgentComposer:
         with (
             patch.dict('os.environ', {'OPENAI_API_KEY': 'test-key'}),
             patch(
-                'createagents.infra.adapters.OpenAI.client_openai.ClientOpenAI.get_client'
+                'createagents.infra.adapters.openai.client_openai.ClientOpenAI.get_client'
             ) as mock_get_client,
         ):
             mock_client = MagicMock()
@@ -134,7 +134,7 @@ class TestAgentComposer:
         with (
             patch.dict('os.environ', {'OPENAI_API_KEY': 'test-key'}),
             patch(
-                'createagents.infra.adapters.OpenAI.client_openai.ClientOpenAI.get_client'
+                'createagents.infra.adapters.openai.client_openai.ClientOpenAI.get_client'
             ) as mock_get_client,
         ):
             mock_client = MagicMock()
@@ -142,7 +142,8 @@ class TestAgentComposer:
 
             use_case = AgentComposer.create_chat_use_case(provider='openai')
 
-            assert hasattr(use_case, '_ChatWithAgentUseCase__chat_repository')
+            assert isinstance(use_case, ChatWithAgentUseCase)
+            assert callable(use_case.execute)
 
     def test_create_get_config_use_case_returns_use_case(self):
         use_case = AgentComposer.create_get_config_use_case()
@@ -172,7 +173,7 @@ class TestAgentComposer:
         with (
             patch.dict('os.environ', {'OPENAI_API_KEY': 'test-key'}),
             patch(
-                'createagents.infra.adapters.OpenAI.client_openai.ClientOpenAI.get_client'
+                'createagents.infra.adapters.openai.client_openai.ClientOpenAI.get_client'
             ) as mock_get_client,
         ):
             mock_client = MagicMock()
@@ -193,12 +194,13 @@ class TestAgentComposer:
             )
 
     def test_error_message_contains_composer_context(self):
-        try:
+        with pytest.raises(
+            InvalidAgentConfigException,
+            match=r"'model' field is required",
+        ):
             AgentComposer.create_agent(
                 provider='openai', model='', name='Test', instructions='Test'
             )
-        except InvalidAgentConfigException:
-            pass
 
     def test_create_agent_with_empty_provider_raises_error(self):
         with pytest.raises(InvalidAgentConfigException):
@@ -360,7 +362,7 @@ class TestAgentComposer:
         with (
             patch.dict('os.environ', {'OPENAI_API_KEY': 'test-key'}),
             patch(
-                'createagents.infra.adapters.OpenAI.client_openai.ClientOpenAI.get_client'
+                'createagents.infra.adapters.openai.client_openai.ClientOpenAI.get_client'
             ) as mock_get_client,
         ):
             mock_client = MagicMock()
@@ -368,12 +370,14 @@ class TestAgentComposer:
 
             use_case = AgentComposer.create_chat_use_case(provider='openai')
 
-            assert use_case._ChatWithAgentUseCase__chat_repository is not None
+            assert isinstance(use_case, ChatWithAgentUseCase)
+            assert use_case.get_metrics() == []
 
     def test_create_chat_use_case_ollama_injects_correct_adapter_type(self):
         use_case = AgentComposer.create_chat_use_case(provider='ollama')
 
-        assert use_case._ChatWithAgentUseCase__chat_repository is not None
+        assert isinstance(use_case, ChatWithAgentUseCase)
+        assert use_case.get_metrics() == []
 
     def test_create_agent_with_valid_data_all_fields_match(self):
         config = {'temperature': 0.5}
@@ -501,7 +505,7 @@ class TestAgentComposer:
         with (
             patch.dict('os.environ', {'OPENAI_API_KEY': 'test-key'}),
             patch(
-                'createagents.infra.adapters.OpenAI.client_openai.ClientOpenAI.get_client'
+                'createagents.infra.adapters.openai.client_openai.ClientOpenAI.get_client'
             ) as mock_get_client,
         ):
             mock_client = MagicMock()
@@ -646,8 +650,7 @@ class TestAgentComposer:
             instructions='Test',
         )
 
-        assert hasattr(agent, 'config')
-        assert isinstance(agent.config, dict)
+        assert agent.config == {}
 
     def test_create_agent_with_tools_none(self):
         agent = AgentComposer.create_agent(
@@ -727,7 +730,7 @@ class TestAgentComposer:
 
         available = AvailableTools.get_system_tools()
         if available:
-            tool_name = list(available.keys())[0]
+            tool_name = next(iter(available))
             agent = AgentComposer.create_agent(
                 provider='openai',
                 model='gpt-5-nano',
@@ -754,7 +757,7 @@ class TestAgentComposer:
         tool = TestTool()
         available = AvailableTools.get_system_tools()
         if available:
-            tool_name = list(available.keys())[0]
+            tool_name = next(iter(available))
             agent = AgentComposer.create_agent(
                 provider='openai',
                 model='gpt-5-nano',
@@ -936,7 +939,7 @@ class TestAgentComposer:
 
         available = AvailableTools.get_system_tools()
         if available:
-            tool_name = list(available.keys())[0]
+            tool_name = next(iter(available))
             agent = AgentComposer.create_agent(
                 provider='openai',
                 model='gpt-5-nano',

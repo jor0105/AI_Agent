@@ -200,6 +200,8 @@ opencode.json
 .github/copilot/
 .github/commands/
 CLAUDE.md
+openspec/
+
 
 # Mutation testing (mutmut) artifacts
 mutants/

@@ -222,6 +222,7 @@ class ToolExecutor:
                 tool_name,
                 start_time,
                 f"Invalid arguments for tool '{tool_name}': {e!s}",
+                e,
             )
 
         except (ValueError, RuntimeError) as e:
@@ -229,6 +230,7 @@ class ToolExecutor:
                 tool_name,
                 start_time,
                 f"Error executing tool '{tool_name}': {e!s}",
+                e,
             )
 
         # A bug in third-party tool code must degrade to a failed result, not
@@ -239,33 +241,38 @@ class ToolExecutor:
                 start_time,
                 f"Internal error in tool '{tool_name}': "
                 f'{type(e).__name__}: {e!s}',
+                e,
             )
 
     def __failure(
-        self, tool_name: str, start_time: float, error_msg: str
+        self,
+        tool_name: str,
+        start_time: float,
+        error_msg: str,
+        error: Exception,
     ) -> ToolExecutionResult:
         """Log a failed execution and build its result.
 
-        Must be called from inside an `except` block: the active exception is
-        what gives the log record its traceback.
+        The captured exception is passed explicitly so logging retains its
+        traceback even though this helper is outside the caller's `except`
+        suite.
 
         Args:
             tool_name: Name of the tool that failed.
             start_time: When the execution attempt started.
             error_msg: The caller-facing description of the failure.
+            error: The exception captured while executing the tool.
 
         Returns:
             The failed `ToolExecutionResult`, timed from `start_time`.
         """
         execution_time = (time.time() - start_time) * 1000
-        # Called from the caller's `except` block, so the active exception is
-        # still set and the traceback is captured.
         self.__logger.error(
             "Error executing tool '%s': %s (execution time: %.2fms)",
             tool_name,
             error_msg,
             execution_time,
-            exc_info=True,
+            exc_info=(type(error), error, error.__traceback__),
         )
         return ToolExecutionResult(
             tool_name=tool_name,

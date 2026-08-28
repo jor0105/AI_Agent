@@ -159,7 +159,7 @@ class ChatOutputDTO:
 
     response: str
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, str]:
         """Convert the DTO to a dictionary.
 
         Returns:

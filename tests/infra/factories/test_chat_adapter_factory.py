@@ -3,10 +3,10 @@ from unittest.mock import Mock, patch
 import pytest
 
 from createagents.application.interfaces import ChatRepository
-from createagents.infra.adapters.Ollama.ollama_chat_adapter import (
+from createagents.infra.adapters.ollama.ollama_chat_adapter import (
     OllamaChatAdapter,
 )
-from createagents.infra.adapters.OpenAI.openai_chat_adapter import (
+from createagents.infra.adapters.openai.openai_chat_adapter import (
     OpenAIChatAdapter,
 )
 from createagents.infra.factories.chat_adapter_factory import (
@@ -14,7 +14,7 @@ from createagents.infra.factories.chat_adapter_factory import (
 )
 
 OPENAI_CLIENT = (
-    'createagents.infra.adapters.OpenAI.openai_client.ClientOpenAI.get_client'
+    'createagents.infra.adapters.openai.openai_client.ClientOpenAI.get_client'
 )
 
 # allow-assertion-reduction: Removed cache and model-key cases target the retired shared-adapter cache; isolation coverage remains below.
@@ -89,18 +89,52 @@ class TestAdapterIsolation:
 
         assert first is not second
 
-    def test_metrics_do_not_leak_between_adapters(self):
-        from createagents.domain import ChatMetrics
-
+    @pytest.mark.asyncio
+    async def test_metrics_do_not_leak_between_adapters(self):
         first = ChatAdapterFactory.create(provider='ollama')
         second = ChatAdapterFactory.create(provider='ollama')
 
-        first._OllamaChatAdapter__metrics.append(
-            ChatMetrics(model='phi4', latency_ms=1.0, success=True)
-        )
-
-        assert len(first.get_metrics()) == 1
+        assert first.get_metrics() == []
         assert second.get_metrics() == []
+
+        from unittest.mock import AsyncMock, MagicMock
+
+        mock_response = MagicMock()
+        mock_response.message = MagicMock(content='Hello', tool_calls=None)
+        mock_response.get.side_effect = lambda key, default=None: {
+            'prompt_eval_count': 10,
+            'eval_count': 20,
+            'total_duration': 100_000_000,
+        }.get(key, default)
+
+        with patch(
+            'createagents.infra.adapters.ollama.ollama_client.OllamaClient.call_api',
+            new_callable=AsyncMock,
+            return_value=mock_response,
+        ):
+            response = await first.chat(
+                model='phi4-mini:latest',
+                instructions='Test',
+                config={},
+                tools=None,
+                history=[],
+                user_ask='Hi',
+            )
+            assert response == 'Hello'
+
+        first_metrics = first.get_metrics()
+        second_metrics = second.get_metrics()
+
+        assert len(first_metrics) == 1
+        assert first_metrics[0].model == 'phi4-mini:latest'
+        assert first_metrics[0].prompt_tokens == 10
+        assert first_metrics[0].completion_tokens == 20
+        assert first_metrics[0].success is True
+
+        assert len(second_metrics) == 0
+
+        first_metrics.clear()
+        assert len(first.get_metrics()) == 1
 
     def test_openai_adapters_are_also_independent(self, openai_ready):
         first = ChatAdapterFactory.create(provider='openai')

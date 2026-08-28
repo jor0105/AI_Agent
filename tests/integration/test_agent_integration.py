@@ -25,7 +25,7 @@ IA_OPENAI_TEST_2: str = 'gpt-5-nano'
 
 
 def _get_openai_api_key():
-    from createagents.infra.adapters.OpenAI.client_openai import ClientOpenAI
+    from createagents.infra.adapters.openai.client_openai import ClientOpenAI
     from createagents.infra.config.environment import EnvironmentConfig
 
     if os.getenv('CI'):
@@ -120,10 +120,9 @@ class _StubChatRepository(ChatRepository):
 
 @pytest.fixture
 def stub_chat_repository(monkeypatch):
-    ChatAdapterFactory.clear_cache()
     stub_repo = _StubChatRepository()
 
-    def _fake_create(cls, provider, model):
+    def _fake_create(cls, provider):
         return stub_repo
 
     monkeypatch.setattr(
@@ -600,8 +599,8 @@ class TestCreateAgentMetrics:
         assert len(metrics) > 0
 
         first_metric = metrics[0]
-        assert hasattr(first_metric, 'model')
-        assert hasattr(first_metric, 'latency_ms')
+        assert isinstance(first_metric, ChatMetrics)
+        assert first_metric.model == IA_OPENAI_TEST_1
         assert first_metric.latency_ms > 0
 
     @pytest.mark.asyncio

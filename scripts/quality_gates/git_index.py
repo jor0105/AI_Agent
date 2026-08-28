@@ -71,6 +71,14 @@ def index_file_exists(path: str | Path, root: Path) -> bool:
     return bool(result.stdout.strip())
 
 
+def indexed_paths(root: Path) -> list[str]:
+    """Return all paths currently present in the Git index."""
+    result = _run_git(['ls-files', '--cached', '-z', '--'], root)
+    return sorted(
+        normalize_path(path) for path in result.stdout.split('\0') if path
+    )
+
+
 def read_index_text(path: str | Path, root: Path) -> str | None:
     """Read UTF-8 text from the index, or ``None`` when it is absent."""
     normalized = normalize_path(path)

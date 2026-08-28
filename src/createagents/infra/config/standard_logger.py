@@ -40,12 +40,6 @@ class StandardLogger(LoggerInterface):
         """Log a critical message."""
         self._logger.critical(message, *args, **kwargs)
 
-    def exception(self, message: str, *args: Any, **kwargs: Any) -> None:
-        """Log an error message with the active exception traceback."""
-        # This adapter intentionally delegates; the exception handler lives
-        # at the call site, not here.
-        self._logger.error(message, *args, exc_info=True, **kwargs)
-
 
 def create_logger(name: str) -> LoggerInterface:
     """Factory function to create a logger instance.

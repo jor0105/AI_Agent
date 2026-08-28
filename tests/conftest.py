@@ -96,7 +96,7 @@ def mock_openai_api_key(request):
         with (
             patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key-mock'}),
             patch(
-                'createagents.infra.adapters.OpenAI.client_openai.ClientOpenAI.get_client'
+                'createagents.infra.adapters.openai.client_openai.ClientOpenAI.get_client'
             ) as mock_get_client,
         ):
             # Create a mock OpenAI client

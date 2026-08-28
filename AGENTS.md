@@ -96,7 +96,7 @@ commands, testing, governance, and harness details.
 | Pre-commit hooks (36)         | `uv run --locked --no-sync pre-commit run --all-files`                                                                                   |
 | Pre-push hooks (3)            | `uv run --locked --no-sync pre-commit run --all-files --hook-stage pre-push`                                                             |
 | Safe local tests and coverage | `uv run --locked --no-sync pytest -m 'not integration and not slow' -ra --cov=src --cov-fail-under=85`                                   |
-| Type checking                 | `uv run --locked --no-sync mypy src --ignore-missing-imports --pretty`                                                                   |
+| Type checking                 | `uv run --locked --no-sync mypy src --pretty`                                                                                            |
 | Docstring style               | `uv run --locked --no-sync pydocstyle src --convention=google --add-ignore=D100,D104,D107`                                               |
 | Source security scan          | `uv run --locked --no-sync bandit -c pyproject.toml -r src -ll`                                                                          |
 | Dependency audit              | `uv run --locked --no-sync pip-audit`                                                                                                    |

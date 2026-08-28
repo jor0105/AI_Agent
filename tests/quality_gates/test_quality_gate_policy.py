@@ -104,6 +104,51 @@ class TestQualityGatePolicy:
 
         assert any('test-integrity' in error for error in _validate(config))
 
+    def test_rejects_test_integrity_without_always_run(self):
+        config = _read('.pre-commit-config.yaml').replace(
+            '      - id: test-integrity\n'
+            '        name: test-integrity\n'
+            '        entry: >-\n'
+            '          uv run --locked --no-sync python\n'
+            '          scripts/quality_gates/check_test_integrity.py\n'
+            '        language: system\n'
+            '        files: ^(?:tests|test)/\n'
+            '        pass_filenames: false\n'
+            '        always_run: true\n',
+            '      - id: test-integrity\n'
+            '        name: test-integrity\n'
+            '        entry: >-\n'
+            '          uv run --locked --no-sync python\n'
+            '          scripts/quality_gates/check_test_integrity.py\n'
+            '        language: system\n'
+            '        files: ^(?:tests|test)/\n'
+            '        pass_filenames: false\n',
+            1,
+        )
+
+        assert any(
+            'test-integrity: must remain always_run' in error
+            for error in _validate(config)
+        )
+
+    def test_runner_validates_a_staged_gitleaksignore(
+        self, monkeypatch, capsys
+    ):
+        monkeypatch.setattr(gate, 'repository_root', lambda: REPOSITORY_ROOT)
+        monkeypatch.setattr(
+            gate,
+            'staged_changes',
+            lambda root: [SimpleNamespace(new_path='.gitleaksignore')],
+        )
+        monkeypatch.setattr(
+            gate,
+            'read_index_text',
+            lambda path, root: _read('.pre-commit-config.yaml'),
+        )
+
+        assert gate.main() == 0
+        assert 'PASS [QUALITY_GATE_POLICY]' in capsys.readouterr().out
+
     def test_rejects_a_pre_push_gate_in_the_wrong_stage(self):
         config = _read('.pre-commit-config.yaml').replace(
             'stages: [pre-push]', 'stages: [pre-commit]', 1

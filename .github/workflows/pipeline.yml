@@ -70,7 +70,7 @@ jobs:
         run: uv run pre-commit run --all-files --show-diff-on-failure
 
       - name: Type check with mypy
-        run: uv run mypy src --ignore-missing-imports --pretty
+        run: uv run mypy src --pretty
 
       - name: Docstring style check
         run: |

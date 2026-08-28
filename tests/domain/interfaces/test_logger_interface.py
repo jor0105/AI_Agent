@@ -14,7 +14,7 @@ class TestLoggerInterface:
     ):
         class IncompleteLogger(LoggerInterface):
             def debug(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
         with pytest.raises(TypeError):
             IncompleteLogger()
@@ -22,19 +22,19 @@ class TestLoggerInterface:
     def test_scenario_concrete_implementation_with_all_methods(self):
         class CompleteLogger(LoggerInterface):
             def debug(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def info(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def warning(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def error(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def critical(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
         logger = CompleteLogger()
         assert isinstance(logger, LoggerInterface)
@@ -48,16 +48,16 @@ class TestLoggerInterface:
                 self.logs.append(('debug', message, args, kwargs))
 
             def info(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def warning(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def error(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def critical(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
         logger = TestLogger()
         logger.debug('test message', 'arg1', key='value')
@@ -74,19 +74,19 @@ class TestLoggerInterface:
                 self.logs = []
 
             def debug(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def info(self, message: str, *args, **kwargs) -> None:
                 self.logs.append(('info', message, args, kwargs))
 
             def warning(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def error(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def critical(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
         logger = TestLogger()
         logger.info('info message', 'arg1', key='value')
@@ -103,19 +103,19 @@ class TestLoggerInterface:
                 self.logs = []
 
             def debug(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def info(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def warning(self, message: str, *args, **kwargs) -> None:
                 self.logs.append(('warning', message, args, kwargs))
 
             def error(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def critical(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
         logger = TestLogger()
         logger.warning('warning message', 'arg1', key='value')
@@ -132,19 +132,19 @@ class TestLoggerInterface:
                 self.logs = []
 
             def debug(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def info(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def warning(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def error(self, message: str, *args, **kwargs) -> None:
                 self.logs.append(('error', message, args, kwargs))
 
             def critical(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
         logger = TestLogger()
         logger.error('error message', 'arg1', key='value')
@@ -161,16 +161,16 @@ class TestLoggerInterface:
                 self.logs = []
 
             def debug(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def info(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def warning(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def error(self, message: str, *args, **kwargs) -> None:
-                pass
+                return None
 
             def critical(self, message: str, *args, **kwargs) -> None:
                 self.logs.append(('critical', message, args, kwargs))

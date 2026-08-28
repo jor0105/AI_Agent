@@ -33,7 +33,7 @@ class SensitiveDataFilter:
     DEFAULT_CACHE_SIZE = 1000
     DEFAULT_VISIBLE_CHARS = 4
 
-    _PATTERNS: ClassVar[dict[str, Pattern]] = {
+    _PATTERNS: ClassVar[dict[str, Pattern[str]]] = {
         'jwt_token': re.compile(
             r'eyJ[a-zA-Z0-9_-]*\.eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*'
         ),

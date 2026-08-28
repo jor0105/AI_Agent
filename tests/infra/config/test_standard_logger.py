@@ -73,11 +73,12 @@ class TestStandardLogger:
         python_logger = logging.getLogger('test2')
         logger = StandardLogger(python_logger)
 
-        assert hasattr(logger, 'debug')
-        assert hasattr(logger, 'info')
-        assert hasattr(logger, 'warning')
-        assert hasattr(logger, 'error')
-        assert hasattr(logger, 'critical')
+        assert isinstance(logger, LoggerInterface)
+        assert callable(logger.debug)
+        assert callable(logger.info)
+        assert callable(logger.warning)
+        assert callable(logger.error)
+        assert callable(logger.critical)
 
     @patch('createagents.infra.config.standard_logger.LoggingConfig')
     def test_scenario_create_logger_factory(self, mock_logging_config):
@@ -97,9 +98,22 @@ class TestStandardLogger:
         try:
             raise ValueError('test exception')
         except ValueError:
-            logger.error('Error occurred', exc_info=True)
+            logger.exception('Error occurred')
 
         python_logger.error.assert_called_once()
         call_args = python_logger.error.call_args
         assert call_args[0][0] == 'Error occurred'
         assert call_args[1]['exc_info'] is True
+
+    def test_scenario_exception_preserves_explicit_exc_info(self):
+        python_logger = Mock(spec=logging.Logger)
+        logger = StandardLogger(python_logger)
+
+        try:
+            raise ValueError('test exception')
+        except ValueError:
+            LoggerInterface.exception(logger, 'Error occurred', exc_info=False)
+
+        python_logger.error.assert_called_once_with(
+            'Error occurred', exc_info=False
+        )

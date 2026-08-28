@@ -48,7 +48,7 @@ ______________________________________________________________________
 
 ## `MetricsRecorder`
 
-**Namespace**: `createagents.infra.adapters.Common`
+**Namespace**: `createagents.infra.adapters.common`
 
 Abstract base for metrics aggregation across provider handlers:
 

@@ -160,7 +160,7 @@ class TerminalRenderer:
             message,
             ColorScheme.get_system_color(),
             align='left',
-            icon='ℹ️',
+            icon='\N{INFORMATION SOURCE}\ufe0f',
         )
 
     def render_success_message(self, message: str) -> None:

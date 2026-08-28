@@ -331,9 +331,9 @@ class TestLoggingConfig:
             )
 
             handlers = LoggingConfig.get_handlers()
-            file_handler = [
+            file_handler = next(
                 h for h in handlers if isinstance(h, RotatingFileHandler)
-            ][0]
+            )
 
             assert file_handler.maxBytes == max_bytes
             assert file_handler.backupCount == backup_count
@@ -437,10 +437,10 @@ class TestLoggingIntegration:
                 assert 'user@test.com' not in log_entry['message']
 
     def test_default_constants_defined(self):
-        assert hasattr(LoggingConfig, 'DEFAULT_LOG_LEVEL')
-        assert hasattr(LoggingConfig, 'DEFAULT_MAX_BYTES')
-        assert hasattr(LoggingConfig, 'DEFAULT_BACKUP_COUNT')
-        assert hasattr(LoggingConfig, 'DEFAULT_LOG_PATH')
+        assert LoggingConfig.DEFAULT_LOG_LEVEL == logging.INFO
+        assert LoggingConfig.DEFAULT_MAX_BYTES == 10 * 1024 * 1024
+        assert LoggingConfig.DEFAULT_BACKUP_COUNT == 5
+        assert LoggingConfig.DEFAULT_LOG_PATH == 'logs/app.log'
 
     def test_default_log_level_constant(self):
         assert LoggingConfig.DEFAULT_LOG_LEVEL == logging.INFO

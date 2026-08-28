@@ -71,7 +71,7 @@ class TestGetSystemAvailableToolsUseCase:
         }
         use_case = GetSystemAvailableToolsUseCase(tool_registry=registry)
         result = use_case.execute()
-        for tool_name in result.keys():
+        for tool_name in result:
             assert isinstance(tool_name, str)
             assert len(tool_name) > 0
 

@@ -460,7 +460,7 @@ class TestHistoryConcurrency:
                 time.sleep(0.001)
 
         def reader(thread_id):
-            for i in range(reads_per_reader):
+            for _ in range(reads_per_reader):
                 messages = history.get_messages()
                 with read_lock:
                     read_results.append(len(messages))
@@ -501,7 +501,7 @@ class TestHistoryConcurrency:
                 time.sleep(0.001)
 
         def clearer(thread_id):
-            for i in range(operations_per_thread):
+            for _ in range(operations_per_thread):
                 history.clear()
                 time.sleep(0.002)
 

@@ -284,7 +284,7 @@ class LoggingConfig:
         SensitiveDataFilter.clear_cache()
 
     @classmethod
-    def get_handlers(cls) -> list:
+    def get_handlers(cls) -> list[logging.Handler]:
         """Returns a list of the configured handlers.
 
         Returns:

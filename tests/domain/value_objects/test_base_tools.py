@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 import pytest
 
 from createagents.domain import BaseTool
@@ -6,7 +8,7 @@ from createagents.domain import BaseTool
 class ConcreteTestTool(BaseTool):
     name = 'test_tool'
     description = 'A tool for testing purposes'
-    parameters = {
+    parameters: ClassVar[dict[str, object]] = {
         'type': 'object',
         'properties': {
             'input': {
@@ -32,7 +34,7 @@ class MinimalTestTool(BaseTool):
 class ComplexParametersTool(BaseTool):
     name = 'complex_tool'
     description = 'Tool with complex parameters'
-    parameters = {
+    parameters: ClassVar[dict[str, object]] = {
         'type': 'object',
         'properties': {
             'query': {'type': 'string', 'description': 'Search query'},
@@ -88,27 +90,25 @@ class TestBaseTool:
 
             IncompleteToolNoExecute()
 
+    # assertion-reduction-reason: exact schema values replace presence checks.
     def test_name_attribute_is_accessible(self):
         tool = ConcreteTestTool()
-
-        assert hasattr(tool, 'name')
-        assert isinstance(tool.name, str)
         assert tool.name == 'test_tool'
+        assert tool.get_schema()['name'] == 'test_tool'
 
     def test_description_attribute_is_accessible(self):
         tool = ConcreteTestTool()
-
-        assert hasattr(tool, 'description')
-        assert isinstance(tool.description, str)
         assert tool.description == 'A tool for testing purposes'
+        assert (
+            tool.get_schema()['description'] == 'A tool for testing purposes'
+        )
 
     def test_parameters_attribute_is_accessible(self):
         tool = ConcreteTestTool()
-
-        assert hasattr(tool, 'parameters')
+        schema = tool.get_schema()
         assert isinstance(tool.parameters, dict)
-        assert 'type' in tool.parameters
-        assert 'properties' in tool.parameters
+        assert schema['parameters']['type'] == 'object'
+        assert 'properties' in schema['parameters']
 
     def test_default_parameters_schema(self):
         tool = MinimalTestTool()
@@ -270,15 +270,15 @@ class TestToolInheritance:
             assert isinstance(tool, BaseTool)
 
     def test_tool_attributes_are_class_attributes(self):
-        assert hasattr(ConcreteTestTool, 'name')
-        assert hasattr(ConcreteTestTool, 'description')
-        assert hasattr(ConcreteTestTool, 'parameters')
+        assert ConcreteTestTool.name == 'test_tool'
+        assert isinstance(ConcreteTestTool.description, str)
+        assert isinstance(ConcreteTestTool.parameters, dict)
 
     def test_default_parameters_can_be_overridden(self):
         class CustomParamsTool(BaseTool):
             name = 'custom'
             description = 'Custom parameters'
-            parameters = {
+            parameters: ClassVar[dict[str, object]] = {
                 'type': 'custom',
                 'properties': {'x': {'type': 'number'}},
             }
@@ -418,7 +418,10 @@ class TestToolEdgeCases:
         class NoParamsTool(BaseTool):
             name = 'no_params'
             description = 'Tool with no parameters'
-            parameters = {'type': 'object', 'properties': {}}
+            parameters: ClassVar[dict[str, object]] = {
+                'type': 'object',
+                'properties': {},
+            }
 
             def execute(self) -> str:
                 return 'no params'

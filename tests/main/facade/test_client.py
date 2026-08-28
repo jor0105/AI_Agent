@@ -20,7 +20,11 @@ class TestCreateAgentInitialization:
             instructions='Be helpful',
         )
 
-        assert hasattr(controller, '_CreateAgent__agent')
+        configs = controller.get_configs()
+        assert configs['provider'] == 'openai'
+        assert configs['model'] == 'gpt-5'
+        assert configs['name'] == 'Test Agent'
+        assert configs['instructions'] == 'Be helpful'
 
     def test_initialization_with_ollama_provider(self):
         controller = CreateAgent(
@@ -30,7 +34,9 @@ class TestCreateAgentInitialization:
             instructions='Test',
         )
 
-        assert hasattr(controller, '_CreateAgent__agent')
+        configs = controller.get_configs()
+        assert configs['provider'] == 'ollama'
+        assert configs['model'] == 'gemma3:4b'
 
     def test_initialization_creates_chat_use_case(self):
         controller = CreateAgent(
@@ -40,7 +46,7 @@ class TestCreateAgentInitialization:
             instructions='Test',
         )
 
-        assert hasattr(controller, '_CreateAgent__chat_use_case')
+        assert callable(controller.chat)
 
     def test_initialization_creates_get_config_use_case(self):
         controller = CreateAgent(
@@ -50,7 +56,9 @@ class TestCreateAgentInitialization:
             instructions='Test',
         )
 
-        assert hasattr(controller, '_CreateAgent__get_config_use_case')
+        configs = controller.get_configs()
+        assert isinstance(configs, dict)
+        assert configs['model'] == 'gpt-5-nano'
 
     def test_initialization_with_invalid_data_raises_error(self):
         with pytest.raises(InvalidAgentConfigException):
@@ -68,8 +76,8 @@ class TestCreateAgentInitialization:
             config=config,
         )
 
-        agent = controller._CreateAgent__agent
-        assert agent.config == config
+        configs = controller.get_configs()
+        assert configs['config'] == config
 
     def test_initialization_with_custom_history_max_size(self):
         controller = CreateAgent(
@@ -80,8 +88,8 @@ class TestCreateAgentInitialization:
             history_max_size=20,
         )
 
-        agent = controller._CreateAgent__agent
-        assert agent.history.max_size == 20
+        configs = controller.get_configs()
+        assert configs['history_max_size'] == 20
 
     def test_initialization_with_default_history_max_size(self):
         controller = CreateAgent(
@@ -91,8 +99,8 @@ class TestCreateAgentInitialization:
             instructions='Test',
         )
 
-        agent = controller._CreateAgent__agent
-        assert agent.history.max_size == 10
+        configs = controller.get_configs()
+        assert configs['history_max_size'] == 10
 
     def test_initialization_with_invalid_provider_raises_error(self):
         with pytest.raises(InvalidProviderException):
@@ -111,8 +119,8 @@ class TestCreateAgentInitialization:
             instructions='Test',
         )
 
-        agent = controller._CreateAgent__agent
-        assert agent.name is None
+        configs = controller.get_configs()
+        assert configs['name'] is None
 
     def test_initialization_with_none_instructions(self):
         controller = CreateAgent(
@@ -122,8 +130,8 @@ class TestCreateAgentInitialization:
             instructions=None,
         )
 
-        agent = controller._CreateAgent__agent
-        assert agent.instructions is None
+        configs = controller.get_configs()
+        assert configs['instructions'] is None
 
     def test_initialization_with_both_none(self):
         controller = CreateAgent(
@@ -133,9 +141,9 @@ class TestCreateAgentInitialization:
             instructions=None,
         )
 
-        agent = controller._CreateAgent__agent
-        assert agent.name is None
-        assert agent.instructions is None
+        configs = controller.get_configs()
+        assert configs['name'] is None
+        assert configs['instructions'] is None
 
     def test_initialization_with_only_required_fields(self):
         controller = CreateAgent(
@@ -143,11 +151,11 @@ class TestCreateAgentInitialization:
             model='gpt-5',
         )
 
-        agent = controller._CreateAgent__agent
-        assert agent.provider == 'openai'
-        assert agent.model == 'gpt-5'
-        assert agent.name is None
-        assert agent.instructions is None
+        configs = controller.get_configs()
+        assert configs['provider'] == 'openai'
+        assert configs['model'] == 'gpt-5'
+        assert configs['name'] is None
+        assert configs['instructions'] is None
 
 
 @pytest.mark.unit
@@ -292,8 +300,8 @@ class TestCreateAgentChat:
 
         await controller.chat('Hello')
 
-        agent = controller._CreateAgent__agent
-        assert len(agent.history) == 2
+        configs = controller.get_configs()
+        assert len(configs['history']) == 2
 
 
 @pytest.mark.unit
@@ -405,11 +413,29 @@ class TestCreateAgentClearHistory:
             name='Test',
             instructions='Test',
         )
-
-        assert hasattr(controller, 'clear_history')
         assert callable(controller.clear_history)
 
-    def test_clear_history_clears_agent_history(self):
+    @patch(
+        'createagents.main.facade.client.AgentComposer.create_chat_use_case'
+    )
+    @pytest.mark.asyncio
+    async def test_clear_history_clears_populated_history(
+        self, mock_create_chat
+    ):
+        from unittest.mock import AsyncMock
+
+        mock_use_case = Mock()
+        mock_output = Mock()
+        mock_output.response = 'AI Response'
+
+        async def execute_side_effect(agent, input_dto):
+            agent.add_user_message(input_dto.message)
+            agent.add_assistant_message(mock_output.response)
+            return mock_output
+
+        mock_use_case.execute = AsyncMock(side_effect=execute_side_effect)
+        mock_create_chat.return_value = mock_use_case
+
         controller = CreateAgent(
             provider='openai',
             model='gpt-5-mini',
@@ -417,17 +443,15 @@ class TestCreateAgentClearHistory:
             instructions='Test',
         )
 
-        agent = controller._CreateAgent__agent
-        agent.add_user_message('Message 1')
-        agent.add_assistant_message('Response 1')
-        agent.add_user_message('Message 2')
-        agent.add_assistant_message('Response 2')
-
-        assert len(agent.history) == 4
+        await controller.chat('Message 1')
+        await controller.chat('Message 2')
+        assert len(controller.get_configs()['history']) == 4
 
         controller.clear_history()
+        assert controller.get_configs()['history'] == []
 
-        assert len(agent.history) == 0
+        await controller.chat('New message')
+        assert len(controller.get_configs()['history']) == 2
 
     def test_clear_history_preserves_agent_config(self):
         controller = CreateAgent(
@@ -436,94 +460,26 @@ class TestCreateAgentClearHistory:
             name='Test Agent',
             instructions='Be helpful',
         )
-
-        agent = controller._CreateAgent__agent
-        original_model = agent.model
-        original_name = agent.name
-        original_instructions = agent.instructions
-        original_provider = agent.provider
-
+        before = controller.get_configs()
         controller.clear_history()
+        after = controller.get_configs()
+        assert after['model'] == before['model']
+        assert after['name'] == before['name']
+        assert after['instructions'] == before['instructions']
+        assert after['provider'] == before['provider']
 
-        assert agent.model == original_model
-        assert agent.name == original_name
-        assert agent.instructions == original_instructions
-        assert agent.provider == original_provider
-
-    def test_clear_history_can_be_called_multiple_times(self):
-        controller = CreateAgent(
-            provider='openai',
-            model='gpt-5-nano',
-            name='Test',
-            instructions='Test',
-        )
-
-        agent = controller._CreateAgent__agent
-        agent.add_user_message('Message 1')
-        agent.add_assistant_message('Response 1')
-        assert len(controller._CreateAgent__agent.history) > 0
-
-        controller.clear_history()
-        assert len(controller._CreateAgent__agent.history) == 0
-
-        agent.add_user_message('Message 2')
-        agent.add_assistant_message('Response 2')
-        assert len(controller._CreateAgent__agent.history) > 0
-
-        controller.clear_history()
-        assert len(controller._CreateAgent__agent.history) == 0
-
-    def test_clear_history_on_empty_history(self):
+    def test_clear_history_on_empty_history_is_idempotent(self):
         controller = CreateAgent(
             provider='openai',
             model='gpt-5-mini',
             name='Test',
             instructions='Test',
         )
-
-        assert len(controller._CreateAgent__agent.history) == 0
-
+        assert controller.get_configs()['history'] == []
         controller.clear_history()
-
-        assert len(controller._CreateAgent__agent.history) == 0
-
-    @patch(
-        'createagents.main.facade.client.AgentComposer.create_chat_use_case'
-    )
-    @patch(
-        'createagents.main.facade.client.AgentComposer.create_get_config_use_case'
-    )
-    @pytest.mark.asyncio
-    async def test_get_configs_after_clear_history_shows_empty_history(
-        self, mock_create_config, mock_create_chat
-    ):
-        from unittest.mock import AsyncMock
-
-        mock_chat_use_case = Mock()
-        mock_output = Mock()
-        mock_output.response = 'Response'
-        mock_chat_use_case.execute = AsyncMock(return_value=mock_output)
-        mock_create_chat.return_value = mock_chat_use_case
-
-        mock_config_use_case = Mock()
-        mock_create_config.return_value = mock_config_use_case
-
-        controller = CreateAgent(
-            provider='openai',
-            model='gpt-5-nano',
-            name='Test',
-            instructions='Test',
-        )
-
-        await controller.chat('Message 1')
-
+        assert controller.get_configs()['history'] == []
         controller.clear_history()
-
-        controller.get_configs()
-
-        call_args = mock_config_use_case.execute.call_args
-        agent_passed = call_args[0][0]
-        assert len(agent_passed.history) == 0
+        assert controller.get_configs()['history'] == []
 
 
 @pytest.mark.unit
@@ -668,7 +624,7 @@ class TestCreateAgentMetrics:
 
         assert filepath.exists()
 
-        with open(filepath, 'r') as f:
+        with open(filepath) as f:
             data = json.load(f)
 
         assert 'summary' in data
@@ -724,7 +680,7 @@ class TestCreateAgentMetrics:
 
         assert filepath.exists()
 
-        with open(filepath, 'r') as f:
+        with open(filepath) as f:
             content = f.read()
 
         assert 'chat_requests_total' in content
@@ -820,14 +776,13 @@ class TestCreateAgentIntegration:
         )
 
         await controller.chat('Message 1')
-        agent = controller._CreateAgent__agent
-        assert len(agent.history) == 2
+        assert len(controller.get_configs()['history']) == 2
 
         controller.clear_history()
-        assert len(agent.history) == 0
+        assert len(controller.get_configs()['history']) == 0
 
         await controller.chat('Message 2')
-        assert len(agent.history) == 2
+        assert len(controller.get_configs()['history']) == 2
 
 
 @pytest.mark.unit
@@ -841,8 +796,8 @@ class TestCreateAgentEdgeCases:
             instructions=long_instructions,
         )
 
-        agent = controller._CreateAgent__agent
-        assert agent.instructions == long_instructions
+        configs = controller.get_configs()
+        assert configs['instructions'] == long_instructions
 
     def test_initialization_with_special_characters_in_name(self):
         special_name = 'Test-Agent_123!@#$%'
@@ -853,8 +808,8 @@ class TestCreateAgentEdgeCases:
             instructions='Test',
         )
 
-        agent = controller._CreateAgent__agent
-        assert agent.name == special_name
+        configs = controller.get_configs()
+        assert configs['name'] == special_name
 
     def test_initialization_with_unicode_characters(self):
         unicode_name = '测试代理 🤖'
@@ -867,9 +822,9 @@ class TestCreateAgentEdgeCases:
             instructions=unicode_instructions,
         )
 
-        agent = controller._CreateAgent__agent
-        assert agent.name == unicode_name
-        assert agent.instructions == unicode_instructions
+        configs = controller.get_configs()
+        assert configs['name'] == unicode_name
+        assert configs['instructions'] == unicode_instructions
 
     @patch(
         'createagents.main.facade.client.AgentComposer.create_chat_use_case'
@@ -912,7 +867,7 @@ class TestCreateAgentEdgeCases:
             provider='openai', model='gpt-5', name='Test', instructions='Test'
         )
 
-        unicode_message = '你好，世界！ 🌍'
+        unicode_message = '你好\uff0c世界\uff01 🌍'
         response = await controller.chat(unicode_message)
 
         assert response == '回复'
@@ -930,17 +885,16 @@ class TestCreateAgentEdgeCases:
             )
 
     def test_initialization_with_negative_history_max_size(self):
-        try:
-            controller = CreateAgent(
+        with pytest.raises(
+            InvalidAgentConfigException, match='history_max_size'
+        ):
+            CreateAgent(
                 provider='openai',
                 model='gpt-5',
                 name='Test',
                 instructions='Test',
                 history_max_size=-1,
             )
-            assert hasattr(controller, '_CreateAgent__agent')
-        except (ValueError, InvalidAgentConfigException):
-            pass
 
     def test_initialization_with_empty_config_dict(self):
         controller = CreateAgent(
@@ -951,8 +905,8 @@ class TestCreateAgentEdgeCases:
             config={},
         )
 
-        agent = controller._CreateAgent__agent
-        assert agent.config == {}
+        configs = controller.get_configs()
+        assert configs['config'] == {}
 
     @patch(
         'createagents.main.facade.client.AgentComposer.create_chat_use_case'
@@ -974,10 +928,8 @@ class TestCreateAgentEdgeCases:
 
         nonexistent_path = tmp_path / 'nonexistent' / 'metrics.json'
 
-        try:
+        with pytest.raises(FileNotFoundError):
             controller.export_metrics_json(str(nonexistent_path))
-        except (FileNotFoundError, OSError):
-            pass
 
     @patch(
         'createagents.main.facade.client.AgentComposer.create_chat_use_case'
@@ -1006,13 +958,12 @@ class TestCreateAgentEdgeCases:
         await controller.chat('Second message')
         await controller.chat('Third message')
 
-        agent = controller._CreateAgent__agent
-        history = agent.history.get_messages()
+        history = controller.get_configs()['history']
 
         assert len(history) == 6
-        assert history[0].content == 'First message'
-        assert history[2].content == 'Second message'
-        assert history[4].content == 'Third message'
+        assert history[0]['content'] == 'First message'
+        assert history[2]['content'] == 'Second message'
+        assert history[4]['content'] == 'Third message'
 
     @patch(
         'createagents.main.facade.client.AgentComposer.create_chat_use_case'
@@ -1041,25 +992,18 @@ class TestCreateAgentEdgeCases:
 
     def test_controller_has_all_required_methods(self):
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model='gpt-5-mini',
+            name='Test Agent',
+            instructions='Test instructions',
         )
 
-        required_methods = [
-            'chat',
-            'get_configs',
-            'clear_history',
-            'get_metrics',
-            'export_metrics_json',
-            'export_metrics_prometheus',
-        ]
-
-        for method_name in required_methods:
-            assert hasattr(controller, method_name), (
-                f'Missing method: {method_name}'
-            )
-            assert callable(getattr(controller, method_name)), (
-                f'{method_name} is not callable'
-            )
+        assert callable(controller.chat)
+        assert callable(controller.get_configs)
+        assert callable(controller.clear_history)
+        assert callable(controller.get_metrics)
+        assert callable(controller.export_metrics_json)
+        assert callable(controller.export_metrics_prometheus)
 
     @patch(
         'createagents.main.facade.client.AgentComposer.create_chat_use_case'
@@ -1109,12 +1053,9 @@ class TestCreateAgentEdgeCases:
     @patch(
         'createagents.main.facade.client.AgentComposer.create_chat_use_case'
     )
-    @patch(
-        'createagents.main.facade.client.AgentComposer.create_get_config_use_case'
-    )
     @pytest.mark.asyncio
     async def test_clear_history_with_chat_and_get_configs(
-        self, mock_create_config, mock_create_chat
+        self, mock_create_chat
     ):
         from unittest.mock import AsyncMock
 
@@ -1130,35 +1071,19 @@ class TestCreateAgentEdgeCases:
         mock_chat_use_case.execute = AsyncMock(side_effect=execute_side_effect)
         mock_create_chat.return_value = mock_chat_use_case
 
-        mock_config_use_case = Mock()
-        mock_config_output = Mock()
-        mock_config_output.to_dict.return_value = {
-            'name': 'Test',
-            'model': 'gpt-5',
-            'history': [],
-        }
-        mock_config_use_case.execute.return_value = mock_config_output
-        mock_create_config.return_value = mock_config_use_case
-
         controller = CreateAgent(
             provider='openai', model='gpt-5', name='Test', instructions='Test'
         )
 
         await controller.chat('Hello')
-        agent = controller._CreateAgent__agent
-        assert len(agent.history) == 2
-
         configs = controller.get_configs()
-        assert isinstance(configs, dict)
+        assert len(configs['history']) == 2
 
         controller.clear_history()
-        assert len(agent.history) == 0
+        assert len(controller.get_configs()['history']) == 0
 
         await controller.chat('New conversation')
-        assert len(agent.history) == 2
-
-        configs2 = controller.get_configs()
-        assert isinstance(configs2, dict)
+        assert len(controller.get_configs()['history']) == 2
 
     def test_initialization_with_all_optional_params_none(self):
         controller = CreateAgent(
@@ -1169,10 +1094,10 @@ class TestCreateAgentEdgeCases:
             config=None,
         )
 
-        agent = controller._CreateAgent__agent
-        assert agent.name is None
-        assert agent.instructions is None
-        assert agent.config == {}
+        configs = controller.get_configs()
+        assert configs['name'] is None
+        assert configs['instructions'] is None
+        assert configs['config'] == {}
 
     @patch(
         'createagents.main.facade.client.AgentComposer.create_chat_use_case'
@@ -1200,16 +1125,16 @@ class TestCreateAgentEdgeCases:
         )
 
         await controller.chat('Message')
-        assert len(controller._CreateAgent__agent.history) == 2
+        assert len(controller.get_configs()['history']) == 2
 
         controller.clear_history()
         controller.clear_history()
         controller.clear_history()
 
-        assert len(controller._CreateAgent__agent.history) == 0
+        assert len(controller.get_configs()['history']) == 0
 
         controller.clear_history()
-        assert len(controller._CreateAgent__agent.history) == 0
+        assert len(controller.get_configs()['history']) == 0
 
     def test_initialization_provider_case_variations(self):
         providers = ['openai', 'OPENAI', 'OpenAI', 'oPeNaI']
@@ -1222,8 +1147,8 @@ class TestCreateAgentEdgeCases:
                 instructions='Test',
             )
 
-            agent = controller._CreateAgent__agent
-            assert agent.provider.lower() == 'openai'
+            configs = controller.get_configs()
+            assert configs['provider'].lower() == 'openai'
 
     def test_initialization_with_tools_none(self):
         controller = CreateAgent(
@@ -1234,8 +1159,8 @@ class TestCreateAgentEdgeCases:
             tools=None,
         )
 
-        agent = controller._CreateAgent__agent
-        assert agent.tools is None
+        configs = controller.get_configs()
+        assert configs['tools'] is None
 
     def test_initialization_with_tools_empty_list(self):
         controller = CreateAgent(
@@ -1246,8 +1171,8 @@ class TestCreateAgentEdgeCases:
             tools=[],
         )
 
-        agent = controller._CreateAgent__agent
-        assert agent.tools == []
+        configs = controller.get_configs()
+        assert configs['tools'] is None
 
     def test_initialization_with_single_tool(self):
         from createagents.domain import BaseTool
@@ -1268,9 +1193,8 @@ class TestCreateAgentEdgeCases:
             tools=[tool],
         )
 
-        agent = controller._CreateAgent__agent
-        assert len(agent.tools) == 1
-        assert agent.tools[0] is tool
+        configs = controller.get_configs()
+        assert len(configs['tools']) == 1
 
     def test_initialization_with_multiple_tools(self):
         from createagents.domain import BaseTool
@@ -1298,15 +1222,15 @@ class TestCreateAgentEdgeCases:
             tools=tools,
         )
 
-        agent = controller._CreateAgent__agent
-        assert len(agent.tools) == 2
+        configs = controller.get_configs()
+        assert len(configs['tools']) == 2
 
     def test_initialization_with_string_tool_name(self):
         from createagents.infra import AvailableTools
 
         available = AvailableTools.get_system_tools()
         if available:
-            tool_name = list(available.keys())[0]
+            tool_name = next(iter(available))
             controller = CreateAgent(
                 provider='openai',
                 model='gpt-5',
@@ -1315,8 +1239,8 @@ class TestCreateAgentEdgeCases:
                 tools=[tool_name],
             )
 
-            agent = controller._CreateAgent__agent
-            assert agent.tools is not None
+            configs = controller.get_configs()
+            assert configs['tools'] is not None
         else:
             pytest.skip('No available tools to test')
 
@@ -1334,7 +1258,7 @@ class TestCreateAgentEdgeCases:
         tool = TestTool()
         available = AvailableTools.get_system_tools()
         if available:
-            tool_name = list(available.keys())[0]
+            tool_name = next(iter(available))
             controller = CreateAgent(
                 provider='openai',
                 model='gpt-5',
@@ -1343,8 +1267,8 @@ class TestCreateAgentEdgeCases:
                 tools=[tool, tool_name],
             )
 
-            agent = controller._CreateAgent__agent
-            assert agent.tools is not None
+            configs = controller.get_configs()
+            assert len(configs['tools']) == 2
         else:
             controller = CreateAgent(
                 provider='openai',
@@ -1353,8 +1277,8 @@ class TestCreateAgentEdgeCases:
                 instructions='Test',
                 tools=[tool],
             )
-            agent = controller._CreateAgent__agent
-            assert len(agent.tools) == 1
+            configs = controller.get_configs()
+            assert len(configs['tools']) == 1
 
     def test_get_configs_includes_tools(self):
         from createagents.domain import BaseTool
@@ -1413,8 +1337,8 @@ class TestCreateAgentEdgeCases:
 
             await controller.chat(' Hello')
 
-            agent = controller._CreateAgent__agent
-            assert len(agent.tools) == 1
+            configs = controller.get_configs()
+            assert len(configs['tools']) == 1
 
     def test_initialization_with_invalid_tool_type_raises_error(self):
         with pytest.raises(InvalidBaseToolException):
@@ -1428,7 +1352,7 @@ class TestCreateAgentEdgeCases:
 
     def test_initialization_with_tool_missing_attributes_raises_error(self):
         class InvalidTool:
-            pass
+            __slots__ = ()
 
         with pytest.raises(InvalidBaseToolException):
             CreateAgent(

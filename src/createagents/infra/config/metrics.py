@@ -37,7 +37,7 @@ class MetricsCollector:
         with self._lock:
             return self._metrics.copy()
 
-    def get_summary(self) -> dict:
+    def get_summary(self) -> dict[str, int | float]:
         """Returns a statistical summary of the metrics in a thread-safe manner.
 
         Returns:

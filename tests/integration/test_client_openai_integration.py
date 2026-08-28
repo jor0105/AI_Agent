@@ -3,9 +3,10 @@ import os
 import openai
 import pytest
 
+from createagents.application import ChatRepository
 from createagents.domain import ChatException
 from createagents.infra import OpenAIChatAdapter
-from createagents.infra.adapters.Tools.available_tools import AvailableTools
+from createagents.infra.adapters.tools.available_tools import AvailableTools
 
 IA_OPENAI_TEST_1: str = (
     'gpt-5-nano'  # nao aceita configs, aceita tools e think: low
@@ -18,7 +19,7 @@ IA_OPENAI_TEST_2: str = (
 
 
 def _get_openai_api_key():
-    from createagents.infra.adapters.OpenAI.client_openai import ClientOpenAI
+    from createagents.infra.adapters.openai.client_openai import ClientOpenAI
     from createagents.infra.config.environment import EnvironmentConfig
 
     if os.getenv('CI'):
@@ -39,15 +40,15 @@ def _get_openai_api_key():
 @pytest.mark.integration
 class TestOpenAIChatAdapterIntegration:
     @pytest.mark.asyncio
+    # assertion-reduction-reason: client conformance replaces presence checks.
     async def test_adapter_initialization(self):
         _get_openai_api_key()
 
         adapter = OpenAIChatAdapter()
 
         assert adapter is not None
-        assert hasattr(adapter, 'chat')
+        assert isinstance(adapter, ChatRepository)
         assert callable(adapter.chat)
-        assert hasattr(adapter, 'get_metrics')
         assert callable(adapter.get_metrics)
 
     @pytest.mark.asyncio
@@ -256,7 +257,7 @@ class TestOpenAIChatAdapterIntegration:
 
         adapter = OpenAIChatAdapter()
 
-        try:
+        with pytest.raises(ChatException):
             await adapter.chat(
                 model='invalid-model-xyz-123',
                 instructions='Test',
@@ -265,8 +266,6 @@ class TestOpenAIChatAdapterIntegration:
                 history=[],
                 user_ask='Test',
             )
-        except ChatException:
-            pass
 
         metrics = adapter.get_metrics()
         assert len(metrics) == 1
@@ -666,7 +665,7 @@ class TestOpenAIChatAdapterIntegration:
 class TestClientOpenAIIntegration:
     @pytest.mark.asyncio
     async def test_get_client_with_real_openai_api(self):
-        from createagents.infra.adapters.OpenAI.client_openai import (
+        from createagents.infra.adapters.openai.client_openai import (
             ClientOpenAI,
         )
 
@@ -674,24 +673,22 @@ class TestClientOpenAIIntegration:
         client = ClientOpenAI.get_client(api_key)
 
         assert client is not None
-        assert hasattr(client, 'chat')
-        assert hasattr(client, 'models')
+        assert isinstance(client, openai.AsyncOpenAI)
 
     @pytest.mark.asyncio
     async def test_client_has_required_attributes(self):
-        from createagents.infra.adapters.OpenAI.client_openai import (
+        from createagents.infra.adapters.openai.client_openai import (
             ClientOpenAI,
         )
 
         api_key = _get_openai_api_key()
         client = ClientOpenAI.get_client(api_key)
 
-        assert hasattr(client, 'chat')
-        assert hasattr(client, 'models')
+        assert isinstance(client, openai.AsyncOpenAI)
 
     @pytest.mark.asyncio
     async def test_list_models_with_real_api(self):
-        from createagents.infra.adapters.OpenAI.client_openai import (
+        from createagents.infra.adapters.openai.client_openai import (
             ClientOpenAI,
         )
 
@@ -705,7 +702,7 @@ class TestClientOpenAIIntegration:
 
     @pytest.mark.asyncio
     async def test_invalid_api_key_raises_error(self):
-        from createagents.infra.adapters.OpenAI.client_openai import (
+        from createagents.infra.adapters.openai.client_openai import (
             ClientOpenAI,
         )
 
@@ -721,7 +718,7 @@ class TestClientOpenAIIntegration:
 
     @pytest.mark.asyncio
     async def test_get_client_multiple_times_with_same_key(self):
-        from createagents.infra.adapters.OpenAI.client_openai import (
+        from createagents.infra.adapters.openai.client_openai import (
             ClientOpenAI,
         )
 
@@ -739,11 +736,10 @@ class TestClientOpenAIIntegration:
 
     @pytest.mark.asyncio
     async def test_client_api_key_constant(self):
-        from createagents.infra.adapters.OpenAI.client_openai import (
+        from createagents.infra.adapters.openai.client_openai import (
             ClientOpenAI,
         )
 
-        assert hasattr(ClientOpenAI, 'API_OPENAI_NAME')
         assert ClientOpenAI.API_OPENAI_NAME == 'OPENAI_API_KEY'
         assert isinstance(ClientOpenAI.API_OPENAI_NAME, str)
         assert len(ClientOpenAI.API_OPENAI_NAME) > 0
@@ -757,7 +753,7 @@ class TestClientOpenAIIntegration:
     )
     @pytest.mark.asyncio
     async def test_get_client_with_invalid_key_formats(self, invalid_key):
-        from createagents.infra.adapters.OpenAI.client_openai import (
+        from createagents.infra.adapters.openai.client_openai import (
             ClientOpenAI,
         )
 
@@ -771,7 +767,7 @@ class TestClientOpenAIIntegration:
 
     @pytest.mark.asyncio
     async def test_get_client_with_none_uses_env_variable(self):
-        from createagents.infra.adapters.OpenAI.client_openai import (
+        from createagents.infra.adapters.openai.client_openai import (
             ClientOpenAI,
         )
 
@@ -1055,14 +1051,14 @@ class TestOpenAIAdapterConfigsReais:
         _get_openai_api_key()
         adapter = OpenAIChatAdapter()
         assert adapter is not None
-        assert hasattr(adapter, '_OpenAIChatAdapter__client')
+        assert isinstance(adapter, ChatRepository)
 
     @pytest.mark.asyncio
     async def test_adapter_reads_max_retries_from_environment(self):
         _get_openai_api_key()
         adapter = OpenAIChatAdapter()
         assert adapter is not None
-        assert hasattr(adapter, '_OpenAIChatAdapter__client')
+        assert isinstance(adapter, ChatRepository)
 
     @pytest.mark.asyncio
     async def test_chat_config_params_do_not_affect_instructions(self):

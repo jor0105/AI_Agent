@@ -237,8 +237,8 @@ class TestSensitiveDataFilter:
             result = SensitiveDataFilter.filter(text)
             assert '[RG_REDACTED]' in result
 
+    # assertion-reduction-reason: cache behavior replaces structural checks.
     def test_lru_cache_is_used(self):
-        assert hasattr(SensitiveDataFilter._filter_cached, 'cache_info')
         SensitiveDataFilter.clear_cache()
         text = 'password=secret123'
         SensitiveDataFilter.filter(text)
@@ -354,15 +354,12 @@ class TestSensitiveDataFilter:
         assert cache_info.hits >= len(inputs)
 
     def test_constants_are_class_level(self):
-        assert hasattr(SensitiveDataFilter, 'DEFAULT_CACHE_SIZE')
-        assert hasattr(SensitiveDataFilter, 'DEFAULT_VISIBLE_CHARS')
+        assert SensitiveDataFilter.DEFAULT_CACHE_SIZE == 1000
+        assert SensitiveDataFilter.DEFAULT_VISIBLE_CHARS == 4
         assert isinstance(SensitiveDataFilter.DEFAULT_CACHE_SIZE, int)
         assert isinstance(SensitiveDataFilter.DEFAULT_VISIBLE_CHARS, int)
-        assert SensitiveDataFilter.DEFAULT_CACHE_SIZE > 0
-        assert SensitiveDataFilter.DEFAULT_VISIBLE_CHARS > 0
 
-    def test_filter_cached_is_internal_method(self):
-        assert SensitiveDataFilter._filter_cached.__name__.startswith('_')
+    def test_filter_cached_caches_results(self):
         SensitiveDataFilter.clear_cache()
         text = 'password=test123'
         SensitiveDataFilter.filter(text)
@@ -374,10 +371,6 @@ class TestSensitiveDataFilter:
         for i in range(5):
             SensitiveDataFilter.filter(f'test{i}')
         info = SensitiveDataFilter._filter_cached.cache_info()
-        assert hasattr(info, 'hits')
-        assert hasattr(info, 'misses')
-        assert hasattr(info, 'maxsize')
-        assert hasattr(info, 'currsize')
         assert info.maxsize == 1000
         assert info.currsize == 5
         assert info.misses == 5
@@ -458,7 +451,6 @@ class TestSensitiveDataFilter:
         assert 'API Credentials:' in result
 
     def test_patterns_dict_is_class_attribute(self):
-        assert hasattr(SensitiveDataFilter, '_PATTERNS')
         assert isinstance(SensitiveDataFilter._PATTERNS, dict)
         assert len(SensitiveDataFilter._PATTERNS) > 0
 

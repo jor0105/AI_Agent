@@ -115,7 +115,9 @@ agent_formal = CreateAgent(
     provider='openai', model='YOUR_MODEL', instructions='Use formal language'
 )
 agent_technical = CreateAgent(
-    provider='openai', model='YOUR_MODEL', instructions='Python technical expert'
+    provider='openai',
+    model='YOUR_MODEL',
+    instructions='Python technical expert',
 )
 ```
 

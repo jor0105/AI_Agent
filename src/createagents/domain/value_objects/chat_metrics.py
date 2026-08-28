@@ -42,7 +42,7 @@ class ChatMetrics:
         if self.eval_duration_ms is not None:
             self.eval_duration_ms = round(self.eval_duration_ms, 2)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, str | float | int | bool | None]:
         """Converts the metrics to a dictionary."""
         return {
             'model': self.model,

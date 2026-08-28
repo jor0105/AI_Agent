@@ -106,14 +106,14 @@ repos:
         files: ^(?:pyproject\.toml|uv\.lock)$
         pass_filenames: false
 
-      # This gate runs only when its configuration or policy code changes.
+      # This gate runs when hook policy or the secret allowlist changes.
       - id: quality-gate-policy
         name: quality-gate-policy
         entry: >-
           uv run --locked --no-sync python
           scripts/quality_gates/quality_gate_policy.py
         language: system
-        files: ^(?:\.pre-commit-config\.yaml|scripts/quality_gates/(?:hook_config|hook_policy|quality_gate_policy)\.py)$
+        files: ^(?:\.pre-commit-config\.yaml|\.gitleaksignore|scripts/quality_gates/(?:hook_config|hook_policy|quality_gate_policy|check_test_contracts|test_contract_ast)\.py)$
         pass_filenames: false
 
       - id: validate-agents-md
@@ -134,6 +134,14 @@ repos:
         files: ^\.github/.*$
         pass_filenames: false
 
+      - id: check-max-lines
+        name: check-max-lines
+        entry: >-
+          uv run --locked --no-sync python
+          .agents/scripts/check-max-lines.py
+        language: system
+        pass_filenames: false
+
   # --------------------------------------------------------------------------
   # 2.1. AI Agent Diff Sanity & Test Integrity (Fail-Closed)
   # --------------------------------------------------------------------------
@@ -145,6 +153,25 @@ repos:
           uv run --locked --no-sync python
           scripts/quality_gates/check_diff_sanity.py
         language: system
+        args:
+          - --allow-print-file=scripts/check-import-cycles.py
+          - --allow-print-file=scripts/quality_gates/check_diff_sanity.py
+          - --allow-print-file=scripts/quality_gates/check_harness_projection.py
+          - --allow-print-file=scripts/quality_gates/check_lockfile_sync.py
+          - --allow-print-file=scripts/quality_gates/check_test_contracts.py
+          - --allow-print-file=scripts/quality_gates/check_test_integrity.py
+          - --allow-print-file=scripts/quality_gates/quality_gate_policy.py
+          - --allow-print-file=src/createagents/presentation/cli/ui/terminal_renderer.py
+        pass_filenames: false
+        always_run: true
+
+      - id: test-contracts
+        name: test-contracts
+        entry: >-
+          uv run --locked --no-sync python
+          scripts/quality_gates/check_test_contracts.py
+        language: system
+        files: ^(?:tests|test)/
         pass_filenames: false
         always_run: true
 
@@ -156,6 +183,7 @@ repos:
         language: system
         files: ^(?:tests|test)/
         pass_filenames: false
+        always_run: true
 
   # --------------------------------------------------------------------------
   # 3. Security and Supply Chain Checks

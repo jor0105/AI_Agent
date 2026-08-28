@@ -37,7 +37,7 @@ class TestTemperatureValidation:
         'value', [0.0, 2.0, 1.0, 0.5, 1.5, None, 0.123456789, 1.999999999]
     )
     def test_validate_temperature_accepts_valid_values(self, value):
-        SupportedConfigs.validate_temperature(value)
+        assert SupportedConfigs.validate_temperature(value) is None
 
     @pytest.mark.parametrize('value', [-0.1, 2.1, 10.0, -5.0, -0.01, 2.01])
     def test_validate_temperature_rejects_invalid_values(self, value):
@@ -51,7 +51,7 @@ class TestMaxTokensValidation:
         'value', [1, 100, 500, 2000, 10000, None, 1000000]
     )
     def test_validate_max_tokens_accepts_valid_values(self, value):
-        SupportedConfigs.validate_max_tokens(value)
+        assert SupportedConfigs.validate_max_tokens(value) is None
 
     @pytest.mark.parametrize('value', [0, -1, -100, '100', 100.5])
     def test_validate_max_tokens_rejects_invalid_values(self, value):
@@ -65,7 +65,7 @@ class TestTopPValidation:
         'value', [0.0, 1.0, 0.5, 0.9, 0.95, None, 0.123456789, 0.999999999]
     )
     def test_validate_top_p_accepts_valid_values(self, value):
-        SupportedConfigs.validate_top_p(value)
+        assert SupportedConfigs.validate_top_p(value) is None
 
     @pytest.mark.parametrize('value', [-0.1, 1.1, 2.0, -1.0, -0.01, 1.01])
     def test_validate_top_p_rejects_invalid_values(self, value):
@@ -76,45 +76,45 @@ class TestTopPValidation:
 @pytest.mark.unit
 class TestValidateConfig:
     def test_validate_config_temperature(self):
-        SupportedConfigs.validate_config('temperature', 0.7)
+        assert SupportedConfigs.validate_config('temperature', 0.7) is None
 
         with pytest.raises(InvalidAgentConfigException):
             SupportedConfigs.validate_config('temperature', 3.0)
 
     def test_validate_config_max_tokens(self):
-        SupportedConfigs.validate_config('max_tokens', 100)
+        assert SupportedConfigs.validate_config('max_tokens', 100) is None
 
         with pytest.raises(InvalidAgentConfigException):
             SupportedConfigs.validate_config('max_tokens', -10)
 
     def test_validate_config_top_p(self):
-        SupportedConfigs.validate_config('top_p', 0.9)
+        assert SupportedConfigs.validate_config('top_p', 0.9) is None
 
         with pytest.raises(InvalidAgentConfigException):
             SupportedConfigs.validate_config('top_p', 1.5)
 
     def test_validate_config_unknown_key(self):
-        SupportedConfigs.validate_config('unknown_key', 123)
+        assert SupportedConfigs.validate_config('unknown_key', 123) is None
 
     def test_validate_config_all_supported(self):
-        SupportedConfigs.validate_config('temperature', 0.8)
-        SupportedConfigs.validate_config('max_tokens', 500)
-        SupportedConfigs.validate_config('top_p', 0.95)
+        assert SupportedConfigs.validate_config('temperature', 0.8) is None
+        assert SupportedConfigs.validate_config('max_tokens', 500) is None
+        assert SupportedConfigs.validate_config('top_p', 0.95) is None
 
     def test_validate_config_with_none_values(self):
-        SupportedConfigs.validate_config('temperature', None)
-        SupportedConfigs.validate_config('max_tokens', None)
-        SupportedConfigs.validate_config('top_p', None)
+        assert SupportedConfigs.validate_config('temperature', None) is None
+        assert SupportedConfigs.validate_config('max_tokens', None) is None
+        assert SupportedConfigs.validate_config('top_p', None) is None
 
     def test_validate_config_boundary_values(self):
         """Test validation with exact boundary values."""
-        SupportedConfigs.validate_config('temperature', 0.0)
-        SupportedConfigs.validate_config('temperature', 2.0)
+        assert SupportedConfigs.validate_config('temperature', 0.0) is None
+        assert SupportedConfigs.validate_config('temperature', 2.0) is None
 
-        SupportedConfigs.validate_config('top_p', 0.0)
-        SupportedConfigs.validate_config('top_p', 1.0)
+        assert SupportedConfigs.validate_config('top_p', 0.0) is None
+        assert SupportedConfigs.validate_config('top_p', 1.0) is None
 
-        SupportedConfigs.validate_config('max_tokens', 1)
+        assert SupportedConfigs.validate_config('max_tokens', 1) is None
 
     def test_validate_config_just_outside_boundaries(self):
         """Test validation with values just outside the boundaries."""
@@ -144,42 +144,42 @@ class TestValidateConfig:
         assert configs == expected_configs
 
     def test_validate_max_tokens_with_large_value(self):
-        SupportedConfigs.validate_max_tokens(1000000)
+        assert SupportedConfigs.validate_max_tokens(1000000) is None
 
     def test_validate_temperature_precision(self):
-        SupportedConfigs.validate_temperature(0.123456789)
-        SupportedConfigs.validate_temperature(1.999999999)
+        assert SupportedConfigs.validate_temperature(0.123456789) is None
+        assert SupportedConfigs.validate_temperature(1.999999999) is None
 
     def test_validate_top_p_precision(self):
-        SupportedConfigs.validate_top_p(0.123456789)
-        SupportedConfigs.validate_top_p(0.999999999)
+        assert SupportedConfigs.validate_top_p(0.123456789) is None
+        assert SupportedConfigs.validate_top_p(0.999999999) is None
 
 
 @pytest.mark.unit
 class TestThinkValidation:
     def test_validate_think_with_boolean_true(self):
-        SupportedConfigs.validate_think(True)
+        assert SupportedConfigs.validate_think(True) is None
 
     def test_validate_think_with_boolean_false(self):
-        SupportedConfigs.validate_think(False)
+        assert SupportedConfigs.validate_think(False) is None
 
     def test_validate_think_with_none(self):
-        SupportedConfigs.validate_think(None)
+        assert SupportedConfigs.validate_think(None) is None
 
     def test_validate_think_with_valid_string_high(self):
-        SupportedConfigs.validate_think('high')
-        SupportedConfigs.validate_think('HIGH')
-        SupportedConfigs.validate_think('High')
+        assert SupportedConfigs.validate_think('high') is None
+        assert SupportedConfigs.validate_think('HIGH') is None
+        assert SupportedConfigs.validate_think('High') is None
 
     def test_validate_think_with_valid_string_low(self):
-        SupportedConfigs.validate_think('low')
-        SupportedConfigs.validate_think('LOW')
-        SupportedConfigs.validate_think('Low')
+        assert SupportedConfigs.validate_think('low') is None
+        assert SupportedConfigs.validate_think('LOW') is None
+        assert SupportedConfigs.validate_think('Low') is None
 
     def test_validate_think_with_valid_string_medium(self):
-        SupportedConfigs.validate_think('medium')
-        SupportedConfigs.validate_think('MEDIUM')
-        SupportedConfigs.validate_think('Medium')
+        assert SupportedConfigs.validate_think('medium') is None
+        assert SupportedConfigs.validate_think('MEDIUM') is None
+        assert SupportedConfigs.validate_think('Medium') is None
 
     def test_validate_think_with_invalid_string(self):
         with pytest.raises(InvalidAgentConfigException, match='think'):
@@ -226,16 +226,16 @@ class TestThinkValidation:
 @pytest.mark.unit
 class TestTopKValidation:
     def test_validate_top_k_with_valid_small_value(self):
-        SupportedConfigs.validate_top_k(1)
+        assert SupportedConfigs.validate_top_k(1) is None
 
     def test_validate_top_k_with_valid_medium_value(self):
-        SupportedConfigs.validate_top_k(50)
+        assert SupportedConfigs.validate_top_k(50) is None
 
     def test_validate_top_k_with_valid_large_value(self):
-        SupportedConfigs.validate_top_k(1000)
+        assert SupportedConfigs.validate_top_k(1000) is None
 
     def test_validate_top_k_with_none(self):
-        SupportedConfigs.validate_top_k(None)
+        assert SupportedConfigs.validate_top_k(None) is None
 
     def test_validate_top_k_with_zero(self):
         with pytest.raises(InvalidAgentConfigException, match='top_k'):
@@ -258,10 +258,8 @@ class TestTopKValidation:
             SupportedConfigs.validate_top_k('10')
 
     def test_validate_top_k_with_boolean_value(self):
-        try:
-            SupportedConfigs.validate_top_k(True)
-        except InvalidAgentConfigException:
-            pass
+        with pytest.raises(InvalidAgentConfigException, match='top_k'):
+            SupportedConfigs.validate_top_k(False)
 
     def test_validate_top_k_error_message_format(self):
         with pytest.raises(InvalidAgentConfigException) as exc_info:
@@ -276,9 +274,9 @@ class TestTopKValidation:
 @pytest.mark.unit
 class TestStreamValidation:
     def test_validate_stream_scenarios_accepts_boolean(self):
-        SupportedConfigs.validate_stream(True)
-        SupportedConfigs.validate_stream(False)
-        SupportedConfigs.validate_stream(None)
+        assert SupportedConfigs.validate_stream(True) is None
+        assert SupportedConfigs.validate_stream(False) is None
+        assert SupportedConfigs.validate_stream(None) is None
 
     def test_validate_stream_scenarios_rejects_invalid_types(self):
         with pytest.raises(InvalidAgentConfigException, match='stream'):
@@ -290,20 +288,20 @@ class TestStreamValidation:
 @pytest.mark.unit
 class TestValidateConfigExtended:
     def test_validate_config_think_with_boolean(self):
-        SupportedConfigs.validate_config('think', True)
-        SupportedConfigs.validate_config('think', False)
+        assert SupportedConfigs.validate_config('think', True) is None
+        assert SupportedConfigs.validate_config('think', False) is None
 
     def test_validate_config_think_with_valid_string(self):
-        SupportedConfigs.validate_config('think', 'low')
-        SupportedConfigs.validate_config('think', 'medium')
-        SupportedConfigs.validate_config('think', 'high')
+        assert SupportedConfigs.validate_config('think', 'low') is None
+        assert SupportedConfigs.validate_config('think', 'medium') is None
+        assert SupportedConfigs.validate_config('think', 'high') is None
 
     def test_validate_config_think_with_invalid_string(self):
         with pytest.raises(InvalidAgentConfigException):
             SupportedConfigs.validate_config('think', 'invalid')
 
     def test_validate_config_top_k_with_valid_value(self):
-        SupportedConfigs.validate_config('top_k', 40)
+        assert SupportedConfigs.validate_config('top_k', 40) is None
 
     def test_validate_config_top_k_with_invalid_value(self):
         with pytest.raises(InvalidAgentConfigException):
@@ -313,11 +311,11 @@ class TestValidateConfigExtended:
             SupportedConfigs.validate_config('top_k', -5)
 
     def test_validate_config_all_supported_configs(self):
-        SupportedConfigs.validate_config('temperature', 0.7)
-        SupportedConfigs.validate_config('max_tokens', 100)
-        SupportedConfigs.validate_config('top_p', 0.9)
-        SupportedConfigs.validate_config('think', True)
-        SupportedConfigs.validate_config('top_k', 50)
+        assert SupportedConfigs.validate_config('temperature', 0.7) is None
+        assert SupportedConfigs.validate_config('max_tokens', 100) is None
+        assert SupportedConfigs.validate_config('top_p', 0.9) is None
+        assert SupportedConfigs.validate_config('think', True) is None
+        assert SupportedConfigs.validate_config('top_k', 50) is None
 
     def test_get_available_configs_includes_think_and_top_k(self):
         configs = SupportedConfigs.get_available_configs()

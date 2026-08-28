@@ -26,8 +26,12 @@ When generating broad scaffolds or completing functions hurriedly, agents may le
 
 To pass validation gates without fixing underlying contract issues, agents often silence compilers:
 
-- `@ts-ignore` or `@ts-nocheck` in TypeScript.
-- `# type: ignore` or `# noqa` in Python. The diff gate always rejects `# noqa`, including rule-specific forms and lines with a reason or `allow-bypass`.
+- `@ts-ignore`, `@ts-nocheck` or `@ts-expect-error` in executable TypeScript or configuration.
+- `# type: ignore` or `# noqa` in executable Python or configuration. The diff
+  gate rejects these markers, including rule-specific forms and lines with a
+  reason. A `.md`, `.markdown`, `.rst` or `.txt` file may quote them as
+  explanatory documentation, including inside a fenced code block; that
+  exception does not apply to any executable or configuration format.
 - `as any` casting without explanation.
 - `// eslint-disable-next-line` without a stated reason.
 
@@ -44,12 +48,26 @@ When a test fails following an implementation change, agents sometimes weaken or
 - Adding a dependency to `package.json` or `pyproject.toml` without running the package manager lock command.
 - Committing phantom packages not reflected in lockfiles.
 
+### 1.6 Operational bypasses in every textual diff
+
+The operational scan is independent of the code classifier and applies to
+every textual file, including documentation, OpenSpec Markdown, generated
+projections, scripts and configuration. It blocks download-to-shell
+pipelines, hook-disabling command flags, hook-skip environment assignments,
+CI settings that continue after an error, and shell fallbacks that force a
+successful exit. A documentation citation never authorizes one of these
+operations.
+
 ## 2. Detection Strategy in Diff
 
 Quality gates must analyze lines starting with `+` in `git diff --cached`:
 
 1. **New violations must trigger `FAIL`**: A newly introduced `console.log` on a staged line is a hard block.
 2. **Intentional exceptions require the narrowest safe scope**:
-   - Fix the code first. If a lint rule legitimately applies only to a CLI or script, use the appropriate file/scope or an explicit per-file lint configuration; never add `# noqa`.
-   - If a type ignore is necessary due to a third-party untyped library, annotate with `# type: ignore[specific-code]  # reason: untyped upstream`.
-   - `# noqa`, `# noqa: <rule>`, and any `# noqa` accompanied by a reason or `allow-bypass` are always violations.
+   - If a third-party type boundary needs explanation, describe it in the
+     surrounding documentation or fix the contract at the source; do not add a
+     type-check suppression to executable code.
+   - `# noqa`, `# noqa: <rule>`, type-ignore markers, and TypeScript suppression
+     markers are violations in executable/configuration formats regardless of
+     the reason attached. Documentation may quote them only as non-executable
+     examples.

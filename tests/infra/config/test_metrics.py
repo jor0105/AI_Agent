@@ -198,7 +198,7 @@ class TestMetricsCollector:
 
         assert filepath.exists()
 
-        with open(filepath, 'r') as f:
+        with open(filepath) as f:
             data = json.load(f)
 
         assert 'summary' in data
@@ -230,7 +230,7 @@ class TestMetricsCollector:
 
         assert filepath.exists()
 
-        with open(filepath, 'r') as f:
+        with open(filepath) as f:
             content = f.read()
 
         assert 'chat_requests_total' in content
@@ -644,8 +644,8 @@ class TestMetricsCollector:
         assert summary['min_latency_ms'] == 100.0
         assert summary['max_latency_ms'] == 500.0
 
+    # assertion-reduction-reason: exact value makes presence check redundant.
     def test_collector_max_metrics_constant_defined(self):
-        assert hasattr(MetricsCollector, 'MAX_METRICS')
         assert MetricsCollector.MAX_METRICS == 10000
 
     def test_add_and_export_large_dataset(self):

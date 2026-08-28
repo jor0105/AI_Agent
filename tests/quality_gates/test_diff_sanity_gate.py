@@ -28,6 +28,17 @@ def _as_added_diff(path: str) -> str:
     )
 
 
+def _added_line_diff(path: str, content: str) -> str:
+    """Return a synthetic diff containing one added line."""
+    return (
+        f'diff --git a/{path} b/{path}\n'
+        f'--- a/{path}\n'
+        f'+++ b/{path}\n'
+        '@@ -0,0 +1 @@\n'
+        f'+{content}\n'
+    )
+
+
 @pytest.mark.unit
 class TestDiffSanity:
     """Ruff suppressions and debugging residue must be visible failures."""
@@ -83,18 +94,60 @@ class TestDiffSanity:
 
         assert any('coverage suppression' in error for error in errors)
 
-    def test_allows_intentional_gate_status_output_in_project_scripts(self):
-        diff = (
-            """diff --git a/scripts/demo.py b/scripts/demo.py
---- a/scripts/demo.py
-+++ b/scripts/demo.py
-@@ -0,0 +1 @@
-+"""
-            + _join_fixture('pri', "nt('PASS [DEMO]')")
-            + '\n'
+    def test_rejects_raw_print_in_project_scripts_without_explicit_allowlist(
+        self,
+    ):
+        diff = _added_line_diff(
+            'scripts/demo.py', _join_fixture('pri', "nt('debug')")
         )
 
-        assert gate.scan_diff(diff) == []
+        errors = gate.scan_diff(diff)
+
+        assert any(
+            _join_fixture('raw pri', 'nt() call') in error for error in errors
+        )
+
+    def test_allows_raw_print_only_in_the_explicitly_allowed_file(self):
+        diff = _added_line_diff(
+            'scripts/demo.py', _join_fixture('pri', "nt('PASS [DEMO]')")
+        )
+
+        assert gate.scan_diff(diff, ['scripts/demo.py']) == []
+        assert gate.scan_diff(diff, ['scripts/other.py'])
+
+    @pytest.mark.parametrize(
+        'marker',
+        (
+            '# ' + 'reason: temporary compatibility',
+            '-- ' + 'reason: temporary compatibility',
+        ),
+    )
+    def test_rejects_generic_bypass_reason_markers(self, marker):
+        line = 'value = 1  ' + _join_fixture('# type', ': ignore ') + marker
+
+        errors = gate.scan_diff(_added_line_diff('src/demo.py', line))
+
+        assert any('[BYPASS]' in error for error in errors)
+
+    def test_accepts_only_explicit_bypass_reason_format(self):
+        line = (
+            'value = 1  '
+            + _join_fixture('# type', ': ignore ')
+            + 'allow-bypass: temporary compatibility'
+        )
+
+        assert gate.scan_diff(_added_line_diff('src/demo.py', line)) == []
+
+    def test_rejects_empty_explicit_bypass_reason(self):
+        line = (
+            'value = 1  '
+            + _join_fixture('# type', ': ignore ')
+            + 'allow-bypass:'
+        )
+
+        errors = gate.scan_diff(_added_line_diff('src/demo.py', line))
+
+        assert any('[BYPASS]' in error for error in errors)
 
     def test_skips_source_owned_by_the_central_harness(self):
         diff = (
@@ -116,4 +169,5 @@ class TestDiffSanity:
         )
 
         for path in source_paths:
-            assert gate.scan_diff(_as_added_diff(path)) == []
+            allowed = (path,) if path.endswith('check_diff_sanity.py') else ()
+            assert gate.scan_diff(_as_added_diff(path), allowed) == []

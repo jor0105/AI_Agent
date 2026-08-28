@@ -8,7 +8,9 @@ Aprenda a criar e interagir com agentes de IA rapidamente.
 from createagents import CreateAgent
 
 agent = CreateAgent(
-    provider='openai', model='YOUR_MODEL', instructions='Você é um assistente útil'
+    provider='openai',
+    model='YOUR_MODEL',
+    instructions='Você é um assistente útil',
 )
 ```
 
@@ -113,7 +115,9 @@ agent_formal = CreateAgent(
     provider='openai', model='YOUR_MODEL', instructions='Use linguagem formal'
 )
 agent_tecnico = CreateAgent(
-    provider='openai', model='YOUR_MODEL', instructions='Especialista em Python'
+    provider='openai',
+    model='YOUR_MODEL',
+    instructions='Especialista em Python',
 )
 ```
 

@@ -211,7 +211,7 @@ class TestRetryWithBackoff:
             TypeError('Error 2'),
             KeyError('Error 3'),
         ]
-        mock_func = Mock(side_effect=exceptions + ['success'])
+        mock_func = Mock(side_effect=[*exceptions, 'success'])
 
         @retry_with_backoff(
             max_attempts=4,
@@ -374,9 +374,9 @@ class TestRetryWithBackoff:
         def test_func():
             if len(received_exceptions) == 0:
                 raise ValueError('First')
-            elif len(received_exceptions) == 1:
+            if len(received_exceptions) == 1:
                 raise TypeError('Second')
-            elif len(received_exceptions) == 2:
+            if len(received_exceptions) == 2:
                 raise KeyError('Third')
             return 'success'
 
@@ -423,7 +423,7 @@ class TestRetryWithBackoff:
         def test_func():
             if len(messages) == 0:
                 raise RetryableTestError('First error')
-            elif len(messages) == 1:
+            if len(messages) == 1:
                 raise RetryableTestError('Second error')
             return 'success'
 
@@ -440,10 +440,9 @@ class TestRetryWithBackoff:
             attempt_count[0] += 1
             if attempt_count[0] == 1:
                 raise ValueError('First error')
-            elif attempt_count[0] == 2:
+            if attempt_count[0] == 2:
                 raise TypeError('Second error')
-            else:
-                raise KeyError('Third error')
+            raise KeyError('Third error')
 
         with pytest.raises(KeyError, match='Third error'):
             test_func()
@@ -483,9 +482,9 @@ class TestRetryWithBackoff:
             attempt[0] += 1
             if attempt[0] == 1:
                 raise ValueError('Value error')
-            elif attempt[0] == 2:
+            if attempt[0] == 2:
                 raise TypeError('Type error')
-            elif attempt[0] == 3:
+            if attempt[0] == 3:
                 raise KeyError('Key error')
             return 'success'
 
@@ -782,11 +781,14 @@ class TestAsyncRetryWithBackoff:
         async def test_func():
             raise ValueError('boom')
 
-        with patch(
-            'createagents.infra.config.retry.random.uniform', return_value=0.1
+        with (
+            patch(
+                'createagents.infra.config.retry.random.uniform',
+                return_value=0.1,
+            ),
+            pytest.raises(ValueError),
         ):
-            with pytest.raises(ValueError):
-                await test_func()
+            await test_func()
 
         assert _delays(no_real_async_sleep) == [pytest.approx(1.1)]
 

@@ -269,22 +269,16 @@ class TestAgent:
         assert '\n' in agent.instructions
         assert 'Be polite' in agent.instructions
 
+    # assertion-reduction-reason: exact fields replace instance-only checks.
     def test_agent_dataclass_fields(self):
-        agent = Agent(
-            provider='openai',
-            model='gpt-5-nano',
-            name='Test',
-            instructions='Test',
-        )
+        import dataclasses
 
-        assert hasattr(agent, '__dataclass_fields__')
-
-        fields = agent.__dataclass_fields__
-        assert 'provider' in fields
-        assert 'model' in fields
-        assert 'name' in fields
-        assert 'instructions' in fields
-        assert 'history' in fields
+        field_names = {f.name for f in dataclasses.fields(Agent)}
+        assert 'provider' in field_names
+        assert 'model' in field_names
+        assert 'name' in field_names
+        assert 'instructions' in field_names
+        assert 'history' in field_names
 
     def test_agent_with_invalid_provider(self):
         with pytest.raises(

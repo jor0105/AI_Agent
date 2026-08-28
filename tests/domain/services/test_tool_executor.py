@@ -1,7 +1,8 @@
 import ast
 import operator
 import time
-from typing import Any
+from typing import Any, ClassVar
+from unittest.mock import Mock
 
 import pytest
 
@@ -39,19 +40,19 @@ class MockLogger(LoggerInterface):
     """Mock logger for testing purposes."""
 
     def debug(self, message: str, *args: Any, **kwargs: Any) -> None:
-        pass
+        return None
 
     def info(self, message: str, *args: Any, **kwargs: Any) -> None:
-        pass
+        return None
 
     def warning(self, message: str, *args: Any, **kwargs: Any) -> None:
-        pass
+        return None
 
     def error(self, message: str, *args: Any, **kwargs: Any) -> None:
-        pass
+        return None
 
     def critical(self, message: str, *args: Any, **kwargs: Any) -> None:
-        pass
+        return None
 
 
 @pytest.fixture
@@ -63,7 +64,7 @@ def mock_logger():
 class MockCalculatorTool(BaseTool):
     name = 'calculator'
     description = 'Performs basic mathematical calculations'
-    parameters = {
+    parameters: ClassVar[dict[str, object]] = {
         'type': 'object',
         'properties': {
             'expression': {
@@ -86,7 +87,7 @@ class MockCalculatorTool(BaseTool):
 class MockGreeterTool(BaseTool):
     name = 'greeter'
     description = 'Greets people by name'
-    parameters = {
+    parameters: ClassVar[dict[str, object]] = {
         'type': 'object',
         'properties': {
             'name': {'type': 'string', 'description': 'Name to greet'}
@@ -282,6 +283,29 @@ class TestToolExecutorEdgeCases:
         assert result.success is False
         assert result.execution_time_ms is not None
         assert result.execution_time_ms > 0
+
+    @pytest.mark.asyncio
+    async def test_failure_logging_preserves_exception_traceback(self):
+        failure = RuntimeError('Tool error')
+
+        class FailingTool(BaseTool):
+            name = 'failing'
+            description = 'Always fails'
+
+            def execute(self) -> str:
+                raise failure
+
+        logger = Mock(spec=LoggerInterface)
+        executor = ToolExecutor([FailingTool()], logger)
+
+        result = await executor.execute_tool('failing')
+
+        assert result.success is False
+        assert logger.error.call_count == 1
+        exc_info = logger.error.call_args.kwargs['exc_info']
+        assert exc_info[0] is RuntimeError
+        assert exc_info[1] is failure
+        assert exc_info[2] is not None
 
     @pytest.mark.asyncio
     async def test_execute_tool_with_extra_kwargs(self, mock_logger):

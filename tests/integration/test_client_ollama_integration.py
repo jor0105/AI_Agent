@@ -1,7 +1,9 @@
+import contextlib
 import os
 
 import pytest
 
+from createagents.application import ChatRepository
 from createagents.domain import ChatException
 from createagents.infra import OllamaChatAdapter
 
@@ -60,33 +62,29 @@ def teardown_ollama_models():
 
     models = [IA_OLLAMA_TEST_1, IA_OLLAMA_TEST_2]
 
-    try:
+    with contextlib.suppress(FileNotFoundError, subprocess.TimeoutExpired):
         subprocess.run(  # nosec B603, B607
             ['ollama', '--version'], capture_output=True, timeout=3
         )
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return
 
     for m in models:
-        try:
+        with contextlib.suppress(OSError, subprocess.SubprocessError):
             subprocess.run(  # nosec B603, B607
                 ['ollama', 'stop', m], capture_output=True, timeout=10
             )
-        except (OSError, subprocess.SubprocessError):
-            continue
 
 
 @pytest.mark.integration
 class TestOllamaChatAdapterIntegration:
+    # assertion-reduction-reason: interface conformance replaces presence checks.
     def test_adapter_initialization(self):
         _check_ollama_available()
 
         adapter = OllamaChatAdapter()
 
         assert adapter is not None
-        assert hasattr(adapter, 'chat')
+        assert isinstance(adapter, ChatRepository)
         assert callable(adapter.chat)
-        assert hasattr(adapter, 'get_metrics')
         assert callable(adapter.get_metrics)
 
     @pytest.mark.asyncio
@@ -301,7 +299,7 @@ class TestOllamaChatAdapterIntegration:
 
         adapter = OllamaChatAdapter()
 
-        try:
+        with pytest.raises(ChatException):
             await adapter.chat(
                 model='invalid-model-xyz-123',
                 instructions='Test',
@@ -310,8 +308,6 @@ class TestOllamaChatAdapterIntegration:
                 history=[],
                 user_ask='Test',
             )
-        except ChatException:
-            pass
 
         metrics = adapter.get_metrics()
         assert len(metrics) == 1
@@ -567,7 +563,7 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_currentdate_tool_get_date(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_1)
-        from createagents.infra.adapters.Tools.available_tools import (
+        from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
 
@@ -591,7 +587,7 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_currentdate_tool_get_time(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_1)
-        from createagents.infra.adapters.Tools.available_tools import (
+        from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
 
@@ -615,7 +611,7 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_currentdate_tool_multiple_actions(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_1)
-        from createagents.infra.adapters.Tools.available_tools import (
+        from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
 
@@ -652,7 +648,7 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_currentdate_tool_different_timezones(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_1)
-        from createagents.infra.adapters.Tools.available_tools import (
+        from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
 
@@ -681,7 +677,7 @@ class TestOllamaChatAdapterToolsIntegration:
         _check_model_available(IA_OLLAMA_TEST_1)
         import os
 
-        from createagents.infra.adapters.Tools.available_tools import (
+        from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
 
@@ -715,7 +711,7 @@ class TestOllamaChatAdapterToolsIntegration:
         _check_model_available(IA_OLLAMA_TEST_1)
         import os
 
-        from createagents.infra.adapters.Tools.available_tools import (
+        from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
 
@@ -747,7 +743,7 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_tools_and_configs_combined(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_1)
-        from createagents.infra.adapters.Tools.available_tools import (
+        from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
 
@@ -781,7 +777,7 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_multiple_tool_calls_in_conversation(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_1)
-        from createagents.infra.adapters.Tools.available_tools import (
+        from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
 
@@ -820,7 +816,7 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_tools_and_think_config(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_2)
-        from createagents.infra.adapters.Tools.available_tools import (
+        from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
 
@@ -849,7 +845,7 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_tools_and_top_k_config(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_1)
-        from createagents.infra.adapters.Tools.available_tools import (
+        from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
 
@@ -878,7 +874,7 @@ class TestOllamaChatAdapterToolsIntegration:
     async def test_chat_with_tools_and_all_configs_ollama(self):
         _check_ollama_available()
         _check_model_available(IA_OLLAMA_TEST_1)
-        from createagents.infra.adapters.Tools.available_tools import (
+        from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
 

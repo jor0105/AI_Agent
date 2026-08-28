@@ -35,7 +35,7 @@ class TestEnvironmentConfigThreadSafety:
         for thread in threads:
             thread.join()
 
-        assert len(set(id(inst) for inst in instances)) == 1
+        assert len({id(inst) for inst in instances}) == 1
 
     def test_concurrent_get_env_is_safe(self):
         results = []

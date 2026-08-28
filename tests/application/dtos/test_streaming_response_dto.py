@@ -25,9 +25,7 @@ class TestStreamingResponseDTO:
         gen = mock_generator(tokens)
         dto = StreamingResponseDTO(gen)
 
-        collected = []
-        async for token in dto:
-            collected.append(token)
+        collected = [token async for token in dto]
 
         assert collected == tokens
         assert dto._consumed is True
@@ -38,9 +36,7 @@ class TestStreamingResponseDTO:
         gen = mock_generator([])
         dto = StreamingResponseDTO(gen)
 
-        collected = []
-        async for token in dto:
-            collected.append(token)
+        collected = [token async for token in dto]
 
         assert collected == []
         assert dto._consumed is True
@@ -77,9 +73,7 @@ class TestStreamingResponseDTO:
 
         await dto
 
-        collected = []
-        async for token in dto:
-            collected.append(token)
+        collected = [token async for token in dto]
 
         assert collected == []
 

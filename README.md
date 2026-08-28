@@ -169,7 +169,9 @@ async def main() -> None:
     )
 
     # The agent automatically determines when to call the tool
-    response = await agent.chat('What is the current time in America/New_York?')
+    response = await agent.chat(
+        'What is the current time in America/New_York?'
+    )
     print(response)
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from collections.abc import Iterable
 from pathlib import Path
 
 from git_index import GitInspectionError, repository_root, staged_diff
@@ -54,7 +55,7 @@ STUB_REASON = re.compile(
     r'(?:allow-stub|stub-reason|todo-reason):\s*\S+.*', re.IGNORECASE
 )
 BYPASS_REASON = re.compile(
-    r'(?:allow-bypass|--\s*reason:|#\s*reason:)\s*\S+.*',
+    r'\ballow-bypass:\s*\S.*',
     re.IGNORECASE,
 )
 NON_SOURCE_SUFFIXES = frozenset(
@@ -93,31 +94,24 @@ def _is_central_harness_path(path: str) -> bool:
     return path.replace('\\', '/').startswith(_CENTRAL_HARNESS_PREFIX)
 
 
-def _is_cli_or_script(path: str) -> bool:
-    """Return whether terminal output is an expected part of the file role."""
-    lower = Path(path).as_posix().lower()
-    return (
-        '/cli/' in lower
-        or '/scripts/' in lower
-        or lower.startswith('scripts/')
-        or Path(path).name in {'cli.py', 'main.py', 'manage.py'}
-    )
+def _normalize_path(path: str) -> str:
+    """Return a repository-relative path in the diff's canonical form."""
+    normalized = path.replace('\\', '/')
+    while normalized.startswith('./'):
+        normalized = normalized[2:]
+    return normalized
 
 
 def _violation(
     content: str,
     path: str,
     line: int,
-    allow_script_prints: bool,
+    allow_print: bool,
 ) -> list[str]:
     """Return all policy violations present in one staged added line."""
     errors: list[str] = []
     for pattern, label in DEBUG_PATTERNS:
-        if (
-            label == 'raw print() call'
-            and allow_script_prints
-            and _is_cli_or_script(path)
-        ):
+        if label == 'raw print() call' and allow_print:
             continue
         if pattern.search(content) and not DEBUG_REASON.search(content):
             errors.append(f'{path}:{line}: [DEBUG] {label}')
@@ -132,9 +126,10 @@ def _violation(
     return errors
 
 
-def scan_diff(diff: str, allow_script_prints: bool = True) -> list[str]:
+def scan_diff(diff: str, allow_print_files: Iterable[str] = ()) -> list[str]:
     """Scan added staged source lines and return actionable failures."""
     errors: list[str] = []
+    allowed_print_files = {_normalize_path(path) for path in allow_print_files}
     path = ''
     line_number = 0
     for line in diff.splitlines():
@@ -157,7 +152,12 @@ def scan_diff(diff: str, allow_script_prints: bool = True) -> list[str]:
         content = line[1:].strip()
         if content:
             errors.extend(
-                _violation(content, path, line_number, allow_script_prints)
+                _violation(
+                    content,
+                    path,
+                    line_number,
+                    _normalize_path(path) in allowed_print_files,
+                )
             )
     return errors
 
@@ -166,7 +166,13 @@ def main() -> int:
     """Run the staged diff-sanity gate."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('files', nargs='*')
-    parser.add_argument('--disallow-script-prints', action='store_true')
+    parser.add_argument(
+        '--allow-print-file',
+        action='append',
+        default=[],
+        metavar='PATH',
+        help='Allow print() only in this exact repository-relative file.',
+    )
     args = parser.parse_args()
     try:
         root = repository_root()
@@ -177,7 +183,7 @@ def main() -> int:
     if not diff.strip():
         print('SKIP [DIFF_SANITY]: No staged source additions to inspect.')
         return 0
-    errors = scan_diff(diff, not args.disallow_script_prints)
+    errors = scan_diff(diff, args.allow_print_file)
     if not errors:
         print('PASS [DIFF_SANITY]: No staged agent artifacts detected.')
         return 0

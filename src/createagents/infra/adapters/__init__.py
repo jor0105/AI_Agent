@@ -1,13 +1,13 @@
-from .Ollama import (
+from .ollama import (
     OllamaChatAdapter,
     OllamaToolSchemaFormatter,
 )
-from .OpenAI import (
+from .openai import (
     OpenAIChatAdapter,
     ToolCallParser,
     ToolSchemaFormatter,
 )
-from .Tools import (
+from .tools import (
     AvailableTools,
     AvailableToolsRegistry,
     CurrentDateTool,

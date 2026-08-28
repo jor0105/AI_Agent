@@ -4,10 +4,11 @@
 Detects common issues introduced on added/modified lines (+):
   - Leftover debug statements (console.log, breakpoint, debugger, raw print)
   - Stubbed implementations / unfulfilled placeholders (TODO throws, pass stubs)
-  - Newly added type/lint bypasses (@ts-ignore, type: ignore, noqa)
+  - Newly added type/lint bypasses in executable or configuration files
+  - Operational hook and shell bypasses in every textual file
 
-The inline noqa form is always rejected; no allow annotation can override
-that rule.
+Documentation files may quote compiler/linter bypass markers as explanatory
+content. Operational bypasses remain prohibited in documentation.
 
 Fail-closed: Exits with code 2 on git errors, code 1 on violations, code 0 on clean pass.
 Zero external dependencies (Python 3.10+ standard library only).
@@ -56,8 +57,13 @@ STUB_PATTERNS = [
 
 BYPASS_PATTERNS = [
     (
-        re.compile(r'@ts-(?:ignore|nocheck)\b'),
-        'TypeScript check bypass (@ts-ignore/@ts-nocheck) added',
+        re.compile(r'#!?\[\s*(?:allow|expect)\s*\('),
+        'Rust lint suppression attribute added',
+    ),
+    (
+        re.compile(r'@ts-(?:ignore|nocheck|expect-error)\b'),
+        'TypeScript check bypass '
+        '(@ts-ignore/@ts-nocheck/@ts-expect-error) added',
     ),
     (
         re.compile(r'#\s*type:\s*ignore\b'),
@@ -69,18 +75,71 @@ BYPASS_PATTERNS = [
     ),
 ]
 
-# Category-specific allow comments (require explicit reason content)
 DEBUG_ALLOW_RE = re.compile(r'allow-debug:\s*\S+.*', re.IGNORECASE)
 STUB_ALLOW_RE = re.compile(
     r'(?:allow-stub|stub-reason|todo-reason):\s*\S+.*', re.IGNORECASE
 )
-BYPASS_ALLOW_RE = re.compile(
-    r'(?:allow-bypass|--\s*reason:|#\s*reason:)\s*\S+.*',
-    re.IGNORECASE,
-)
 NOQA_PATTERN = re.compile(r'#\s*noqa\b', re.IGNORECASE)
-NOQA_LABEL = '# ' + 'noqa'
-NOQA_DESCRIPTION = f'Linter bypass ({NOQA_LABEL}) is never permitted'
+NOQA_DESCRIPTION = 'Linter bypass (noqa) is never permitted'
+
+DOCUMENTATION_EXTENSIONS = frozenset({'.md', '.markdown', '.rst', '.txt'})
+SECURITY_IGNORED_EXTENSIONS = frozenset(
+    {
+        '.gif',
+        '.ico',
+        '.jpeg',
+        '.jpg',
+        '.png',
+        '.woff',
+        '.woff2',
+        '.zip',
+    }
+)
+
+NO_VERIFY_FLAG = '--' + 'no-verify'
+TEST_DELETION_FLAG = '--allow-' + 'deleted-tests'
+TEST_DELETION_FILES_FLAG = '--allow-' + 'deleted-test-files'
+SKIP_ASSIGNMENT = 'SKIP' + '='
+CONTINUE_ON_ERROR_KEY = 'continue-' + 'on-error'
+SHELL_PIPE_SUFFIX = '| ' + 'sh'
+SHELL_PIPE_LABEL = 'curl ' + SHELL_PIPE_SUFFIX
+SHELL_OR_TRUE_LABEL = 'shell OR true fallback'
+
+DANGEROUS_PATTERNS = [
+    (
+        re.compile(re.escape(NO_VERIFY_FLAG) + r'\b'),
+        f'Git {NO_VERIFY_FLAG} hook bypass flag detected (prohibited)',
+    ),
+    (
+        re.compile(
+            r'(?i)(?:'
+            + re.escape(TEST_DELETION_FLAG)
+            + r'\b|'
+            + re.escape(TEST_DELETION_FILES_FLAG)
+            + r'\b|\ballow[_-]deleted[_-]tests?\b)'
+        ),
+        'Test-deletion integrity bypass flag detected (prohibited)',
+    ),
+    (
+        re.compile(r'\b' + re.escape(SKIP_ASSIGNMENT)),
+        f'{SKIP_ASSIGNMENT} environment hook bypass variable detected (prohibited)',
+    ),
+    (
+        re.compile(
+            re.escape(CONTINUE_ON_ERROR_KEY) + r'\s*:\s*true\b',
+            re.IGNORECASE,
+        ),
+        f'{CONTINUE_ON_ERROR_KEY} CI bypass detected (prohibited)',
+    ),
+    (
+        re.compile(r'(?:curl|wget)\s+[^|]*\|\s*(?:ba)?sh\b'),
+        f'Insecure {SHELL_PIPE_LABEL} execution detected (prohibited)',
+    ),
+    (
+        re.compile(r'\|\|\s*true\b'),
+        f'{SHELL_OR_TRUE_LABEL} bypass detected (prohibited)',
+    ),
+]
 
 NON_INSPECTABLE_EXTENSIONS = frozenset(
     {
@@ -111,6 +170,18 @@ def is_inspectable_file(file_path: str) -> bool:
     """Determine if a file is an authored source/script file to be checked."""
     p = Path(file_path)
     return p.suffix.lower() not in NON_INSPECTABLE_EXTENSIONS
+
+
+def is_bypass_inspectable_file(file_path: str) -> bool:
+    suffix = Path(file_path).suffix.lower()
+    return (
+        suffix not in DOCUMENTATION_EXTENSIONS
+        and suffix not in SECURITY_IGNORED_EXTENSIONS
+    )
+
+
+def is_security_inspectable_file(file_path: str) -> bool:
+    return Path(file_path).suffix.lower() not in SECURITY_IGNORED_EXTENSIONS
 
 
 def get_staged_diff(target_files: list[str] | None = None) -> str:
@@ -175,20 +246,32 @@ def _check_bypass_violations(
 ) -> list[str]:
     errors: list[str] = []
     for pattern, desc in BYPASS_PATTERNS:
-        if pattern.search(content) and not BYPASS_ALLOW_RE.search(content):
+        if pattern.search(content):
             errors.append(f'{file_path}:{line_num}: [BYPASS] {desc}')
     return errors
 
 
-def _check_noqa_violations(
-    content: str, file_path: str, line_num: int
+def _check_security_violations(
+    content: str,
+    file_path: str,
+    line_num: int,
+    check_bypasses: bool,
 ) -> list[str]:
-    """Reject inline noqa independently of the other bypass policies."""
-    if not NOQA_PATTERN.search(content):
-        return []
-    return [
-        f'{file_path}:{line_num}: [BYPASS] {NOQA_DESCRIPTION}',
-    ]
+    """Apply code-level bypass and universal operational policies."""
+    errors: list[str] = []
+    if is_bypass_inspectable_file(file_path):
+        if NOQA_PATTERN.search(content):
+            errors.append(
+                f'{file_path}:{line_num}: [BYPASS] {NOQA_DESCRIPTION}'
+            )
+        if check_bypasses:
+            errors.extend(
+                _check_bypass_violations(content, file_path, line_num)
+            )
+    for pattern, desc in DANGEROUS_PATTERNS:
+        if pattern.search(content):
+            errors.append(f'{file_path}:{line_num}: [SECURITY] {desc}')
+    return errors
 
 
 def scan_diff(
@@ -216,7 +299,7 @@ def scan_diff(
         if not line.startswith('+') or line.startswith('+++'):
             continue
 
-        if not is_inspectable_file(current_file):
+        if not is_security_inspectable_file(current_file):
             continue
 
         line_num += 1
@@ -224,25 +307,27 @@ def scan_diff(
         if not added_content:
             continue
 
+        if is_inspectable_file(current_file):
+            errors.extend(
+                _check_debug_violations(
+                    added_content,
+                    current_file,
+                    line_num,
+                    allow_debug_in_scripts,
+                    allowed_print_files,
+                )
+            )
+            errors.extend(
+                _check_stub_violations(added_content, current_file, line_num)
+            )
         errors.extend(
-            _check_debug_violations(
+            _check_security_violations(
                 added_content,
                 current_file,
                 line_num,
-                allow_debug_in_scripts,
-                allowed_print_files,
+                check_bypasses,
             )
         )
-        errors.extend(
-            _check_stub_violations(added_content, current_file, line_num)
-        )
-        errors.extend(
-            _check_noqa_violations(added_content, current_file, line_num)
-        )
-        if check_bypasses:
-            errors.extend(
-                _check_bypass_violations(added_content, current_file, line_num)
-            )
 
     return errors
 
@@ -301,11 +386,9 @@ def main() -> int:
         for error_msg in errors:
             sys.stderr.write(f'  • {error_msg}\n')
         sys.stderr.write(
-            '\nResolution: Fix the code, use the appropriate file/scope, or '
-            'configure the lint rule explicitly for that file. '
-            f'{NOQA_LABEL} is never permitted; other annotations require a '
-            'specific reason '
-            '("allow-debug", "allow-stub", or "-- reason: <why>").\n'
+            '\nResolution: fix the code or document the behavior without '
+            'executable suppressions; debug and stub exceptions require a '
+            'specific reason.\n'
         )
         return 1
 

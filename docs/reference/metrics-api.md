@@ -48,7 +48,7 @@ ______________________________________________________________________
 
 ## MetricsRecorder
 
-**Namespace**: `createagents.infra.adapters.Common`
+**Namespace**: `createagents.infra.adapters.common`
 
 Base abstrata para gravação de métricas nos handlers. Ler o uso reportado é a
 única parte específica de cada provider, então as subclasses implementam

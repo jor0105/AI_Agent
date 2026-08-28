@@ -29,6 +29,7 @@ _REQUIRED_HOOKS = frozenset(
         'lockfile-sync',
         'quality-gate-policy',
         'diff-sanity',
+        'test-contracts',
         'test-integrity',
         'bandit-src',
         'gitleaks',
@@ -59,12 +60,15 @@ _REQUIRED_MIRROR_EXCLUSIONS = (
 )
 _PRE_PUSH_HOOKS = frozenset({'mypy-pre-push', 'pytest-unit', 'pip-audit'})
 _COMMIT_MSG_HOOKS = frozenset({'validate-commit-msg'})
-_ALWAYS_RUN_HOOKS = frozenset({'diff-sanity', *_PRE_PUSH_HOOKS})
+_ALWAYS_RUN_HOOKS = frozenset(
+    {'diff-sanity', 'test-contracts', 'test-integrity', *_PRE_PUSH_HOOKS}
+)
 _INDEX_ONLY_HOOKS = frozenset(
     {
         'lockfile-sync',
         'quality-gate-policy',
         'diff-sanity',
+        'test-contracts',
         'test-integrity',
     }
 )

@@ -346,7 +346,7 @@ class TestEnvironmentConfig:
         with patch.dict(os.environ, {'PERSISTENT': 'persist_value'}):
             EnvironmentConfig.reset()
 
-            for i in range(5):
+            for _ in range(5):
                 value = EnvironmentConfig.get_env('PERSISTENT')
                 assert value == 'persist_value'
 

@@ -200,7 +200,7 @@ Output format example:
 {
   "timestamp": "2026-08-25 10:00:00,000",
   "level": "INFO",
-  "logger": "createagents.infra.adapters.OpenAI.adapter",
+  "logger": "createagents.infra.adapters.openai.adapter",
   "message": "Chat request completed successfully",
   "module": "chat_adapter",
   "function": "chat",
