@@ -19,6 +19,7 @@ class CommandRegistry:
 
         Args:
             handler: The command handler to register.
+
         """
         self._handlers.append(handler)
 
@@ -33,6 +34,7 @@ class CommandRegistry:
 
         Returns:
             The first matching CommandHandler, or None if no match found.
+
         """
         for handler in self._handlers:
             if handler.can_handle(user_input):
@@ -44,6 +46,7 @@ class CommandRegistry:
 
         Returns:
             List of all registered command handlers.
+
         """
         return self._handlers.copy()
 

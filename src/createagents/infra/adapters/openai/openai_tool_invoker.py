@@ -27,6 +27,7 @@ async def run_tool_calls(
             the assistant's output items and each tool result.
         executor: Executor holding the agent's tools.
         logger: Logger of the calling handler.
+
     """
     output_items = ToolCallParser.get_assistant_message_with_tool_calls(
         response

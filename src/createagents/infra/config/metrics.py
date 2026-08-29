@@ -13,17 +13,18 @@ class MetricsCollector:
     MAX_METRICS = 10000
 
     def __init__(self, max_metrics: int = MAX_METRICS) -> None:
-        """Initializes the metrics collector.
+        """Initialize the metrics collector.
 
         Args:
             max_metrics: The maximum number of metrics to store (default: 10,000).
+
         """
         self._metrics: list[ChatMetrics] = []
         self._lock = threading.Lock()
         self._max_metrics = max_metrics
 
     def add(self, metrics: ChatMetrics) -> None:
-        """Adds metrics to the collection in a thread-safe manner.
+        """Add metrics to the collection in a thread-safe manner.
 
         If the collection exceeds the maximum size, the oldest metrics are removed.
         """
@@ -33,15 +34,16 @@ class MetricsCollector:
                 self._metrics = self._metrics[-self._max_metrics :]
 
     def get_all(self) -> list[ChatMetrics]:
-        """Returns a thread-safe copy of all collected metrics."""
+        """Return a thread-safe copy of all collected metrics."""
         with self._lock:
             return self._metrics.copy()
 
     def get_summary(self) -> dict[str, int | float]:
-        """Returns a statistical summary of the metrics in a thread-safe manner.
+        """Return a statistical summary of the metrics in a thread-safe manner.
 
         Returns:
             A dictionary containing aggregated statistics.
+
         """
         with self._lock:
             if not self._metrics:
@@ -74,12 +76,12 @@ class MetricsCollector:
             }
 
     def clear(self) -> None:
-        """Clears all metrics in a thread-safe manner."""
+        """Clear all metrics in a thread-safe manner."""
         with self._lock:
             self._metrics.clear()
 
     def export_json(self, filepath: str | None = None) -> str:
-        """Exports the metrics in JSON format.
+        """Export the metrics in JSON format.
 
         Args:
             filepath: An optional file path to save the JSON data.
@@ -87,6 +89,7 @@ class MetricsCollector:
 
         Returns:
             A JSON string containing all metrics.
+
         """
         data = {
             'summary': self.get_summary(),
@@ -102,7 +105,7 @@ class MetricsCollector:
         return json_str
 
     def export_prometheus(self) -> str:
-        """Exports metrics in a Prometheus-compatible format.
+        """Export metrics in a Prometheus-compatible format.
 
         This method generates metrics in the Prometheus text format, including:
         - `chat_requests_total`: Total number of requests.
@@ -113,6 +116,7 @@ class MetricsCollector:
 
         Returns:
             A string with the metrics in Prometheus format.
+
         """
         if not self._metrics:
             return '# No metrics available\n'
@@ -181,10 +185,11 @@ class MetricsCollector:
         return '\n'.join(lines)
 
     def export_prometheus_to_file(self, filepath: str) -> None:
-        """Exports metrics to a file in Prometheus format.
+        """Export metrics to a file in Prometheus format.
 
         Args:
             filepath: The file path to save the metrics.
+
         """
         content = self.export_prometheus()
         with open(filepath, 'w', encoding='utf-8') as f:

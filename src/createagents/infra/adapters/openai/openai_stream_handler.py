@@ -24,6 +24,7 @@ class OpenAIStreamHandler(BaseStreamHandler):
         Args:
             client: Transport used to reach the OpenAI Responses API.
             metrics_list: Optional shared list to append metrics to.
+
         """
         super().__init__(
             logger=LoggingConfig.get_logger(__name__),
@@ -40,7 +41,7 @@ class OpenAIStreamHandler(BaseStreamHandler):
         config: dict[str, Any] | None,
         tools: list[BaseTool] | None,
     ) -> AsyncGenerator[str, None]:
-        """Yields tokens from the OpenAI API as they arrive.
+        """Yield tokens from the OpenAI API as they arrive.
 
         Supports tool calling with interrupted streaming: when tools are
         called during streaming, token yield is paused, tools are executed,
@@ -59,6 +60,7 @@ class OpenAIStreamHandler(BaseStreamHandler):
 
         Raises:
             ChatException: If the streaming call fails.
+
         """
         start_time = time.time()
         session = ToolSession.prepare(
@@ -96,23 +98,12 @@ class OpenAIStreamHandler(BaseStreamHandler):
                 has_yielded_content = False
 
                 async for event in stream_response:
-                    event_type = getattr(event, 'type', None)
-
-                    if event_type == 'response.output_text.delta':
-                        token = getattr(event, 'delta', None)
-                        if token:
-                            yield token
-                            has_yielded_content = True
-
-                    elif event_type == 'response.content_part.added':
-                        content_part = getattr(event, 'content_part', None)
-                        token = getattr(content_part, 'text', None)
-                        if token:
-                            yield token
-                            has_yielded_content = True
-
-                    elif event_type == 'response.completed':
-                        full_response = getattr(event, 'response', None)
+                    token, completed = self._extract_stream_event(event)
+                    if token:
+                        yield token
+                        has_yielded_content = True
+                    if completed is not None:
+                        full_response = completed
 
                 if not full_response:
                     self._logger.warning(
@@ -153,6 +144,27 @@ class OpenAIStreamHandler(BaseStreamHandler):
                 original_error=e,
             ) from e
 
+    @staticmethod
+    def _extract_stream_event(event: Any) -> tuple[str | None, Any | None]:
+        """Extract incremental token or completed response from a stream event.
+
+        Args:
+            event: An event emitted by the OpenAI streaming API.
+
+        Returns:
+            A tuple of (text_delta, completed_response).
+
+        """
+        event_type = getattr(event, 'type', None)
+        if event_type == 'response.output_text.delta':
+            return getattr(event, 'delta', None), None
+        if event_type == 'response.content_part.added':
+            content_part = getattr(event, 'content_part', None)
+            return getattr(content_part, 'text', None), None
+        if event_type == 'response.completed':
+            return None, getattr(event, 'response', None)
+        return None, None
+
     def __accumulate_usage(
         self, totals: StreamUsageTotals, response: Any, iteration: int
     ) -> None:
@@ -162,6 +174,7 @@ class OpenAIStreamHandler(BaseStreamHandler):
             totals: The turn's accumulated usage, updated in place.
             response: The object from the `response.completed` event.
             iteration: The iteration number, for the debug trace.
+
         """
         usage = getattr(response, 'usage', None)
         if not usage:
@@ -189,6 +202,7 @@ class OpenAIStreamHandler(BaseStreamHandler):
 
         Yields:
             Each non-empty text part, in order.
+
         """
         for item in getattr(response, 'output', None) or ():
             if getattr(item, 'type', None) != 'message':

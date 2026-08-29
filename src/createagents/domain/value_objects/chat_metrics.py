@@ -15,6 +15,7 @@ class ChatMetrics:
         timestamp: The timestamp of the request.
         success: A boolean indicating whether the request was successful.
         error_message: An error message, if any.
+
     """
 
     model: str
@@ -30,7 +31,7 @@ class ChatMetrics:
     error_message: str | None = None
 
     def __post_init__(self) -> None:
-        """Rounds float metrics to 2 decimal places."""
+        """Round float metrics to 2 decimal places."""
         if self.latency_ms is not None:
             self.latency_ms = round(self.latency_ms, 2)
         if self.load_duration_ms is not None:
@@ -43,7 +44,7 @@ class ChatMetrics:
             self.eval_duration_ms = round(self.eval_duration_ms, 2)
 
     def to_dict(self) -> dict[str, str | float | int | bool | None]:
-        """Converts the metrics to a dictionary."""
+        """Convert the metrics to a dictionary."""
         return {
             'model': self.model,
             'latency_ms': self.latency_ms,
@@ -59,7 +60,7 @@ class ChatMetrics:
         }
 
     def __str__(self) -> str:
-        """Returns a string representation of the metrics."""
+        """Return a string representation of the metrics."""
         tokens_info = (
             f', tokens={self.tokens_used}' if self.tokens_used else ''
         )

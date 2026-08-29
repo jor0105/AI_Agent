@@ -40,6 +40,7 @@ class BaseTool(ABC):
             def execute(self, text: str) -> str:
                 return str(len(text.split()))
         ```
+
     """
 
     name: str = 'base_tool'
@@ -62,6 +63,7 @@ class BaseTool(ABC):
 
         Returns:
             The result of the tool execution (typically a string).
+
         """
 
     def get_schema(self) -> dict[str, Any]:
@@ -91,6 +93,7 @@ class BaseTool(ABC):
                 }
             }
             ```
+
         """
         return {
             'name': self.name,

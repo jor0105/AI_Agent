@@ -20,4 +20,5 @@ class ToolRegistry(ABC):
 
         Args:
             tool_name: The registered tool name, matched case-insensitively.
+
         """

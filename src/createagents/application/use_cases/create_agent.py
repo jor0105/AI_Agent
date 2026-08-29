@@ -26,12 +26,13 @@ class CreateAgentUseCase:
         Args:
             tool_registry: Port used to resolve tool names into instances.
             logger: Optional logger injected by the composition root.
+
         """
         self.__tool_registry = tool_registry
         self.__logger = logger or NullLogger()
 
     def execute(self, input_dto: CreateAgentInputDTO) -> Agent:
-        """Creates a new agent with the provided configurations.
+        """Create a new agent with the provided configurations.
 
         Args:
             input_dto: DTO with the data for agent creation.
@@ -45,6 +46,7 @@ class CreateAgentUseCase:
             InvalidProviderException: If the provider is not supported.
             UnsupportedConfigException: If a configuration is not supported.
             InvalidConfigTypeException: If a configuration type is invalid.
+
         """
         self.__logger.info(
             'Creating new agent - Provider: %s, Model: %s',
@@ -97,6 +99,7 @@ class CreateAgentUseCase:
 
         Raises:
             InvalidBaseToolException: If a name is not in the registry.
+
         """
         if tools is None:
             return None

@@ -58,9 +58,72 @@ CI settings that continue after an error, and shell fallbacks that force a
 successful exit. A documentation citation never authorizes one of these
 operations.
 
+### 1.7 Control-Flow and Structural Complexity
+
+Structural erosion is visible when a routine becomes progressively harder to
+reason about even though each branch is locally valid:
+
+- Arrow-shaped code created by nested conditions, loops, and error handlers.
+- Cyclomatic or cognitive complexity that exceeds the project's configured
+  limit. Record these as separate metrics; neither is a substitute for the
+  other.
+- Redundant `else` branches after a terminal statement.
+- Missing guard clauses when an invalid precondition or edge case can be
+  rejected before the main path.
+
+Do not impose a single-exit rule. Multiple returns are acceptable when they
+make preconditions and the main path clearer. Treat scattered exits as a
+problem only when they obscure cleanup, effects, or invariants.
+
+These findings require a parser-aware linter or analyzer. Do not add regexes
+for nesting or complexity to `check_diff_sanity.py`.
+
+### 1.8 Error Handling and Exception Masking
+
+Error handling becomes deceptive when it prevents a visible failure without
+preserving enough information to diagnose or recover from it:
+
+- A root or universal error type is caught inside ordinary business logic.
+- An empty handler, neutral fallback, or generic return silently swallows the
+  failure.
+- One broad handler wraps unrelated operations, hiding which operation failed.
+- A replacement error discards the original cause or stack information.
+
+A broad catch can be valid at an explicit process, request, worker, CLI, or
+integration boundary. Keep that scope narrow, perform a defined action, and
+preserve the original cause using the language's native mechanism. An
+intentional ignore must be explicit and narrowly justified; an empty handler
+is not sufficient evidence.
+
+### 1.9 Monolithic Functions and Scope Bloat
+
+Flag routines that accumulate unrelated responsibilities, exceed the
+configured statement limit, or mix orchestration, validation, persistence,
+and presentation. Count executable statements when the analyzer supports
+them; physical line count is a separate repository policy and must not be
+reported as the same metric.
+
+More than five positional parameters is a review signal for coupling or
+control flags, not a universal failure. Prefer decomposition or a cohesive
+input object only when it clarifies a real responsibility boundary.
+
+### 1.10 Assertion Vacuum and Hollow Verification
+
+Tests are hollow when they execute code without proving an observable result,
+or when a specific assertion is replaced by a tautology, broad truthiness
+check, or assertion that only repeats the mock setup.
+
+`check_test_integrity.py` detects focused tests, unjustified skips, deleted
+tests, and net assertion loss. It cannot prove test meaning across every test
+framework. Keep assertion design under `[TEST_INTEGRITY]` and use the
+`testing-patterns` skill for non-tautological behavior checks; do not claim
+that `[LINTER]` or a generic regex can detect every hollow test.
+
 ## 2. Detection Strategy in Diff
 
-Quality gates must analyze lines starting with `+` in `git diff --cached`:
+Diff-oriented gates must analyze lines starting with `+` in
+`git diff --cached`. Structural gates must run the project's parser-aware
+linter or analyzer against changed or affected code instead:
 
 1. **New violations must trigger `FAIL`**: A newly introduced `console.log` on a staged line is a hard block.
 2. **Intentional exceptions require the narrowest safe scope**:

@@ -41,6 +41,7 @@ class ToolExecutionResult:
         result: The result returned by the tool (if successful).
         error: Error message (if execution failed).
         execution_time_ms: Time taken to execute the tool in milliseconds.
+
     """
 
     tool_name: str
@@ -54,6 +55,7 @@ class ToolExecutionResult:
 
         Returns:
             Dict[str, Any]: The dictionary representation of the result.
+
         """
         return {
             'tool_name': self.tool_name,
@@ -68,6 +70,7 @@ class ToolExecutionResult:
 
         Returns:
             A formatted string describing the tool execution result.
+
         """
         if self.success:
             return f"Tool '{self.tool_name}' executed successfully:\n{self.result}"
@@ -92,6 +95,7 @@ class ToolExecutor:
         if result.success:
             print(result.result)
         ```
+
     """
 
     def __init__(self, tools: list[BaseTool], logger: LoggerInterface) -> None:
@@ -101,6 +105,7 @@ class ToolExecutor:
             tools: List of tool instances available for execution.
                    If None, no tools will be available.
             logger: Logger instance for logging tool execution events.
+
         """
         self._tools_map: dict[str, BaseTool] = {}
         self.__logger = logger
@@ -126,6 +131,7 @@ class ToolExecutor:
 
         Returns:
             List of tool names that can be executed.
+
         """
         return list(self._tools_map.keys())
 
@@ -137,6 +143,7 @@ class ToolExecutor:
 
         Returns:
             True if the tool exists, False otherwise.
+
         """
         return tool_name in self._tools_map
 
@@ -162,6 +169,7 @@ class ToolExecutor:
                 query="What is Clean Architecture?"
             )
             ```
+
         """
         start_time = time.time()
 
@@ -265,6 +273,7 @@ class ToolExecutor:
 
         Returns:
             The failed `ToolExecutionResult`, timed from `start_time`.
+
         """
         execution_time = (time.time() - start_time) * 1000
         self.__logger.error(

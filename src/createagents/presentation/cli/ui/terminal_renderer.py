@@ -24,6 +24,7 @@ class TerminalRenderer:
 
         Args:
             show_timestamps: Whether to display timestamps in messages.
+
         """
         self._formatter = TerminalFormatter()
         self._show_timestamps = show_timestamps
@@ -34,6 +35,7 @@ class TerminalRenderer:
 
         Returns:
             Formatted timestamp string or empty if disabled.
+
         """
         if not self._show_timestamps:
             return ''
@@ -83,6 +85,7 @@ class TerminalRenderer:
             color: ANSI color code for the box.
             align: Alignment ('left' or 'right').
             icon: Optional icon to display before message.
+
         """
         timestamp = self._get_timestamp()
         # Not named `box`: that is the `rich` module imported above.
@@ -96,6 +99,7 @@ class TerminalRenderer:
 
         Args:
             message: The user's message.
+
         """
         self.render_message_box(
             message, ColorScheme.get_user_color(), align='right', icon='👤'
@@ -106,6 +110,7 @@ class TerminalRenderer:
 
         Args:
             message: The AI's message.
+
         """
         self.render_message_box(
             message, ColorScheme.get_ai_color(), align='left', icon='🤖'
@@ -121,6 +126,7 @@ class TerminalRenderer:
 
         Args:
             token_generator: Async iterator yielding response tokens.
+
         """
         first_token = await anext(aiter(token_generator), None)
         if first_token is None:
@@ -155,6 +161,7 @@ class TerminalRenderer:
 
         Args:
             message: The system message.
+
         """
         self.render_message_box(
             message,
@@ -168,6 +175,7 @@ class TerminalRenderer:
 
         Args:
             message: The success message.
+
         """
         self.render_message_box(
             message, ColorScheme.get_success_color(), align='left', icon='✓'
@@ -197,6 +205,7 @@ class TerminalRenderer:
 
         Args:
             num_lines: Number of lines to clear.
+
         """
         for _ in range(num_lines):
             sys.stdout.write(ColorScheme.MOVE_UP)
@@ -208,6 +217,7 @@ class TerminalRenderer:
 
         Args:
             prompt: The prompt message to display.
+
         """
         print(f'{ColorScheme.GRAY}{prompt}{ColorScheme.RESET}')
 
@@ -233,6 +243,7 @@ class TerminalRenderer:
 
         Args:
             error_message: The error message to display.
+
         """
         print(
             f'\n{ColorScheme.get_error_color()}{ColorScheme.BOLD}✗ Error:{ColorScheme.RESET} '

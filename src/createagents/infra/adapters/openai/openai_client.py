@@ -23,6 +23,7 @@ class OpenAIClient:
 
         Raises:
             ChatException: If the API key is missing or invalid.
+
         """
         self.__logger = LoggingConfig.get_logger(__name__)
         self.__timeout = EnvironmentConfig.get_int_env(
@@ -58,7 +59,7 @@ class OpenAIClient:
         config: dict[str, Any] | None,
         tools: list[dict[str, Any]] | None = None,
     ) -> Any:
-        """Calls the OpenAI Responses API.
+        """Call the OpenAI Responses API.
 
         Transport retries are owned by the SDK client, configured from
         `OPENAI_TIMEOUT` and `OPENAI_MAX_RETRIES`.
@@ -72,6 +73,7 @@ class OpenAIClient:
 
         Returns:
             The API response object.
+
         """
         chat_kwargs: dict[str, Any] = {
             'model': model,

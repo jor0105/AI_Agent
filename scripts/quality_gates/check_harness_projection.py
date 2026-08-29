@@ -105,10 +105,30 @@ def _catalog_components(
     return components
 
 
-def _selected_component_ids(
+def _manifest_component_id(
+    category: str,
+    name: object,
+    catalog: dict[str, CatalogComponent],
+) -> str:
+    """Return and validate the catalog identifier for one manifest entry."""
+    if not isinstance(name, str):
+        raise HarnessProjectionError(
+            'harness manifest component names must be strings.'
+        )
+    component_id = (
+        f'skills/{name}' if category == 'review' else f'{category}/{name}'
+    )
+    if component_id not in catalog:
+        raise HarnessProjectionError(
+            f'harness manifest selects unknown component {component_id!r}.'
+        )
+    return component_id
+
+
+def _manifest_selection(
     manifest: dict[str, Any], catalog: dict[str, CatalogComponent]
 ) -> set[str]:
-    """Resolve the manifest selection plus every catalog dependency edge."""
+    """Return the validated component identifiers selected by the manifest."""
     raw_selection = manifest.get('components')
     if not isinstance(raw_selection, dict):
         raise HarnessProjectionError(
@@ -121,20 +141,14 @@ def _selected_component_ids(
                 'harness manifest contains an invalid selection.'
             )
         for name in names:
-            if not isinstance(name, str):
-                raise HarnessProjectionError(
-                    'harness manifest component names must be strings.'
-                )
-            component_id = (
-                f'skills/{name}'
-                if category == 'review'
-                else f'{category}/{name}'
-            )
-            if component_id not in catalog:
-                raise HarnessProjectionError(
-                    f'harness manifest selects unknown component {component_id!r}.'
-                )
-            selected.add(component_id)
+            selected.add(_manifest_component_id(category, name, catalog))
+    return selected
+
+
+def _include_required_components(
+    selected: set[str], catalog: dict[str, CatalogComponent]
+) -> set[str]:
+    """Expand a manifest selection to its complete dependency closure."""
     pending = list(selected)
     while pending:
         component_id = pending.pop()
@@ -149,13 +163,20 @@ def _selected_component_ids(
     return selected
 
 
-def validate_harness_projection(snapshot: Path) -> list[str]:
-    """Return staged lock/projection discrepancies with no working-tree input."""
-    lock = _read_json(snapshot / LOCK_PATH)
-    manifest = _read_json(snapshot / MANIFEST_PATH)
-    catalog = _catalog_components(_read_json(snapshot / CATALOG_PATH))
-    errors: list[str] = []
+def _selected_component_ids(
+    manifest: dict[str, Any], catalog: dict[str, CatalogComponent]
+) -> set[str]:
+    """Resolve the manifest selection plus every catalog dependency edge."""
+    return _include_required_components(
+        _manifest_selection(manifest, catalog), catalog
+    )
 
+
+def _validate_lock_metadata(
+    lock: dict[str, Any], manifest: dict[str, Any]
+) -> tuple[list[str], set[str]]:
+    """Validate lock metadata and return its normalized managed paths."""
+    errors: list[str] = []
     central_version = lock.get('centralVersion')
     if not isinstance(central_version, str) or not central_version:
         errors.append('harness lock must declare a non-empty centralVersion.')
@@ -169,60 +190,88 @@ def validate_harness_projection(snapshot: Path) -> list[str]:
         isinstance(path, str) for path in managed
     ):
         errors.append('harness lock managedPaths must be a list of strings.')
-        managed_paths: set[str] = set()
-    else:
-        managed_paths = set(managed)
-        if managed != sorted(managed) or len(managed_paths) != len(managed):
-            errors.append(
-                'harness lock managedPaths must be sorted and unique.'
-            )
+        return errors, set()
 
-    components = lock.get('components')
-    if not isinstance(components, list):
-        return [*errors, 'harness lock components must be a list.']
+    managed_paths = set(managed)
+    if managed != sorted(managed) or len(managed_paths) != len(managed):
+        errors.append('harness lock managedPaths must be sorted and unique.')
+    return errors, managed_paths
+
+
+def _validate_lock_component(
+    snapshot: Path,
+    entry: object,
+    catalog: dict[str, CatalogComponent],
+    managed_paths: set[str],
+) -> tuple[str | None, list[str]]:
+    """Validate one lock component and return its identifier and errors."""
+    if not isinstance(entry, dict):
+        return None, ['harness lock contains a non-object component entry.']
+
+    component_id = entry.get('id')
+    expected_hash = entry.get('hash')
+    if not isinstance(component_id, str) or component_id not in catalog:
+        return None, [
+            f'harness lock references unknown component {component_id!r}.'
+        ]
+    if not isinstance(expected_hash, str) or not expected_hash.startswith(
+        HASH_PREFIX
+    ):
+        return component_id, [
+            f'{component_id}: lock hash must use the sha256: prefix.'
+        ]
+
+    projected_path = Path('.agents') / catalog[component_id].source
+    if projected_path.as_posix() not in managed_paths:
+        return component_id, [
+            f'{component_id}: target is absent from managedPaths.'
+        ]
+    try:
+        actual_hash = component_hash(snapshot / projected_path)
+    except HarnessProjectionError as err:
+        return component_id, [f'{component_id}: {err}']
+    if actual_hash != expected_hash:
+        return component_id, [
+            f'{component_id}: projection hash differs from staged harness lock.'
+        ]
+    return component_id, []
+
+
+def _validate_lock_components(
+    snapshot: Path,
+    entries: list[object],
+    catalog: dict[str, CatalogComponent],
+    managed_paths: set[str],
+) -> tuple[list[str], list[str]]:
+    """Validate every lock component while preserving declared order."""
+    errors: list[str] = []
     component_ids: list[str] = []
-    for entry in components:
-        if not isinstance(entry, dict):
-            errors.append(
-                'harness lock contains a non-object component entry.'
-            )
-            continue
-        component_id = entry.get('id')
-        expected_hash = entry.get('hash')
-        if not isinstance(component_id, str) or component_id not in catalog:
-            errors.append(
-                f'harness lock references unknown component {component_id!r}.'
-            )
-            continue
-        component_ids.append(component_id)
-        if not isinstance(expected_hash, str) or not expected_hash.startswith(
-            HASH_PREFIX
-        ):
-            errors.append(
-                f'{component_id}: lock hash must use the sha256: prefix.'
-            )
-            continue
-        projected_path = Path('.agents') / catalog[component_id].source
-        if projected_path.as_posix() not in managed_paths:
-            errors.append(
-                f'{component_id}: target is absent from managedPaths.'
-            )
-            continue
-        try:
-            actual_hash = component_hash(snapshot / projected_path)
-        except HarnessProjectionError as err:
-            errors.append(f'{component_id}: {err}')
-            continue
-        if actual_hash != expected_hash:
-            errors.append(
-                f'{component_id}: projection hash differs from staged harness lock.'
-            )
+    for entry in entries:
+        component_id, component_errors = _validate_lock_component(
+            snapshot, entry, catalog, managed_paths
+        )
+        errors.extend(component_errors)
+        if component_id is not None:
+            component_ids.append(component_id)
+    return errors, component_ids
+
+
+def _validate_projection_sets(
+    snapshot: Path,
+    component_ids: list[str],
+    managed_paths: set[str],
+    manifest: dict[str, Any],
+    catalog: dict[str, CatalogComponent],
+) -> list[str]:
+    """Validate ordering and exact manifest, lock, and projection sets."""
+    errors: list[str] = []
     if component_ids != sorted(component_ids) or len(
         set(component_ids)
     ) != len(component_ids):
         errors.append(
             'harness lock components must be sorted and unique by id.'
         )
+
     selected_ids = _selected_component_ids(manifest, catalog)
     if set(component_ids) != selected_ids:
         errors.append(
@@ -238,6 +287,28 @@ def validate_harness_projection(snapshot: Path) -> list[str]:
         )
     if not (snapshot / '.agents/harness').is_dir():
         errors.append('harness base directory is missing from the projection.')
+    return errors
+
+
+def validate_harness_projection(snapshot: Path) -> list[str]:
+    """Return staged lock/projection discrepancies with no working-tree input."""
+    lock = _read_json(snapshot / LOCK_PATH)
+    manifest = _read_json(snapshot / MANIFEST_PATH)
+    catalog = _catalog_components(_read_json(snapshot / CATALOG_PATH))
+    errors, managed_paths = _validate_lock_metadata(lock, manifest)
+
+    components = lock.get('components')
+    if not isinstance(components, list):
+        return [*errors, 'harness lock components must be a list.']
+    component_errors, component_ids = _validate_lock_components(
+        snapshot, components, catalog, managed_paths
+    )
+    errors.extend(component_errors)
+    errors.extend(
+        _validate_projection_sets(
+            snapshot, component_ids, managed_paths, manifest, catalog
+        )
+    )
     return errors
 
 

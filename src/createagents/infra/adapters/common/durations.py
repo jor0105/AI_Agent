@@ -18,6 +18,7 @@ def nanoseconds_to_milliseconds(nanoseconds: float | None) -> float | None:
 
     Returns:
         The duration in milliseconds, or None when the input was None.
+
     """
     if nanoseconds is None:
         return None

@@ -1,6 +1,6 @@
 import os
 import threading
-from typing import ClassVar, Optional, Self, cast
+from typing import ClassVar, Self
 
 from dotenv import load_dotenv
 
@@ -12,21 +12,24 @@ class EnvironmentConfig:
     safety in multi-threaded environments.
     """
 
-    _instance: ClassVar[Optional['EnvironmentConfig']] = None
+    _instance: ClassVar[Self | None] = None
     _initialized: ClassVar[bool] = False
     _cache: ClassVar[dict[str, str]] = {}
     _lock: ClassVar[threading.Lock] = threading.Lock()
 
     def __new__(cls) -> Self:
-        """Implements the singleton pattern with thread-safety."""
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
-        return cast('Self', cls._instance)
+        """Implement the singleton pattern with thread safety."""
+        with cls._lock:
+            instance = cls._instance
+
+            if instance is None:
+                instance = super().__new__(cls)
+                cls._instance = instance
+
+            return instance
 
     def __init__(self) -> None:
-        """Initializes and loads environment variables only once."""
+        """Initialize and load environment variables only once."""
         if not EnvironmentConfig._initialized:
             with EnvironmentConfig._lock:
                 if not EnvironmentConfig._initialized:
@@ -35,7 +38,7 @@ class EnvironmentConfig:
 
     @classmethod
     def get_api_key(cls, key: str) -> str:
-        """Retrieves an API key from environment variables.
+        """Retrieve an API key from environment variables.
 
         This method is thread-safe and reads directly from environment variables
         to prevent sensitive API keys from being held in memory cache.
@@ -48,6 +51,7 @@ class EnvironmentConfig:
 
         Raises:
             OSError: If the variable is not found or is empty.
+
         """
         if not cls._initialized:
             cls()
@@ -65,7 +69,7 @@ class EnvironmentConfig:
 
     @classmethod
     def get_env(cls, key: str, default: str | None = None) -> str | None:
-        """Retrieves an environment variable with an optional default value.
+        """Retrieve an environment variable with an optional default value.
 
         This method is thread-safe, cached, and validates for empty values.
 
@@ -80,6 +84,7 @@ class EnvironmentConfig:
             Only real environment values are cached. Caching a default would
             pin the first caller's fallback for every later caller, and would
             hide a variable defined after the first read.
+
         """
         if not cls._initialized:
             cls()
@@ -102,7 +107,7 @@ class EnvironmentConfig:
 
     @classmethod
     def get_int_env(cls, key: str, default: int) -> int:
-        """Retrieves an environment variable as an integer.
+        """Retrieve an environment variable as an integer.
 
         Args:
             key: The name of the environment variable.
@@ -111,6 +116,7 @@ class EnvironmentConfig:
         Returns:
             The parsed integer, or `default` if the variable is missing or
             does not hold a valid integer.
+
         """
         raw = cls.get_env(key, str(default))
         if raw is None:
@@ -123,13 +129,14 @@ class EnvironmentConfig:
 
     @classmethod
     def reload(cls) -> None:
-        """Reloads environment variables from the .env file.
+        """Reload environment variables from the .env file.
 
         This is useful for tests or runtime reconfigurations.
         This method is thread-safe.
 
         Example:
             >>> EnvironmentConfig.reload()
+
         """
         with cls._lock:
             load_dotenv(override=True)
@@ -137,7 +144,7 @@ class EnvironmentConfig:
 
     @classmethod
     def clear_cache(cls) -> None:
-        """Clears the variable cache. This method is thread-safe."""
+        """Clear the variable cache. This method is thread-safe."""
         with cls._lock:
             cls._cache.clear()
 

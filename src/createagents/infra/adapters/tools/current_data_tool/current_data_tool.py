@@ -1,6 +1,6 @@
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, ClassVar, Final
+from typing import Any, ClassVar, Final, override
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .....domain import BaseTool
@@ -27,6 +27,7 @@ def _get_zoneinfo(tz: str) -> ZoneInfo:
 
     Returns:
         ZoneInfo: The ZoneInfo object.
+
     """
     return ZoneInfo(tz)
 
@@ -49,6 +50,7 @@ class CurrentDateTool(BaseTool):
     Returns:
     - Error message starting with "[CurrentDateTool Error]" if validation fails
     - Otherwise, a string with the requested date/time information (sanitized)
+
     """
 
     name = 'currentdate'
@@ -98,12 +100,14 @@ class CurrentDateTool(BaseTool):
 
         Raises:
             ValueError: If the timezone is invalid.
+
         """
         try:
             return _get_zoneinfo(tz.strip())
         except ZoneInfoNotFoundError as e:
             raise ValueError(f'Invalid timezone: {tz}') from e
 
+    @override
     def execute(
         self,
         action: str,
@@ -118,6 +122,7 @@ class CurrentDateTool(BaseTool):
         Returns:
                 A string with the requested date/time, or an error message
                 starting with "[CurrentDateTool Error]".
+
         """
         self.__logger.info(
             'CurrentDateTool.execute called: action=%s, tz=%s',
@@ -178,6 +183,7 @@ class CurrentDateTool(BaseTool):
 
         Returns:
             str: The formatted error message.
+
         """
         msg = f'[CurrentDateTool Error] {details}'
         self.__logger.warning(msg)

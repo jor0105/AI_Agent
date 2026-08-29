@@ -28,6 +28,7 @@ async def run_tool_calls(
         messages: The conversation sent to the model, extended in place.
         executor: Executor holding the agent's tools.
         logger: Logger of the calling handler.
+
     """
     tool_calls = assistant_turn.tool_calls
     messages.append(assistant_turn)

@@ -59,7 +59,7 @@ apenas isso:
 
 ### Métodos
 
-#### `__init__(metrics_list: Optional[List[ChatMetrics]] = None)`
+#### `__init__(metrics_list: List[ChatMetrics] | None = None)`
 
 Inicializa o recorder com lista opcional de métricas. Quando omitida, cria a
 própria lista.

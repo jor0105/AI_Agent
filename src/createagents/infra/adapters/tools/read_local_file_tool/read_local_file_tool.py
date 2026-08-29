@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any, ClassVar, override
 
 from .....domain import BaseTool, FileReadException
 from ....config import EnvironmentConfig, LoggingConfig
@@ -70,6 +70,7 @@ class ReadLocalFileTool(BaseTool):
         Raises:
             RuntimeError: If tiktoken encoder initialization fails or
                           dependencies are missing.
+
         """
         if not DEPENDENCIES_AVAILABLE:
             raise RuntimeError(
@@ -82,6 +83,7 @@ class ReadLocalFileTool(BaseTool):
         self.__logger = LoggingConfig.get_logger(__name__)
         self.__encoding = initialize_tiktoken()
 
+    @override
     def execute(
         self,
         path: str,
@@ -102,6 +104,7 @@ class ReadLocalFileTool(BaseTool):
             - File too large: File exceeds size limit
             - Content exceeds token limit: Content has too many tokens
             - Various file-specific errors
+
         """
         self.__logger.info(
             "Executing file read: path='%s', max_tokens=%s",
@@ -111,29 +114,9 @@ class ReadLocalFileTool(BaseTool):
 
         try:
             file_path = Path(path).resolve()
-
-            allowed_dir = self._get_allowed_base_dir()
-            if not file_path.is_relative_to(allowed_dir):
-                return self.__format_error(
-                    'Access denied',
-                    f"Path '{path}' is outside the allowed directory '{allowed_dir}'",
-                )
-
-            if not file_path.exists():
-                return self.__format_error('File not found', path)
-
-            if not file_path.is_file():
-                return self.__format_error('Path is a directory', path)
-
-            # Validation: File size check (before reading)
-            file_size = file_path.stat().st_size
-            if file_size > self.MAX_FILE_SIZE_BYTES:
-                size_mb = file_size / (1024 * 1024)
-                max_mb = self.MAX_FILE_SIZE_BYTES / (1024 * 1024)
-                return self.__format_error(
-                    'File too large',
-                    f'{path} is {size_mb:.2f} MB (max: {max_mb:.2f} MB)',
-                )
+            validation_error = self.__validate_file_path(file_path, path)
+            if validation_error is not None:
+                return validation_error
 
             # Determine file type and read content
             extension = file_path.suffix.lstrip('.').lower() or 'txt'
@@ -180,6 +163,43 @@ class ReadLocalFileTool(BaseTool):
             self.__logger.exception(error_msg)
             return error_msg
 
+    def __validate_file_path(
+        self, file_path: Path, raw_path: str
+    ) -> str | None:
+        """Validate accessibility, existence, and size for a target file.
+
+        Args:
+            file_path: Resolved target path.
+            raw_path: Original path argument for error formatting.
+
+        Returns:
+            An error message string if invalid, or None if valid.
+
+        """
+        allowed_dir = self._get_allowed_base_dir()
+        if not file_path.is_relative_to(allowed_dir):
+            return self.__format_error(
+                'Access denied',
+                f"Path '{raw_path}' is outside the allowed directory '{allowed_dir}'",
+            )
+
+        if not file_path.exists():
+            return self.__format_error('File not found', raw_path)
+
+        if not file_path.is_file():
+            return self.__format_error('Path is a directory', raw_path)
+
+        file_size = file_path.stat().st_size
+        if file_size > self.MAX_FILE_SIZE_BYTES:
+            size_mb = file_size / (1024 * 1024)
+            max_mb = self.MAX_FILE_SIZE_BYTES / (1024 * 1024)
+            return self.__format_error(
+                'File too large',
+                f'{raw_path} is {size_mb:.2f} MB (max: {max_mb:.2f} MB)',
+            )
+
+        return None
+
     def __format_error(self, error_type: str, details: str) -> str:
         """Format a consistent error message.
 
@@ -189,6 +209,7 @@ class ReadLocalFileTool(BaseTool):
 
         Returns:
             Formatted error message string.
+
         """
         error_msg = f'[ReadLocalFileTool Error] {error_type}: {details}'
         self.__logger.error(error_msg)

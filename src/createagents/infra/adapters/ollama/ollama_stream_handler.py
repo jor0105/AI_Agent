@@ -36,6 +36,7 @@ class OllamaStreamHandler(BaseStreamHandler):
         Args:
             client: Transport used to reach the Ollama chat API.
             metrics_list: Optional shared list to append metrics to.
+
         """
         super().__init__(
             logger=LoggingConfig.get_logger(__name__),
@@ -51,7 +52,7 @@ class OllamaStreamHandler(BaseStreamHandler):
         config: dict[str, Any] | None,
         tools: list[BaseTool] | None,
     ) -> AsyncGenerator[str, None]:
-        """Yields tokens from the Ollama API as they arrive.
+        """Yield tokens from the Ollama API as they arrive.
 
         Supports tool calling with interrupted streaming: when tools are
         called during streaming, token yield is paused, tools are executed,
@@ -69,6 +70,7 @@ class OllamaStreamHandler(BaseStreamHandler):
 
         Raises:
             ChatException: If the streaming call fails.
+
         """
         start_time = time.time()
         session = ToolSession.prepare(
@@ -173,6 +175,7 @@ class OllamaStreamHandler(BaseStreamHandler):
             totals: The turn's accumulated usage, updated in place.
             chunk: The last chunk seen in this iteration's stream.
             iteration: The iteration number, for the debug trace.
+
         """
         prompt_eval_count = getattr(chunk, 'prompt_eval_count', None)
         eval_count = getattr(chunk, 'eval_count', None)

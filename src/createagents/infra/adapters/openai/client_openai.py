@@ -19,6 +19,7 @@ class ClientOpenAI:
 
         Returns:
             AsyncOpenAI: The configured OpenAI client.
+
         """
         return AsyncOpenAI(
             api_key=api_key, timeout=timeout, max_retries=max_retries

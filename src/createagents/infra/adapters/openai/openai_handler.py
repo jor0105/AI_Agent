@@ -42,6 +42,7 @@ class OpenAIHandler:
         Args:
             client: Transport used to reach the OpenAI Responses API.
             metrics_list: Optional shared list to append metrics to.
+
         """
         self.__client = client
         self.__logger = LoggingConfig.get_logger(__name__)
@@ -58,7 +59,7 @@ class OpenAIHandler:
         config: dict[str, Any] | None,
         tools: list[BaseTool] | None,
     ) -> str:
-        """Executes the tool calling loop.
+        """Execute the tool calling loop.
 
         Args:
             model: The name of the model.
@@ -75,6 +76,7 @@ class OpenAIHandler:
             ChatException: If the model requests tools the agent does not
                 have, returns an empty answer, exhausts the iteration budget,
                 or the call fails.
+
         """
         start_time = time.time()
         session = ToolSession.prepare(
@@ -167,6 +169,7 @@ class OpenAIHandler:
         Returns:
             The sentence that prefixes both the log record and the message of
             the resulting `ChatException`.
+
         """
         for error_types, reason in cls.__FAILURE_REASONS:
             if isinstance(error, error_types):

@@ -26,7 +26,7 @@ class Message:
     content: str
 
     def __post_init__(self) -> None:
-        """Validates the message data."""
+        """Validate the message data."""
         if not isinstance(self.role, MessageRole):
             # TypeError would be more precise, but `Message` is exported from
             # `createagents.domain` and callers already catch ValueError.
@@ -37,16 +37,17 @@ class Message:
             raise ValueError('The message content cannot be empty.')
 
     def to_dict(self) -> dict[str, str]:
-        """Converts the message to a dictionary.
+        """Convert the message to a dictionary.
 
         Returns:
             A dictionary with the role and content.
+
         """
         return {'role': self.role.value, 'content': self.content}
 
     @classmethod
     def from_dict(cls, data: dict[str, str]) -> 'Message':
-        """Creates a Message instance from a dictionary.
+        """Create a Message instance from a dictionary.
 
         Args:
             data: A dictionary containing 'role' and 'content'.
@@ -56,6 +57,7 @@ class Message:
 
         Raises:
             ValueError: If the dictionary does not contain the required fields.
+
         """
         if 'role' not in data or 'content' not in data:
             raise ValueError(

@@ -42,6 +42,7 @@ class Agent:
             InvalidProviderException: if the provider is not supported.
             UnsupportedConfigException: if a configuration key is unsupported.
             InvalidConfigTypeException: if a configuration value has an invalid type.
+
         """
         if not isinstance(self.history, History):
             self.history = History()

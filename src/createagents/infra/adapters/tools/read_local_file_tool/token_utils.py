@@ -17,6 +17,7 @@ def initialize_tiktoken() -> 'tiktoken.Encoding':
 
     Raises:
         RuntimeError: If tiktoken is not installed or initialization fails.
+
     """
     try:
         import tiktoken
@@ -48,6 +49,7 @@ def count_tokens(text: str, encoding: 'tiktoken.Encoding') -> int:
 
     Returns:
         Number of tokens in the text.
+
     """
     try:
         return len(encoding.encode(text))

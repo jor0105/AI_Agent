@@ -48,6 +48,7 @@ class ToolSession:
 
         Returns:
             A populated session, or an empty one when `tools` is falsy.
+
         """
         if not tools:
             return cls()

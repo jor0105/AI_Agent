@@ -26,6 +26,7 @@ class History:
 
         Raises:
             ValueError: If max_size is not positive.
+
         """
         if not isinstance(self.max_size, int) or self.max_size <= 0:
             raise ValueError(
@@ -37,12 +38,13 @@ class History:
         self._lock = Lock()
 
     def add(self, message: Message) -> None:
-        """Adds a message to the history.
+        """Add a message to the history.
 
         The deque with `maxlen` automatically maintains the size limit.
 
         Args:
             message: The message to be added.
+
         """
         if not isinstance(message, Message):
             raise TypeError('Only Message objects can be added.')
@@ -51,60 +53,66 @@ class History:
             self._messages.append(message)
 
     def add_user_message(self, content: str) -> None:
-        """A shortcut to add a user message.
+        """Add a user message as a shortcut.
 
         Args:
             content: The content of the message.
+
         """
         message = Message(role=MessageRole.USER, content=content)
         self.add(message)
 
     def add_assistant_message(self, content: str) -> None:
-        """A shortcut to add an assistant message.
+        """Add an assistant message as a shortcut.
 
         Args:
             content: The content of the message.
+
         """
         message = Message(role=MessageRole.ASSISTANT, content=content)
         self.add(message)
 
     def add_system_message(self, content: str) -> None:
-        """A shortcut to add a system message.
+        """Add a system message as a shortcut.
 
         Args:
             content: The content of the message.
+
         """
         message = Message(role=MessageRole.SYSTEM, content=content)
         self.add(message)
 
     def add_tool_message(self, content: str) -> None:
-        """A shortcut to add a tool message (tool execution result).
+        """Add a tool message as a shortcut.
 
         Args:
             content: The content of the tool result.
+
         """
         message = Message(role=MessageRole.TOOL, content=content)
         self.add(message)
 
     def clear(self) -> None:
-        """Clears all messages from the history."""
+        """Clear all messages from the history."""
         with self._lock:
             self._messages.clear()
 
     def get_messages(self) -> list[Message]:
-        """Returns a copy of the message list.
+        """Return a copy of the message list.
 
         Returns:
             A list of messages.
+
         """
         with self._lock:
             return list(self._messages)
 
     def to_dict_list(self) -> list[dict[str, str]]:
-        """Converts the history to a list of dictionaries.
+        """Convert the history to a list of dictionaries.
 
         Returns:
             A list of dictionaries, each with a role and content.
+
         """
         with self._lock:
             return [message.to_dict() for message in self._messages]
@@ -113,7 +121,7 @@ class History:
     def from_dict_list(
         cls, data: list[dict[str, str]], max_size: int
     ) -> 'History':
-        """Creates a History instance from a list of dictionaries.
+        """Create a History instance from a list of dictionaries.
 
         Args:
             data: A list of dictionaries, each with 'role' and 'content'.
@@ -121,6 +129,7 @@ class History:
 
         Returns:
             A new History instance.
+
         """
         history = cls(max_size=max_size)
         for item in data:

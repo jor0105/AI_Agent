@@ -35,6 +35,90 @@ PACKAGE = 'createagents'
 # would re-open the door this hook exists to keep shut.
 
 
+class _TraversalState:
+    """Mutable state for one iterative Tarjan traversal."""
+
+    def __init__(self) -> None:
+        self.index: dict[str, int] = {}
+        self.low: dict[str, int] = {}
+        self.on_stack: set[str] = set()
+        self.stack: list[str] = []
+        self.cycles: list[list[str]] = []
+        self.counter = 0
+
+
+def _initialize_node(node: str, state: _TraversalState) -> None:
+    """Register a node when the traversal reaches it for the first time."""
+    state.index[node] = state.counter
+    state.low[node] = state.counter
+    state.counter += 1
+    state.stack.append(node)
+    state.on_stack.add(node)
+
+
+def _next_unvisited_child(
+    node: str,
+    child_index: int,
+    adjacency: dict[str, list[str]],
+    state: _TraversalState,
+) -> tuple[str | None, int]:
+    """Return the next child that requires traversal and update back edges."""
+    children = adjacency.get(node, [])
+    for index in range(child_index, len(children)):
+        child = children[index]
+        if child not in state.index:
+            return child, index + 1
+        if child in state.on_stack:
+            state.low[node] = min(state.low[node], state.index[child])
+    return None, len(children)
+
+
+def _record_component(
+    node: str,
+    adjacency: dict[str, list[str]],
+    state: _TraversalState,
+) -> None:
+    """Pop and record a completed strongly connected component if cyclic."""
+    component: list[str] = []
+    while True:
+        member = state.stack.pop()
+        state.on_stack.discard(member)
+        component.append(member)
+        if member == node:
+            break
+    if len(component) > 1 or node in adjacency.get(node, []):
+        state.cycles.append(sorted(component))
+
+
+def _walk_root(
+    root: str,
+    adjacency: dict[str, list[str]],
+    state: _TraversalState,
+) -> None:
+    """Traverse one root iteratively and update Tarjan low-link values."""
+    work: list[tuple[str, int]] = [(root, 0)]
+    while work:
+        node, child_index = work[-1]
+        if child_index == 0:
+            _initialize_node(node, state)
+
+        child, next_index = _next_unvisited_child(
+            node, child_index, adjacency, state
+        )
+        if child is not None:
+            work[-1] = (node, next_index)
+            work.append((child, 0))
+            continue
+
+        if state.low[node] == state.index[node]:
+            _record_component(node, adjacency, state)
+
+        work.pop()
+        if work:
+            parent = work[-1][0]
+            state.low[parent] = min(state.low[parent], state.low[node])
+
+
 def find_cycles(graph: grimp.ImportGraph) -> list[list[str]]:
     """Return every cyclic strongly connected component of the graph.
 
@@ -46,57 +130,13 @@ def find_cycles(graph: grimp.ImportGraph) -> list[list[str]]:
     adjacency = {
         m: sorted(graph.find_modules_directly_imported_by(m)) for m in modules
     }
-
-    index: dict[str, int] = {}
-    low: dict[str, int] = {}
-    on_stack: set[str] = set()
-    stack: list[str] = []
-    cycles: list[list[str]] = []
-    counter = 0
+    state = _TraversalState()
 
     for root in modules:
-        if root in index:
-            continue
-        work: list[tuple[str, int]] = [(root, 0)]
-        while work:
-            node, child_i = work[-1]
-            if child_i == 0:
-                index[node] = low[node] = counter
-                counter += 1
-                stack.append(node)
-                on_stack.add(node)
+        if root not in state.index:
+            _walk_root(root, adjacency, state)
 
-            recursed = False
-            children = adjacency.get(node, ())
-            for i in range(child_i, len(children)):
-                child = children[i]
-                if child not in index:
-                    work[-1] = (node, i + 1)
-                    work.append((child, 0))
-                    recursed = True
-                    break
-                if child in on_stack:
-                    low[node] = min(low[node], index[child])
-            if recursed:
-                continue
-
-            if low[node] == index[node]:
-                component = []
-                while True:
-                    member = stack.pop()
-                    on_stack.discard(member)
-                    component.append(member)
-                    if member == node:
-                        break
-                if len(component) > 1 or node in adjacency.get(node, ()):
-                    cycles.append(sorted(component))
-
-            work.pop()
-            if work:
-                parent = work[-1][0]
-                low[parent] = min(low[parent], low[node])
-
-    return cycles
+    return state.cycles
 
 
 def main() -> int:

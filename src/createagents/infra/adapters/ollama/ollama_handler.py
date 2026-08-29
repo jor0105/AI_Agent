@@ -40,6 +40,7 @@ class OllamaHandler:
         Args:
             client: Transport used to reach the Ollama chat API.
             metrics_list: Optional shared list to append metrics to.
+
         """
         self.__client = client
         self.__logger = LoggingConfig.get_logger(__name__)
@@ -55,7 +56,7 @@ class OllamaHandler:
         config: dict[str, Any] | None,
         tools: list[BaseTool] | None,
     ) -> str:
-        """Executes the tool calling loop.
+        """Execute the tool calling loop.
 
         Args:
             model: The name of the model.
@@ -70,6 +71,7 @@ class OllamaHandler:
         Raises:
             ChatException: If the model requests tools the agent does not
                 have, keeps answering blank, or exhausts the iteration budget.
+
         """
         start_time = time.time()
         session = ToolSession.prepare(
@@ -172,6 +174,7 @@ class OllamaHandler:
 
         Returns:
             The retry response.
+
         """
         retry_messages = [
             *messages,
@@ -194,6 +197,7 @@ class OllamaHandler:
 
         Returns:
             The summary, or None when no tool produced any output.
+
         """
         try:
             tool_results = [

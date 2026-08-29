@@ -36,7 +36,7 @@ class AgentComposer:
         tools: Sequence[str | BaseTool] | None = None,
         history_max_size: int = 10,
     ) -> Agent:
-        """Creates a new agent using the CreateAgentUseCase.
+        """Create a new agent using the CreateAgentUseCase.
 
         Args:
             provider: The specific provider ("openai" or "ollama").
@@ -44,10 +44,12 @@ class AgentComposer:
             name: The name of the agent (optional).
             instructions: The agent's instructions (optional).
             config: Extra agent configurations, such as `max_tokens` and `temperature` (optional).
+            tools: Tool names or instances available to the agent (optional).
             history_max_size: The maximum history size (default: 10).
 
         Returns:
             A new agent instance.
+
         """
         AgentComposer.__logger.info(
             'Composing agent creation - Provider: %s, Model: %s, Name: %s',
@@ -89,13 +91,14 @@ class AgentComposer:
 
     @staticmethod
     def create_chat_use_case(provider: str) -> ChatWithAgentUseCase:
-        """Creates the ChatWithAgentUseCase with its dependencies injected.
+        """Create the ChatWithAgentUseCase with its dependencies injected.
 
         Args:
             provider: The specific provider ("openai" or "ollama").
 
         Returns:
             A configured ChatWithAgentUseCase.
+
         """
         AgentComposer.__logger.debug(
             'Composing chat use case - Provider: %s', provider
@@ -112,10 +115,11 @@ class AgentComposer:
 
     @staticmethod
     def create_get_config_use_case() -> GetAgentConfigUseCase:
-        """Creates the GetAgentConfigUseCase.
+        """Create the GetAgentConfigUseCase.
 
         Returns:
             A configured GetAgentConfigUseCase.
+
         """
         AgentComposer.__logger.debug('Composing get config use case')
         return GetAgentConfigUseCase(logger=create_logger(__name__))
@@ -124,12 +128,13 @@ class AgentComposer:
     def create_get_system_available_tools_use_case() -> (
         GetSystemAvailableToolsUseCase
     ):
-        """Creates the GetSystemAvailableToolsUseCase.
+        """Create the GetSystemAvailableToolsUseCase.
 
         This use case returns only system tools provided by the framework.
 
         Returns:
             A configured GetSystemAvailableToolsUseCase.
+
         """
         AgentComposer.__logger.debug(
             'Composing get system available tools use case'

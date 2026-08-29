@@ -10,17 +10,19 @@ class GetAgentConfigUseCase:
 
         Args:
             logger: Optional logger injected by the composition root.
+
         """
         self.__logger = logger or NullLogger()
 
     def execute(self, agent: Agent) -> AgentConfigOutputDTO:
-        """Returns the agent's configurations as a DTO.
+        """Return the agent's configurations as a DTO.
 
         Args:
             agent: The agent instance.
 
         Returns:
             A DTO containing the agent's configurations.
+
         """
         self.__logger.debug(
             'Retrieving configuration for agent - Name: %s, Provider: %s, Model: %s',

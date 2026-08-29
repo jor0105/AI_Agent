@@ -13,5 +13,6 @@ class InputReader:
 
         Returns:
             The user's input as a string.
+
         """
         return input(prompt)

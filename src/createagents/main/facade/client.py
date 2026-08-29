@@ -28,7 +28,7 @@ class CreateAgent:
         tools: Sequence[str | BaseTool] | None = None,
         history_max_size: int = 10,
     ) -> None:
-        """Initializes the controller by creating an agent and its dependencies.
+        """Initialize the controller by creating an agent and its dependencies.
 
         Args:
             provider: The specific provider ("openai" or "ollama"), which
@@ -41,6 +41,7 @@ class CreateAgent:
             tools: Tools the agent may call, given as registered system tool
                 names or `BaseTool` instances (optional).
             history_max_size: The maximum history size (default: 10).
+
         """
         self.__logger = LoggingConfig.get_logger(__name__)
 
@@ -80,7 +81,7 @@ class CreateAgent:
         self,
         message: str,
     ) -> str | StreamingResponseDTO:
-        """Sends a message to the agent and returns the response.
+        """Send a message to the agent and return the response.
 
         The response appears token-by-token in real-time when stream=True is configured,
         or as a complete response when stream=False (default).
@@ -96,6 +97,7 @@ class CreateAgent:
         Example:
             >>> agent = CreateAgent(provider="openai", model="gpt-5-nano")
             >>> print(await agent.chat("Hello!"))  # Works seamlessly with or without streaming
+
         """
         self.__logger.debug(
             'Chat request received - Message length: %s chars', len(message)
@@ -124,10 +126,11 @@ class CreateAgent:
         return response
 
     def get_configs(self) -> dict[str, Any]:
-        """Returns the agent's configurations.
+        """Return the agent's configurations.
 
         Returns:
             A dictionary containing the agent's configurations.
+
         """
         self.__logger.debug('Retrieving agent configurations')
         output_dto = self.__get_config_use_case.execute(self.__agent)
@@ -148,6 +151,7 @@ class CreateAgent:
 
         Returns:
             A dict of all tool names and descriptions available for this agent.
+
         """
         self.__logger.debug(
             'Retrieving all tools for this agent (system + agent-specific)'
@@ -173,13 +177,14 @@ class CreateAgent:
 
         Returns:
             A dict of system tool names and descriptions.
+
         """
         self.__logger.debug('Retrieving system available tools')
         output_dto: dict[str, str] = self.__get_system_tools_use_case.execute()
         return output_dto
 
     def clear_history(self) -> None:
-        """Clears the agent's history."""
+        """Clear the agent's history."""
         history_size = len(self.__agent.history)
         self.__agent.clear_history()
         self.__logger.info(
@@ -187,23 +192,25 @@ class CreateAgent:
         )
 
     def get_metrics(self) -> list[ChatMetrics]:
-        """Returns the performance metrics of the chat adapter.
+        """Return the performance metrics of the chat adapter.
 
         Returns:
             A list of metrics collected during interactions.
+
         """
         metrics: list[ChatMetrics] = self.__chat_use_case.get_metrics()
         self.__logger.debug('Retrieved %s metric(s)', len(metrics))
         return metrics
 
     def export_metrics_json(self, filepath: str | None = None) -> str:
-        """Exports metrics in JSON format.
+        """Export metrics in JSON format.
 
         Args:
             filepath: The file path to save the metrics (optional).
 
         Returns:
             A JSON string with the metrics.
+
         """
         self.__logger.debug(
             'Exporting metrics to JSON - Filepath: %s',
@@ -224,13 +231,14 @@ class CreateAgent:
         return json_result
 
     def export_metrics_prometheus(self, filepath: str | None = None) -> str:
-        """Exports metrics in Prometheus format.
+        """Export metrics in Prometheus format.
 
         Args:
             filepath: The file path to save the metrics (optional).
 
         Returns:
             A string in Prometheus format with the metrics.
+
         """
         self.__logger.debug(
             'Exporting metrics to Prometheus - Filepath: %s',
@@ -262,6 +270,7 @@ class CreateAgent:
         Example:
             >>> agent = CreateAgent(provider="openai", model="gpt-4")
             >>> agent.start_cli()  # Starts interactive chat
+
         """
         # Keep the terminal stack lazy for consumers that never open a CLI.
         from ...presentation.cli import ChatCLIApplication

@@ -39,11 +39,12 @@ class ChatWithAgentUseCase:
         chat_repository: ChatRepository,
         logger: LoggerInterface | None = None,
     ) -> None:
-        """Initializes the Use Case with its dependencies.
+        """Initialize the use case with its dependencies.
 
         Args:
             chat_repository: Repository for AI communication.
             logger: Optional logger injected by the composition root.
+
         """
         self.__chat_repository = chat_repository
         self.__logger = logger or NullLogger()
@@ -51,7 +52,7 @@ class ChatWithAgentUseCase:
     async def execute(
         self, agent: Agent, input_dto: ChatInputDTO
     ) -> ChatOutputDTO | AsyncGenerator[str, None]:
-        """Sends a message to the agent and returns the response.
+        """Send a message to the agent and return the response.
 
         Args:
             agent: The agent instance.
@@ -65,6 +66,7 @@ class ChatWithAgentUseCase:
         Raises:
             ValueError: If the input data is invalid.
             ChatException: If an error occurs during AI communication.
+
         """
         input_dto.validate()
 
@@ -125,7 +127,7 @@ class ChatWithAgentUseCase:
         input_dto: ChatInputDTO,
         stream: AsyncGenerator[str, None],
     ) -> AsyncGenerator[str, None]:
-        """Handles streaming responses by yielding tokens and preserving chat history.
+        """Handle streaming responses by yielding tokens and preserving chat history.
 
         This method creates a wrapper generator that:
         1. Yields tokens as they arrive from the underlying stream
@@ -142,6 +144,7 @@ class ChatWithAgentUseCase:
 
         Raises:
             ChatException: If an error occurs during streaming.
+
         """
         full_response = []
 
@@ -179,9 +182,10 @@ class ChatWithAgentUseCase:
             ) from e
 
     def get_metrics(self) -> list[ChatMetrics]:
-        """Returns the metrics collected by the chat repository.
+        """Return the metrics collected by the chat repository.
 
         Returns:
             A list of metrics collected during interactions.
+
         """
         return self.__chat_repository.get_metrics()

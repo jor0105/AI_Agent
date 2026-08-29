@@ -15,10 +15,10 @@ def __init__(
     self,
     provider: str,
     model: str,
-    name: Optional[str] = None,
-    instructions: Optional[str] = None,
-    config: Optional[Dict[str, Any]] = None,
-    tools: Optional[Sequence[Union[str, BaseTool]]] = None,
+    name: str | None = None,
+    instructions: str | None = None,
+    config: Dict[str, Any] | None = None,
+    tools: Sequence[Union[str, BaseTool]] | None = None,
     history_max_size: int = 10,
 ) -> None: ...
 ```
@@ -245,7 +245,7 @@ ______________________________________________________________________
 Exports collected metrics to JSON.
 
 ```python
-def export_metrics_json(filepath: Optional[str] = None) -> str: ...
+def export_metrics_json(filepath: str | None = None) -> str: ...
 ```
 
 ______________________________________________________________________
@@ -255,7 +255,7 @@ ______________________________________________________________________
 Exports collected metrics in Prometheus format.
 
 ```python
-def export_metrics_prometheus(filepath: Optional[str] = None) -> str: ...
+def export_metrics_prometheus(filepath: str | None = None) -> str: ...
 ```
 
 ______________________________________________________________________

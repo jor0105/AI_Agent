@@ -19,6 +19,7 @@ def _validate_tool_reference(tool: str | BaseTool) -> None:
     Raises:
         InvalidBaseToolException: If the reference is neither a non-empty
             string nor a well-formed `BaseTool`.
+
     """
     if isinstance(tool, str):
         if not tool.strip():
@@ -59,6 +60,7 @@ class CreateAgentInputDTO:
         Raises:
             ValueError: If any field validation fails.
             InvalidBaseToolException: If a tool reference is malformed.
+
         """
         if not isinstance(self.provider, str) or not self.provider.strip():
             raise ValueError(
@@ -118,6 +120,7 @@ class AgentConfigOutputDTO:
 
         Returns:
             Dict[str, Any]: The dictionary representation of the DTO.
+
         """
         tool_names = None
         if self.tools:
@@ -146,6 +149,7 @@ class ChatInputDTO:
 
         Raises:
             ValueError: If the message is invalid.
+
         """
         if not isinstance(self.message, str) or not self.message.strip():
             raise ValueError(
@@ -164,6 +168,7 @@ class ChatOutputDTO:
 
         Returns:
             Dict: The dictionary representation of the DTO.
+
         """
         return {
             'response': self.response,

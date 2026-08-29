@@ -25,6 +25,7 @@ class TerminalFormatter:
 
         Returns:
             The visual width of the text in terminal columns.
+
         """
         # Strip ANSI codes
         ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
@@ -43,6 +44,7 @@ class TerminalFormatter:
 
         Returns:
             Terminal width in columns, defaults to 100 if unable to determine.
+
         """
         try:
             return shutil.get_terminal_size().columns
@@ -62,6 +64,7 @@ class TerminalFormatter:
 
         Returns:
             List of wrapped text lines.
+
         """
         if not text.strip():
             return ['']
@@ -96,6 +99,7 @@ class TerminalFormatter:
 
         Returns:
             Formatted text with rounded box borders.
+
         """
         terminal_width = TerminalFormatter.get_terminal_width()
         max_content_width = min(100, terminal_width - 10)

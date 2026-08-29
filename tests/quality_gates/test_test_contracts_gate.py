@@ -165,6 +165,23 @@ def test_factory_cache():
             for violation in violations
         )
 
+    def test_detects_transitive_factory_clear_cache_aliases(self):
+        source = """
+from createagents.infra import ChatAdapterFactory as Factory
+factory = later_factory
+later_factory = Factory
+def test_factory_cache():
+    factory.clear_cache()
+    assert result == 1
+"""
+
+        violations = gate.audit_source(source, 'tests/test_example.py')
+
+        assert any(
+            violation.category == 'RETIRED_FACTORY_CACHE'
+            for violation in violations
+        )
+
     def test_allows_non_factory_clear_cache_calls(self):
         source = """
 def test_valid_cache_reset():

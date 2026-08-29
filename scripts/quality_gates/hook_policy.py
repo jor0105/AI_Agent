@@ -76,6 +76,7 @@ _FORBIDDEN_ENTRIES = (
     'harness-sync',
     '.agents/skills/local-quality-gates/scripts/',
     'git commit --no-verify',
+    'pydocstyle',
 )
 
 
@@ -148,12 +149,19 @@ def _validate_hook_commands(blocks: dict[str, _HookBlock]) -> list[str]:
     return errors
 
 
-def _validate_hook_coverage(blocks: dict[str, _HookBlock]) -> list[str]:
-    """Require core gates while allowing normal maintenance of their details."""
-    errors: list[str] = []
+def _validate_required_hooks(blocks: dict[str, _HookBlock]) -> list[str]:
+    """Return an error when a required hook is absent."""
     missing = sorted(_REQUIRED_HOOKS - blocks.keys())
-    if missing:
-        errors.append(f'missing required hooks: {", ".join(missing)}.')
+    return (
+        [f'missing required hooks: {", ".join(missing)}.'] if missing else []
+    )
+
+
+def _validate_mutating_hook_exclusions(
+    blocks: dict[str, _HookBlock],
+) -> list[str]:
+    """Keep generated mirrors outside every mutating hook."""
+    errors: list[str] = []
     for hook_id in _MUTATING_HOOKS:
         block = blocks.get(hook_id)
         if block is None:
@@ -169,18 +177,33 @@ def _validate_hook_coverage(blocks: dict[str, _HookBlock]) -> list[str]:
                 f'{hook_id}: generated mirrors must remain excluded: '
                 f'{", ".join(missing_mirrors)}.'
             )
+    return errors
+
+
+def _validate_gitleaks_redaction(blocks: dict[str, _HookBlock]) -> list[str]:
+    """Require secret redaction in gitleaks output."""
     gitleaks = blocks.get('gitleaks')
     if gitleaks is not None and '--redact' not in gitleaks.value('args'):
-        errors.append(
+        return [
             'gitleaks must retain --redact to avoid secret disclosure in logs.'
-        )
+        ]
+    return []
+
+
+def _validate_ruff_autofix(blocks: dict[str, _HookBlock]) -> list[str]:
+    """Require Ruff's safe and visible automatic-fix behavior."""
     ruff_check = blocks.get('ruff-check')
-    if ruff_check is not None:
-        args = ruff_check.value('args')
-        if '--fix' not in args or '--exit-non-zero-on-fix' not in args:
-            errors.append(
-                'ruff-check must retain its safe auto-fix failure mode.'
-            )
+    if ruff_check is None:
+        return []
+    args = ruff_check.value('args')
+    if '--fix' in args and '--exit-non-zero-on-fix' in args:
+        return []
+    return ['ruff-check must retain its safe auto-fix failure mode.']
+
+
+def _validate_explicit_stages(blocks: dict[str, _HookBlock]) -> list[str]:
+    """Keep pre-push and commit-message hooks on their owned stages."""
+    errors: list[str] = []
     for hook_id, block in blocks.items():
         if hook_id in _PRE_PUSH_HOOKS:
             expected_stage = '[pre-push]'
@@ -192,10 +215,26 @@ def _validate_hook_coverage(blocks: dict[str, _HookBlock]) -> list[str]:
             errors.append(
                 f'{hook_id}: must remain in the {expected_stage} hook stage.'
             )
+    return errors
+
+
+def _validate_always_run_hooks(
+    blocks: dict[str, _HookBlock],
+) -> list[str]:
+    """Require complete-index gates to run even without matching filenames."""
+    errors: list[str] = []
     for hook_id in _ALWAYS_RUN_HOOKS:
         block = blocks.get(hook_id)
         if block is not None and block.value('always_run') != 'true':
             errors.append(f'{hook_id}: must remain always_run.')
+    return errors
+
+
+def _validate_index_only_hooks(
+    blocks: dict[str, _HookBlock],
+) -> list[str]:
+    """Require index-aware gates to inspect the staged snapshot themselves."""
+    errors: list[str] = []
     for hook_id in _INDEX_ONLY_HOOKS:
         block = blocks.get(hook_id)
         if block is not None and block.value('pass_filenames') != 'false':
@@ -203,3 +242,16 @@ def _validate_hook_coverage(blocks: dict[str, _HookBlock]) -> list[str]:
                 f'{hook_id}: must inspect the complete staged index, not filenames.'
             )
     return errors
+
+
+def _validate_hook_coverage(blocks: dict[str, _HookBlock]) -> list[str]:
+    """Require core gates while allowing normal maintenance of their details."""
+    return [
+        *_validate_required_hooks(blocks),
+        *_validate_mutating_hook_exclusions(blocks),
+        *_validate_gitleaks_redaction(blocks),
+        *_validate_ruff_autofix(blocks),
+        *_validate_explicit_stages(blocks),
+        *_validate_always_run_hooks(blocks),
+        *_validate_index_only_hooks(blocks),
+    ]

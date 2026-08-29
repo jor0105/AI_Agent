@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, override
 
 from .base_command import CommandHandler
 
@@ -15,12 +15,14 @@ class ConfigsCommandHandler(CommandHandler):
     This follows SRP by handling only config-related functionality.
     """
 
+    @override
     def execute(self, agent: 'AgentFacade', user_input: str) -> None:
         """Execute the configs command.
 
         Args:
             agent: The agent facade.
             user_input: The user's input string.
+
         """
         config_str = '## Agent Configuration\n\n'
         for key, value in agent.get_configs().items():
@@ -40,6 +42,7 @@ class ConfigsCommandHandler(CommandHandler):
 
         Returns:
             The Markdown block for this entry, ending in a blank line.
+
         """
         block = f'**{key}:** {len(history)} messages in history\n\n'
         for message in history:
@@ -56,6 +59,7 @@ class ConfigsCommandHandler(CommandHandler):
             block += f'  - **{role}**: {single_line}\n'
         return block + '\n'
 
+    @override
     def get_aliases(self) -> list[str]:
         """Get configs command aliases."""
         return ['/configs', 'get_configs']

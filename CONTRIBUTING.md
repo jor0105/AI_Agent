@@ -33,7 +33,7 @@ This document provides a quick entrypoint for contributors. For the complete, in
 6. **Add or update tests** to verify your changes and prevent regressions.
 7. **Run local validation**:
    ```bash
-   # Run all pre-commit quality hooks (36 hooks)
+   # Run all pre-commit quality hooks (37 hooks)
    uv run --locked --no-sync pre-commit run --all-files
 
    # Run pre-push quality hooks (3 hooks: mypy, pytest-unit, pip-audit)
@@ -54,9 +54,9 @@ This document provides a quick entrypoint for contributors. For the complete, in
 
 ## Quality Gates and Hook Breakdown
 
-The repository enforces **40 automated hooks** via `.pre-commit-config.yaml`:
+The repository enforces **41 automated hooks** via `.pre-commit-config.yaml`:
 
-- **36 pre-commit hooks**: Code formatting (Ruff, mdformat), linting (Ruff, yamllint, actionlint, codespell), syntax/file integrity, secret scanning (gitleaks), static security (Bandit), import direction (`import-linter`), cycle detection, and docstrings (`pydocstyle`).
+- **37 pre-commit hooks**: Code formatting (Ruff, mdformat), linting (Ruff, yamllint, actionlint, codespell), syntax/file integrity, secret scanning (gitleaks), static security (Bandit), import direction (`import-linter`), cycle detection, and docstrings (Ruff D rules).
 - **3 pre-push hooks**: Full static type checking (`mypy`), safe unit test suite with 85% coverage floor (`pytest-unit`), and dependency audit (`pip-audit`).
 - **1 commit-msg hook**: Conventional Commits format validation.
 

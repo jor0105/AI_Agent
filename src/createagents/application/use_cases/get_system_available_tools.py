@@ -19,17 +19,19 @@ class GetSystemAvailableToolsUseCase:
         Args:
             tool_registry: Port that exposes the framework's tool catalog.
             logger: Optional logger injected by the composition root.
+
         """
         self.__tool_registry = tool_registry
         self.__logger = logger or NullLogger()
 
     def execute(self) -> dict[str, str]:
-        """Returns a dictionary of available system tools.
+        """Return a dictionary of available system tools.
 
         System tools are built-in tools provided by the AI Agent framework.
 
         Returns:
             Dict[str, str]: Dictionary mapping system tool names to descriptions.
+
         """
         self.__logger.debug('Retrieving available system tools.')
         system_tools: dict[str, str] = self.__tool_registry.get_system_tools()

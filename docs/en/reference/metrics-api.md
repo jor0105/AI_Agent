@@ -57,7 +57,7 @@ Abstract base for metrics aggregation across provider handlers:
 
 ### Methods
 
-#### `__init__(metrics_list: Optional[List[ChatMetrics]] = None)`
+#### `__init__(metrics_list: List[ChatMetrics] | None = None)`
 
 Initializes the recorder with an optional list of metrics. When omitted, creates a fresh internal list.
 

@@ -67,6 +67,7 @@ class OllamaClient:
 
         Returns:
             The complete chat response.
+
         """
         result = await self.__call_with_retry(
             model, messages, config, tools, False
@@ -90,6 +91,7 @@ class OllamaClient:
 
         Returns:
             An async iterator over the response chunks.
+
         """
         result = await self.__call_with_retry(
             model, messages, config, tools, True

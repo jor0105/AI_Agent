@@ -27,6 +27,7 @@ def _partition_quietly(
 
     Returns:
         The elements returned by the partitioner.
+
     """
     # Redirect stderr to capture warnings from C libraries
     stderr_capture = io.StringIO()
@@ -91,6 +92,7 @@ def _group_pdf_elements_by_page(elements: Any) -> list[str]:
 
     Returns:
         Text blocks, one per page when page metadata is available.
+
     """
     content_parts: list[str] = []
     current_page = None
@@ -145,6 +147,7 @@ def read_pdf_file(file_path: Path) -> str:
     Raises:
         FileReadException: If PDF reading fails.
         RuntimeError: If unstructured is not installed.
+
     """
     try:
         from unstructured.partition.pdf import (
@@ -206,6 +209,7 @@ def read_document_file(file_path: Path) -> str:
     Raises:
         FileReadException: If document reading fails.
         RuntimeError: If unstructured is not installed.
+
     """
     try:
         from unstructured.partition.auto import (

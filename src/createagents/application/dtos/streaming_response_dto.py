@@ -13,6 +13,7 @@ class StreamingResponseDTO:
 
         Args:
             generator: AsyncGenerator that yields response tokens as strings.
+
         """
         self._generator = generator
         self._consumed = False

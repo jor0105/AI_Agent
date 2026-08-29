@@ -81,7 +81,7 @@ commands, testing, governance, and harness details.
 | Manifest and tool configuration | `pyproject.toml`                                                 | dependency metadata, Python range, build backend, and tool configuration                 |
 | Resolved dependencies           | `uv.lock`                                                        | uv-owned lockfile; never hand-edit                                                       |
 | Test configuration              | `pytest.ini`                                                     | test paths, markers, options, and the 85% coverage floor                                 |
-| Local quality hooks             | `.pre-commit-config.yaml`                                        | 40 hooks: 36 pre-commit, 3 pre-push, and 1 commit-msg                                    |
+| Local quality hooks             | `.pre-commit-config.yaml`                                        | 41 hooks: 37 pre-commit, 3 pre-push, and 1 commit-msg                                    |
 | Public environment names        | `.env.example`                                                   | names only for provider, retry, tool-iteration, logging, and file-tool settings          |
 | Documentation configuration     | `mkdocs.yml`                                                     | MkDocs Material site configuration and navigation                                        |
 | CI, docs, and release workflows | `.github/workflows/` (`pipeline.yml`, `docs.yml`, `publish.yml`) | quality gates/tests (`pipeline.yml`), docs deploy (`docs.yml`), and PyPI (`publish.yml`) |
@@ -93,11 +93,11 @@ commands, testing, governance, and harness details.
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | Install dependencies          | `uv sync --locked`                                                                                                                       |
 | Install hooks                 | `uv run --locked --no-sync pre-commit install --install-hooks`                                                                           |
-| Pre-commit hooks (36)         | `uv run --locked --no-sync pre-commit run --all-files`                                                                                   |
+| Pre-commit hooks (37)         | `uv run --locked --no-sync pre-commit run --all-files`                                                                                   |
 | Pre-push hooks (3)            | `uv run --locked --no-sync pre-commit run --all-files --hook-stage pre-push`                                                             |
 | Safe local tests and coverage | `uv run --locked --no-sync pytest -m 'not integration and not slow' -ra --cov=src --cov-fail-under=85`                                   |
 | Type checking                 | `uv run --locked --no-sync mypy src --pretty`                                                                                            |
-| Docstring style               | `uv run --locked --no-sync pydocstyle src --convention=google --add-ignore=D100,D104,D107`                                               |
+| Docstring style               | `uv run --locked --no-sync ruff check src --select D --ignore D100,D104,D107`                                                            |
 | Source security scan          | `uv run --locked --no-sync bandit -c pyproject.toml -r src -ll`                                                                          |
 | Dependency audit              | `uv run --locked --no-sync pip-audit`                                                                                                    |
 | Strict documentation build    | `uv run --locked --no-sync mkdocs build --strict`                                                                                        |
@@ -133,7 +133,8 @@ runtime libraries `openai`, `ollama`, `python-dotenv`, `defusedxml`, and `rich`,
 with optional file-tool dependencies declared separately in `pyproject.toml`.
 It follows Clean Architecture and SOLID. `setuptools` is the packaging/build
 backend, not the dependency manager. Quality and documentation tooling includes
-Ruff (79-column, single-quote format), mypy, pydocstyle (Google), pytest,
+Ruff (79-column, single-quote format, including Google-style docstrings via
+the D rules), mypy, pytest,
 pytest-cov, pytest-asyncio, Bandit, pip-audit, import-linter, the cycle detector
 at `scripts/check-import-cycles.py`, mdformat, yamllint, actionlint, codespell,
 gitleaks, zizmor, MkDocs Material, and setuptools. `pyproject.toml` is the

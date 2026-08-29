@@ -80,6 +80,29 @@ class TestQualityGatePolicy:
             '--locked --no-sync' in error for error in _validate(config)
         )
 
+    def test_rejects_a_reintroduced_pydocstyle_hook(self):
+        config = _read('.pre-commit-config.yaml').replace(
+            '      - id: import-cycles\n',
+            '      - id: pydocstyle\n'
+            '        entry: pydocstyle src\n'
+            '      - id: import-cycles\n',
+            1,
+        )
+
+        assert any('pydocstyle' in error for error in _validate(config))
+
+    def test_requires_visible_ruff_autofix_failure(self):
+        config = _read('.pre-commit-config.yaml').replace(
+            'args: [--fix, --exit-non-zero-on-fix]',
+            'args: [--fix]',
+            1,
+        )
+
+        assert any(
+            'safe auto-fix failure mode' in error
+            for error in _validate(config)
+        )
+
     def test_rejects_the_mutating_uv_lock_hook(self):
         config = _read('.pre-commit-config.yaml').replace(
             '- id: lockfile-sync', '- id: uv-lock', 1

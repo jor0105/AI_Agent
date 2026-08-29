@@ -1,7 +1,7 @@
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, override
 
 from ....domain import ChatMetrics
 from ...config import LoggingConfig
@@ -33,6 +33,7 @@ class MetricsRecorder(ABC):
         Args:
             metrics_list: Optional shared list to append metrics to. A new
                 list is created when omitted.
+
         """
         self._metrics = metrics_list if metrics_list is not None else []
         self._logger = LoggingConfig.get_logger(__name__)
@@ -50,6 +51,7 @@ class MetricsRecorder(ABC):
             model: The model name used for the operation.
             start_time: The timestamp when the operation started.
             response_api: The response object from the API.
+
         """
         usage = self._extract_usage(response_api)
 
@@ -76,6 +78,7 @@ class MetricsRecorder(ABC):
             model: The model name used for the operation.
             start_time: The timestamp when the operation started.
             error: The error that occurred (string or Exception).
+
         """
         metrics = ChatMetrics(
             model=model,
@@ -90,6 +93,7 @@ class MetricsRecorder(ABC):
 
         Returns:
             A copy of the metrics list.
+
         """
         return self._metrics.copy()
 
@@ -97,6 +101,7 @@ class MetricsRecorder(ABC):
 class OpenAIMetricsRecorder(MetricsRecorder):
     """Reads usage from an OpenAI Responses API object."""
 
+    @override
     def _extract_usage(self, response_api: Any) -> ProviderUsage:
         """Read the `usage` attribute; OpenAI reports no durations."""
         usage = getattr(response_api, 'usage', None)
@@ -129,6 +134,7 @@ class OpenAIMetricsRecorder(MetricsRecorder):
 class OllamaMetricsRecorder(MetricsRecorder):
     """Reads usage from an Ollama chat response."""
 
+    @override
     def _extract_usage(self, response_api: Any) -> ProviderUsage:
         """Read Ollama's counts and convert its nanosecond durations."""
         prompt_tokens = response_api.get('prompt_eval_count', 0)

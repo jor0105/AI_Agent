@@ -20,6 +20,7 @@ class TextSanitizer:
             The sanitized text with problematic characters removed or
             replaced, normalized to NFKC form. Non-string input is returned
             unchanged.
+
         """
         if not isinstance(text, str):
             return text

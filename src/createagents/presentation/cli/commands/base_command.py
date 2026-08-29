@@ -27,6 +27,7 @@ class CommandHandler(ABC):
 
         Args:
             renderer: The terminal renderer for output.
+
         """
         self._renderer = renderer
 
@@ -41,6 +42,7 @@ class CommandHandler(ABC):
 
         Returns:
             True if this handler can process the input, False otherwise.
+
         """
         return self._normalize_input(user_input) in self.get_aliases()
 
@@ -54,6 +56,7 @@ class CommandHandler(ABC):
 
         Returns:
             Command execution result (can vary by command).
+
         """
 
     @abstractmethod
@@ -62,6 +65,7 @@ class CommandHandler(ABC):
 
         Returns:
             List of command aliases (e.g., ['/help', 'help']).
+
         """
 
     def _normalize_input(self, user_input: str) -> str:
@@ -72,6 +76,7 @@ class CommandHandler(ABC):
 
         Returns:
             Normalized input (stripped and lowercased).
+
         """
         return user_input.strip().lower()
 
@@ -80,6 +85,7 @@ class CommandHandler(ABC):
 
         Args:
             markdown: The Markdown source to format and display.
+
         """
         self._renderer.render_system_message(
             MarkdownTerminalFormatter.format(markdown)

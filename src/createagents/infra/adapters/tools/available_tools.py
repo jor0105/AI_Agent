@@ -32,6 +32,7 @@ class AvailableTools:
 
         Returns:
             A dictionary mapping system tool names to their descriptions.
+
         """
         return {
             tool_name: tool.description
@@ -47,6 +48,7 @@ class AvailableTools:
 
         Returns:
             The BaseTool instance if found, None otherwise.
+
         """
         return cls.__all_instances().get(tool_name.lower())
 
@@ -56,6 +58,7 @@ class AvailableTools:
 
         Returns:
             A dict of all available tool instances.
+
         """
         return cls.__all_instances()
 

@@ -35,6 +35,7 @@ class ToolCallParser:
 
         Returns:
             True if tool calls are present, False otherwise.
+
         """
         try:
             if not hasattr(response, 'output') or not response.output:
@@ -80,6 +81,7 @@ class ToolCallParser:
                 }
             ]
             ```
+
         """
         if not ToolCallParser.has_tool_calls(response):
             ToolCallParser._logger.debug('No tool calls to extract')
@@ -146,6 +148,7 @@ class ToolCallParser:
                 "output": "Weather in Paris: 15°C"
             }
             ```
+
         """
         ToolCallParser._logger.debug(
             "Formatting tool result for '%s' with call_id '%s'",
@@ -179,6 +182,7 @@ class ToolCallParser:
 
         Returns:
             List of output items (cleaned), or None if not available.
+
         """
         if not ToolCallParser.has_tool_calls(response):
             ToolCallParser._logger.debug(

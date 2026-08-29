@@ -1,5 +1,5 @@
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import Any, override
 
 from ....application.interfaces import ChatRepository
 from ....domain import BaseTool, ChatException, ChatMetrics
@@ -17,12 +17,14 @@ class OpenAIChatAdapter(ChatRepository):
 
         Raises:
             ChatException: If the API key is missing or invalid.
+
         """
         self.__logger = LoggingConfig.get_logger(__name__)
         self.__metrics: list[ChatMetrics] = []
 
         self.__client = OpenAIClient()
 
+    @override
     async def chat(
         self,
         model: str,
@@ -32,7 +34,7 @@ class OpenAIChatAdapter(ChatRepository):
         history: list[dict[str, str]],
         user_ask: str,
     ) -> str | AsyncGenerator[str, None]:
-        """Sends a message to OpenAI and returns the response.
+        """Send a message to OpenAI and return the response.
 
         Implements tool calling loop:
         1. Send message to LLM
@@ -59,6 +61,7 @@ class OpenAIChatAdapter(ChatRepository):
         Raises:
             ChatException: If a communication error occurs or if streaming
                 is used with tool calling.
+
         """
         try:
             self.__logger.debug(
@@ -93,10 +96,12 @@ class OpenAIChatAdapter(ChatRepository):
                 original_error=e,
             ) from e
 
+    @override
     def get_metrics(self) -> list[ChatMetrics]:
         """Return the list of collected metrics.
 
         Returns:
             List[ChatMetrics]: The list of metrics.
+
         """
         return self.__metrics.copy()

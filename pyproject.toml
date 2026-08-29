@@ -81,7 +81,6 @@ dev = [
     "mypy>=1.11.0",
     "ruff>=0.16.2,<0.17.0",
     "bandit>=1.7.9",
-    "pydocstyle>=6.3.0",
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.6.22",
     "mdformat>=0.7.17",
@@ -127,10 +126,6 @@ forbidden_modules = [
     "createagents.main",
     "createagents.presentation",
 ]
-
-[tool.pydocstyle]
-convention = "google"
-match = "(?!test_).*\\.py"
 
 [tool.mypy]
 python_version = "3.12"
@@ -179,20 +174,35 @@ select = [
     "PIE", "PERF",   # misc + performance
     "BLE",           # blind except
     "PYI",           # typing stubs correctness
+    "D",             # Google-style docstrings
     "ERA",           # commented-out code
     "TRY",           # exception handling
     "RUF",           # ruff-specific
     "T201",          # flake8-print: disallow print/pprint in library code
     "PGH",           # pygrep-hooks: disallow blanket type: ignore and noqa
+    "C901",          # mccabe: cyclomatic complexity
 ]
 ignore = [
     "E501",    # line length is owned by ruff-format
+    "D100",    # module docstrings are optional at the package boundary
+    "D104",    # package docstrings are optional at the package boundary
+    "D107",    # __init__ docstrings are optional
     "TRY003",  # long messages in raise: the project's exceptions are message-driven
     "TRY300",  # try/else restructuring: not worth churning the adapters
     "TRY301",  # raise-within-try is used deliberately in the retry/adapters flow
 ]
 
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
 [tool.ruff.lint.per-file-ignores]
+# Preserve the previous docstring-gate scope: docstrings are enforced for
+# product source, while repository tooling and tests keep their contracts.
+"scripts/**/*.py" = ["D"]
+"tests/**/*.py" = ["D"]
 # The public Message contract intentionally reports invalid roles as ValueError.
 "src/createagents/domain/value_objects/message.py" = ["TRY004"]
 # These boundaries must isolate failures from third-party tools and callbacks.

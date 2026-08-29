@@ -104,6 +104,36 @@ def _is_mangled_attribute(name: str) -> bool:
     )
 
 
+def _boolean_truth(node: ast.BoolOp) -> bool | None:
+    """Evaluate a constant boolean expression when its outcome is obvious."""
+    results = [_constant_truth(value) for value in node.values]
+    if isinstance(node.op, ast.Or):
+        if any(result is True for result in results):
+            return True
+        return False if all(result is not None for result in results) else None
+    if any(result is False for result in results):
+        return False
+    return True if all(result is not None for result in results) else None
+
+
+def _comparison_truth(node: ast.Compare) -> bool | None:
+    """Evaluate a comparison made entirely from supported literals."""
+    values = [node.left, *node.comparators]
+    try:
+        literal_values = [ast.literal_eval(value) for value in values]
+        result = True
+        for index, operation in enumerate(node.ops):
+            compare = _COMPARISON_OPERATORS.get(type(operation))
+            if compare is None:
+                return None
+            result = result and compare(
+                literal_values[index], literal_values[index + 1]
+            )
+        return bool(result)
+    except (TypeError, ValueError, SyntaxError):
+        return None
+
+
 def _constant_truth(node: ast.AST) -> bool | None:
     """Evaluate obvious constant assertion outcomes without executing code."""
     if isinstance(node, ast.Constant):
@@ -112,33 +142,20 @@ def _constant_truth(node: ast.AST) -> bool | None:
         result = _constant_truth(node.operand)
         return None if result is None else not result
     if isinstance(node, ast.BoolOp):
-        results = [_constant_truth(value) for value in node.values]
-        if isinstance(node.op, ast.Or):
-            if any(result is True for result in results):
-                return True
-            return (
-                False
-                if all(result is not None for result in results)
-                else None
-            )
-        if any(result is False for result in results):
-            return False
-        return True if all(result is not None for result in results) else None
+        return _boolean_truth(node)
     if isinstance(node, ast.Compare):
-        values = [node.left, *node.comparators]
-        try:
-            literal_values = [ast.literal_eval(value) for value in values]
-            result = True
-            for index, operation in enumerate(node.ops):
-                compare = _COMPARISON_OPERATORS.get(type(operation))
-                if compare is None:
-                    return None
-                result = result and compare(
-                    literal_values[index], literal_values[index + 1]
-                )
-            return bool(result)
-        except (TypeError, ValueError, SyntaxError):
-            return None
+        return _comparison_truth(node)
+    return None
+
+
+def _assignment_parts(
+    node: ast.AST,
+) -> tuple[list[ast.expr], ast.expr] | None:
+    """Return assignment targets and value for supported assignment nodes."""
+    if isinstance(node, ast.Assign):
+        return node.targets, node.value
+    if isinstance(node, ast.AnnAssign) and node.value is not None:
+        return [node.target], node.value
     return None
 
 
@@ -158,70 +175,86 @@ class TestContractVisitor(ast.NodeVisitor):
 
     def collect_bindings(self, tree: ast.Module) -> None:
         """Collect aliases and module constants before semantic traversal."""
+        self._collect_import_bindings(tree)
+        self._collect_string_constants(tree)
+        self._collect_factory_aliases(tree)
+
+    def _collect_import_bindings(self, tree: ast.Module) -> None:
+        """Collect aliases imported from supported modules and symbols."""
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    local_name = alias.asname or alias.name.split('.')[0]
-                    if alias.name == 'builtins':
-                        self._builtin_names.add(local_name)
-                    if alias.name.endswith('.ChatAdapterFactory'):
-                        self._factory_names.add(local_name)
-                    if alias.name.endswith('.patch'):
-                        self._patch_names.add(local_name)
+                    self._collect_import_alias(alias)
             elif isinstance(node, ast.ImportFrom):
                 module = node.module or ''
                 for alias in node.names:
-                    local_name = alias.asname or alias.name
-                    if module == 'builtins':
-                        if alias.name == 'hasattr':
-                            self._hasattr_names.add(local_name)
-                        if alias.name in _BUILTIN_ACCESS_NAMES:
-                            self._dynamic_access_names.add(local_name)
-                    if alias.name == 'patch' and module in {
-                        'mock',
-                        'unittest.mock',
-                    }:
-                        self._patch_names.add(local_name)
-                    if alias.name == 'ChatAdapterFactory':
-                        self._factory_names.add(local_name)
+                    self._collect_from_import_alias(module, alias)
 
+    def _collect_import_alias(self, alias: ast.alias) -> None:
+        """Record one alias from a regular import statement."""
+        local_name = alias.asname or alias.name.split('.')[0]
+        if alias.name == 'builtins':
+            self._builtin_names.add(local_name)
+        if alias.name.endswith('.ChatAdapterFactory'):
+            self._factory_names.add(local_name)
+        if alias.name.endswith('.patch'):
+            self._patch_names.add(local_name)
+
+    def _collect_from_import_alias(
+        self, module: str, alias: ast.alias
+    ) -> None:
+        """Record one alias from a from-import statement."""
+        local_name = alias.asname or alias.name
+        if module == 'builtins':
+            self._collect_builtin_alias(alias.name, local_name)
+        if alias.name == 'patch' and module in {'mock', 'unittest.mock'}:
+            self._patch_names.add(local_name)
+        if alias.name == 'ChatAdapterFactory':
+            self._factory_names.add(local_name)
+
+    def _collect_builtin_alias(self, imported: str, local_name: str) -> None:
+        """Record a supported aliased built-in access function."""
+        if imported == 'hasattr':
+            self._hasattr_names.add(local_name)
+        if imported in _BUILTIN_ACCESS_NAMES:
+            self._dynamic_access_names.add(local_name)
+
+    def _collect_string_constants(self, tree: ast.Module) -> None:
+        """Collect module-level string constants used as dynamic targets."""
         for statement in tree.body:
-            if isinstance(statement, ast.Assign):
-                value = _literal_string(statement.value)
-                if value is not None:
-                    for target in statement.targets:
-                        for name in _target_names(target):
-                            self._string_constants[name] = value
-            elif isinstance(statement, ast.AnnAssign):
-                value = (
-                    _literal_string(statement.value)
-                    if statement.value is not None
-                    else None
-                )
-                if value is not None:
-                    for name in _target_names(statement.target):
-                        self._string_constants[name] = value
+            assignment = _assignment_parts(statement)
+            if assignment is None:
+                continue
+            targets, expression = assignment
+            value = _literal_string(expression)
+            if value is None:
+                continue
+            for target in targets:
+                for name in _target_names(target):
+                    self._string_constants[name] = value
 
+    def _collect_factory_aliases(self, tree: ast.Module) -> None:
+        """Resolve transitive aliases of ChatAdapterFactory assignments."""
         for _ in range(len(tree.body) + 1):
-            changed = False
-            for node in ast.walk(tree):
-                if not isinstance(node, (ast.Assign, ast.AnnAssign)):
-                    continue
-                value = node.value
-                if value is None or not self._resolves_factory(value):
-                    continue
-                targets = (
-                    node.targets
-                    if isinstance(node, ast.Assign)
-                    else [node.target]
-                )
-                for target in targets:
-                    for name in _target_names(target):
-                        if name not in self._factory_names:
-                            self._factory_names.add(name)
-                            changed = True
-            if not changed:
+            if not self._collect_factory_alias_pass(tree):
                 break
+
+    def _collect_factory_alias_pass(self, tree: ast.Module) -> bool:
+        """Resolve one pass of factory aliases and report whether it grew."""
+        changed = False
+        for node in ast.walk(tree):
+            assignment = _assignment_parts(node)
+            if assignment is None:
+                continue
+            targets, value = assignment
+            if not self._resolves_factory(value):
+                continue
+            for target in targets:
+                for name in _target_names(target):
+                    if name not in self._factory_names:
+                        self._factory_names.add(name)
+                        changed = True
+        return changed
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
         self._current_scope.append('class')

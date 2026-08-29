@@ -76,6 +76,7 @@ class BaseStreamHandler:
             max_iterations_env_var: Environment variable holding this
                 provider's tool-iteration budget.
             metrics_list: Optional shared list to append metrics to.
+
         """
         self._logger = logger
         self._metrics = metrics_list if metrics_list is not None else []

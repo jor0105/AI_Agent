@@ -92,8 +92,7 @@ jobs:
 
       - name: Docstring style check
         run: |
-          uv run pydocstyle src --convention=google \
-            --add-ignore=D100,D104,D107
+          uv run ruff check src --select D --ignore D100,D104,D107
           echo "✅ Docstring style check passed"
 
       # --------------------------------------------------------------------------

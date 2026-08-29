@@ -60,6 +60,7 @@ class OllamaToolSchemaFormatter:
                 },
                 ...
             ]
+
         """
         if not tools:
             OllamaToolSchemaFormatter._logger.debug('No tools to format')

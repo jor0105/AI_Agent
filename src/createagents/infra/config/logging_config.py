@@ -41,7 +41,7 @@ class SensitiveDataFormatter(logging.Formatter):
     """
 
     def format(self, record: logging.LogRecord) -> str:
-        """Formats the log record while filtering for sensitive data."""
+        """Format the log record while filtering for sensitive data."""
         original = super().format(record)
         result: str = SensitiveDataFilter.filter(original)
         return result
@@ -54,7 +54,7 @@ class JSONFormatter(logging.Formatter):
     """
 
     def format(self, record: logging.LogRecord) -> str:
-        """Formats the log record as a structured JSON object."""
+        """Format the log record as a structured JSON object."""
         log_data = {
             'timestamp': self.formatTime(record, self.datefmt),
             'level': record.levelname,
@@ -103,7 +103,7 @@ class LoggingConfig:
         backup_count: int = DEFAULT_BACKUP_COUNT,
         json_format: bool = False,
     ) -> None:
-        """Configures the application's logging.
+        """Configure the application's logging.
 
         Args:
             level: The logging level (e.g., DEBUG, INFO).
@@ -114,6 +114,7 @@ class LoggingConfig:
             max_bytes: The maximum file size before rotation (default: 10MB).
             backup_count: The number of backup files to keep (default: 5).
             json_format: Whether to use a structured JSON format.
+
         """
         # Always reconfigure when called; there is no early return on
         # `cls._configured` by design.
@@ -128,32 +129,10 @@ class LoggingConfig:
         )
 
         cls._log_level = level
-
-        if format_string is None:
-            if include_timestamp:
-                format_string = (
-                    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-                )
-            else:
-                format_string = '%(name)s - %(levelname)s - %(message)s'
-
-        root_logger = logging.getLogger()
-        root_logger.setLevel(level)
-
-        # Drop every handler already attached to the root logger.
-        for handler in root_logger.handlers[:]:
-            root_logger.removeHandler(handler)
-        cls._handlers.clear()
-
-        # Force every existing logger onto the new level, stripping the
-        # handlers it may have accumulated so records reach the root only.
-        for logger_name in list(logging.Logger.manager.loggerDict):
-            logger = logging.getLogger(logger_name)
-            logger.setLevel(level)
-            for handler in logger.handlers[:]:
-                logger.removeHandler(handler)
-            if level >= logging.ERROR:
-                logger.addFilter(ErrorOnlyFilter())
+        format_string = cls._resolve_format_string(
+            format_string, include_timestamp
+        )
+        root_logger = cls._reset_loggers(level)
 
         if json_format:
             formatter: logging.Formatter = JSONFormatter()
@@ -195,16 +174,47 @@ class LoggingConfig:
 
     @classmethod
     def configure_for_development(cls, level: int = logging.INFO) -> None:
-        """Helper method to configure logging for development/testing environments.
+        """Configure logging for development and testing environments.
 
         This is useful for seeing logs during development, tests, or examples.
         It enables console logging with sensible defaults.
         """
         cls.configure(level=level)
 
+    @staticmethod
+    def _resolve_format_string(
+        format_string: str | None, include_timestamp: bool
+    ) -> str:
+        """Resolve log message format pattern."""
+        if format_string is not None:
+            return format_string
+        if include_timestamp:
+            return '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        return '%(name)s - %(levelname)s - %(message)s'
+
+    @classmethod
+    def _reset_loggers(cls, level: int) -> logging.Logger:
+        """Reset root and existing child loggers to the target level."""
+        root_logger = logging.getLogger()
+        root_logger.setLevel(level)
+
+        for handler in root_logger.handlers[:]:
+            root_logger.removeHandler(handler)
+        cls._handlers.clear()
+
+        for logger_name in list(logging.Logger.manager.loggerDict):
+            logger = logging.getLogger(logger_name)
+            logger.setLevel(level)
+            for handler in logger.handlers[:]:
+                logger.removeHandler(handler)
+            if level >= logging.ERROR:
+                logger.addFilter(ErrorOnlyFilter())
+
+        return root_logger
+
     @classmethod
     def _resolve_log_file_path(cls, log_file_path: str | None) -> str:
-        """Resolves and validates the log file path.
+        """Resolve and validate the log file path.
 
         This method centralizes the logic for path validation to improve readability.
 
@@ -213,6 +223,7 @@ class LoggingConfig:
 
         Returns:
             A valid path as a string.
+
         """
         default_path = os.getenv('LOG_FILE_PATH', cls.DEFAULT_LOG_PATH)
 
@@ -226,10 +237,11 @@ class LoggingConfig:
 
     @classmethod
     def _get_log_level_from_env(cls) -> int:
-        """Retrieves the log level from the LOG_LEVEL environment variable.
+        """Retrieve the log level from the LOG_LEVEL environment variable.
 
         Returns:
             The logging level (default: INFO).
+
         """
         level_name = os.getenv('LOG_LEVEL', 'INFO').upper()
         level_map = {
@@ -243,7 +255,7 @@ class LoggingConfig:
 
     @classmethod
     def get_logger(cls, name: str) -> logging.Logger:
-        """Retrieves a logger for the specified module.
+        """Retrieve a logger for the specified module.
 
         Note: This no longer configures logging automatically.
         The application using the library is responsible for configuring logging.
@@ -253,23 +265,25 @@ class LoggingConfig:
 
         Returns:
             A standard python logger.
+
         """
         # Simply return the logger. Configuration is up to the app.
         return logging.getLogger(name)
 
     @classmethod
     def set_level(cls, level: int) -> None:
-        """Adjusts the logging level at runtime.
+        """Adjust the logging level at runtime.
 
         Args:
             level: The new logging level.
+
         """
         cls._log_level = level
         logging.getLogger().setLevel(level)
 
     @classmethod
     def reset(cls) -> None:
-        """Resets the logging configuration, which is useful for tests.
+        """Reset the logging configuration, which is useful for tests.
 
         This method removes all handlers and marks the configuration as not set.
         """
@@ -285,10 +299,11 @@ class LoggingConfig:
 
     @classmethod
     def get_handlers(cls) -> list[logging.Handler]:
-        """Returns a list of the configured handlers.
+        """Return a list of the configured handlers.
 
         Returns:
             A list of active handlers.
+
         """
         return cls._handlers.copy()
 

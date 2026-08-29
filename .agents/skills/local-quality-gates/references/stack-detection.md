@@ -79,7 +79,28 @@ Before selecting a tool, inspect the workspace configuration files:
 
 - Locate the project's configured dependency graph or architecture validator and wire it into the required `[CIRCULAR_DEPENDENCIES]` slot. A missing tool is an `ERROR` during setup, not an optional gate.
 
-## 3. Existing Hook Runner Detection
+## 3. Structural Lint Capability Discovery
+
+Inspect the existing linter configuration before declaring `[LINTER]`
+complete. Record the rule, metric, threshold, file scope, and one of
+`ENABLED`, `DELEGATED`, `MANUAL`, or `UNSUPPORTED` for each capability:
+
+1. Cyclomatic complexity and cognitive complexity as separate metrics.
+2. Maximum nesting depth for control flow and handlers.
+3. Redundant branches after terminal statements and avoidable nesting.
+4. Empty handlers, broad catches, and preserved error context.
+5. Routine size by executable statements or the closest explicitly named
+   native metric.
+
+Also inspect whether the tool can limit work to changed or affected code and
+whether the project already owns a non-growing baseline. Do not infer support
+from a generic lint command, equate lines with statements, add a new dependency
+without authorization, or replace parser-aware analysis with a diff regex.
+
+More than five positional parameters is a review signal when the configured
+linter exposes that metric. It is not required as a universal blocking rule.
+
+## 4. Existing Hook Runner Detection
 
 Check for prior git hook configurations:
 
@@ -88,7 +109,7 @@ Check for prior git hook configurations:
 3. `lefthook.yml` / `.lefthook/` -> Lefthook binary runner.
 4. `.git/hooks/` -> Plain shell scripts.
 
-## 4. Reuse-First Decision Matrix
+## 5. Reuse-First Decision Matrix
 
 1. If the repository already uses `biome`, do not introduce `eslint` or `prettier`.
 2. If the repository uses `ruff`, do not introduce `black`, `flake8`, or `isort`.

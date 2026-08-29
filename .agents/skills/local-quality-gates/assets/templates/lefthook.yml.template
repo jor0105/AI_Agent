@@ -49,6 +49,13 @@ pre-commit:
     # =========================================================================
     # 04. STACK-SPECIFIC FORMATTERS & LINTERS (READ-ONLY IN PRE-COMMIT)
     # =========================================================================
+    # [LINTER] must record native read-only coverage for:
+    #   cyclomatic <= 15; cognitive <= 15 when supported; nesting <= 4;
+    #   redundant branches after terminal statements; empty/broad handlers;
+    #   routine scope <= 50 executable statements.
+    # Lines do not substitute for statements. Do not enforce one return per
+    # routine or add a generic regex scanner. Mark unavailable capabilities as
+    # MANUAL or UNSUPPORTED instead of claiming complete coverage.
     # [PYTHON EXAMPLE]
     # ruff-format-check:
     #   glob: "*.py"

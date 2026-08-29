@@ -304,15 +304,6 @@ repos:
         files: ^src/.*\.py$
         pass_filenames: false
 
-      - id: pydocstyle
-        name: pydocstyle
-        entry: >-
-          uv run --locked --no-sync pydocstyle src --convention=google
-          --add-ignore=D100,D104,D107
-        language: system
-        files: ^(src/.*\.py|pyproject\.toml)$
-        pass_filenames: false
-
   # --------------------------------------------------------------------------
   # 5. Slow or Network-Bound Checks
   # --------------------------------------------------------------------------

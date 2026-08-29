@@ -65,15 +65,15 @@ Além dos hooks, execute os gates direcionados quando a alteração os afetar:
 
 ```bash
 uv run --locked --no-sync mypy src --pretty
-uv run --locked --no-sync pydocstyle src --convention=google --add-ignore=D100,D104,D107
+uv run --locked --no-sync ruff check src --select D --ignore D100,D104,D107
 uv run --locked --no-sync bandit -c pyproject.toml -r src -ll
 uv run --locked --no-sync pip-audit
 ```
 
 O workflow completo de CI, incluindo lockfile, segurança, qualidade, tipos,
 docstrings e cobertura, está em
-`.github/workflows/pipeline.yml`. A configuração local dos 40 hooks está em
-`.pre-commit-config.yaml`: são 36 hooks `pre-commit`, 3 `pre-push` e 1
+`.github/workflows/pipeline.yml`. A configuração local dos 41 hooks está em
+`.pre-commit-config.yaml`: são 37 hooks `pre-commit`, 3 `pre-push` e 1
 `commit-msg`.
 
 ### Política dos gates locais
@@ -123,7 +123,7 @@ ______________________________________________________________________
 - [ ] Testes automatizados cobrindo a nova funcionalidade/correção
 - [ ] Documentação atualizada (código e Markdown)
 - [ ] Sem warnings/lints (Ruff, yamllint, mdformat)
-- [ ] Gates direcionados (mypy, pydocstyle, Bandit e pip-audit) executados quando aplicáveis
+- [ ] Gates direcionados (mypy, Ruff D, Bandit e pip-audit) executados quando aplicáveis
 - [ ] Build estrito da documentação (`uv run --locked --no-sync mkdocs build --strict`) aprovado
 - [ ] Commits claros e atômicos
 - [ ] PR descreve claramente o que foi feito e por quê

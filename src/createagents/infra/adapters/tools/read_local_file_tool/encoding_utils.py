@@ -14,6 +14,7 @@ def detect_encoding(file_path: Path) -> str:
 
     Returns:
         Detected encoding name, or 'utf-8' as fallback.
+
     """
     try:
         import chardet
@@ -60,6 +61,7 @@ def candidate_encodings(file_path: Path) -> list[str]:
 
     Returns:
         Detected encoding followed by the remaining common encodings.
+
     """
     detected_encoding = detect_encoding(file_path)
     return [detected_encoding] + [
@@ -78,6 +80,7 @@ def read_text_file(file_path: Path) -> str:
 
     Raises:
         UnicodeDecodeError: If file cannot be decoded with any supported encoding.
+
     """
     last_error: Exception | None = None
     for encoding in candidate_encodings(file_path):

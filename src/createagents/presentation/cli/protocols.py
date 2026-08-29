@@ -30,6 +30,7 @@ class AgentFacade(Protocol):
         Returns:
             The response text, or a `StreamingResponseDTO` when the agent is
             configured for streaming.
+
         """
         ...
 
@@ -38,6 +39,7 @@ class AgentFacade(Protocol):
 
         Returns:
             The agent's configuration values, keyed by name.
+
         """
         ...
 
@@ -46,6 +48,7 @@ class AgentFacade(Protocol):
 
         Returns:
             Tool names mapped to their descriptions.
+
         """
         ...
 
@@ -58,5 +61,6 @@ class AgentFacade(Protocol):
 
         Returns:
             One `ChatMetrics` entry per recorded chat operation.
+
         """
         ...

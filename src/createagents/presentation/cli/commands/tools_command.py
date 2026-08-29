@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
 from .base_command import CommandHandler
 
@@ -13,12 +13,14 @@ class ToolsCommandHandler(CommandHandler):
     This follows SRP by handling only tools-related functionality.
     """
 
+    @override
     def execute(self, agent: 'AgentFacade', user_input: str) -> None:
         """Execute the tools command.
 
         Args:
             agent: The agent facade.
             user_input: The user's input string.
+
         """
         tools = agent.get_all_available_tools()
         tools_str = '## Available Tools\n\n'
@@ -29,6 +31,7 @@ class ToolsCommandHandler(CommandHandler):
                 tools_str += f'**{name}**\n{desc}\n\n'
         self._render_markdown(tools_str)
 
+    @override
     def get_aliases(self) -> list[str]:
         """Get tools command aliases."""
         return ['/tools', 'get_tools']

@@ -1,5 +1,5 @@
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
 from ....application import StreamingResponseDTO
 from ....infra.config import create_logger
@@ -19,6 +19,7 @@ class ChatCommandHandler(CommandHandler):
     This follows SRP by handling only chat-related functionality.
     """
 
+    @override
     def can_handle(self, user_input: str) -> bool:
         """Accept every non-empty input.
 
@@ -27,12 +28,14 @@ class ChatCommandHandler(CommandHandler):
         """
         return bool(user_input.strip())
 
+    @override
     def execute(self, agent: 'AgentFacade', user_input: str) -> None:
         """Execute the chat command.
 
         Args:
             agent: The agent facade.
             user_input: The user's input string.
+
         """
         asyncio.run(self.__run_chat(agent, user_input))
 
@@ -42,6 +45,7 @@ class ChatCommandHandler(CommandHandler):
         Args:
             agent: The agent facade.
             user_input: The user's input string.
+
         """
         self._renderer.render_user_message(user_input)
         self._renderer.render_spacer()
@@ -67,6 +71,7 @@ class ChatCommandHandler(CommandHandler):
 
         self._renderer.render_spacer()
 
+    @override
     def get_aliases(self) -> list[str]:
         """Get chat command aliases.
 

@@ -27,6 +27,7 @@ def determine_file_type(extension: str) -> FileType:
 
     Returns:
         FileType enum value.
+
     """
     if extension in TEXT_EXTENSIONS:
         return FileType.TEXT
@@ -54,6 +55,7 @@ def _read_as_text_fallback(file_path: Path) -> str:
 
     Raises:
         FileReadException: If the file cannot be decoded as text.
+
     """
     try:
         content = read_text_file(file_path)
@@ -81,6 +83,7 @@ def read_file_by_type(file_path: Path, file_type: FileType) -> str:
 
     Raises:
         FileReadException: If file reading fails.
+
     """
     try:
         if file_type == FileType.TEXT:

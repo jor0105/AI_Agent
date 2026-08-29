@@ -18,6 +18,7 @@ class LoggerInterface(ABC):
             message: The message to log.
             *args: Positional arguments for string formatting.
             **kwargs: Keyword arguments (e.g., exc_info, extra).
+
         """
 
     @abstractmethod
@@ -28,6 +29,7 @@ class LoggerInterface(ABC):
             message: The message to log.
             *args: Positional arguments for string formatting.
             **kwargs: Keyword arguments (e.g., exc_info, extra).
+
         """
 
     @abstractmethod
@@ -38,6 +40,7 @@ class LoggerInterface(ABC):
             message: The message to log.
             *args: Positional arguments for string formatting.
             **kwargs: Keyword arguments (e.g., exc_info, extra).
+
         """
 
     @abstractmethod
@@ -48,6 +51,7 @@ class LoggerInterface(ABC):
             message: The message to log.
             *args: Positional arguments for string formatting.
             **kwargs: Keyword arguments (e.g., exc_info, extra).
+
         """
 
     @abstractmethod
@@ -58,6 +62,7 @@ class LoggerInterface(ABC):
             message: The message to log.
             *args: Positional arguments for string formatting.
             **kwargs: Keyword arguments (e.g., exc_info, extra).
+
         """
 
     def exception(self, message: str, *args: Any, **kwargs: Any) -> None:
@@ -71,6 +76,7 @@ class LoggerInterface(ABC):
             message: The message to log.
             *args: Positional arguments for string formatting.
             **kwargs: Keyword arguments (e.g., extra).
+
         """
         kwargs.setdefault('exc_info', True)
         self.error(message, *args, **kwargs)

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
 from .base_command import CommandHandler
 
@@ -25,15 +25,18 @@ class HelpCommandHandler(CommandHandler):
     This follows SRP by handling only help-related functionality.
     """
 
+    @override
     def execute(self, agent: 'AgentFacade', user_input: str) -> None:
         """Execute the help command.
 
         Args:
             agent: The agent facade (not used for help).
             user_input: The user's input string.
+
         """
         self._render_markdown(_HELP_TEXT)
 
+    @override
     def get_aliases(self) -> list[str]:
         """Get help command aliases."""
         return ['/help', 'help']

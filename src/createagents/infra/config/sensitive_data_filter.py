@@ -79,7 +79,7 @@ class SensitiveDataFilter:
     @classmethod
     @lru_cache(maxsize=DEFAULT_CACHE_SIZE)
     def _filter_cached(cls, text: str) -> str:
-        """Removes or masks sensitive data from text (cached version).
+        """Remove or mask sensitive data from text (cached version).
 
         Uses an LRU cache for improved performance and automatic management.
 
@@ -88,6 +88,7 @@ class SensitiveDataFilter:
 
         Returns:
             The text with sensitive data replaced by placeholders.
+
         """
         filtered_text = text
 
@@ -119,7 +120,7 @@ class SensitiveDataFilter:
 
     @classmethod
     def filter(cls, text: str) -> str:
-        """Removes or masks sensitive data from a given text.
+        """Remove or mask sensitive data from a given text.
 
         Args:
             text: The text to be filtered.
@@ -131,6 +132,7 @@ class SensitiveDataFilter:
             >>> text = "API Key: abc123xyz, email: user@example.com"
             >>> SensitiveDataFilter.filter(text)
             'API Key: [API_KEY_REDACTED], email: [EMAIL_REDACTED]'
+
         """
         if not text:
             return text
@@ -139,14 +141,14 @@ class SensitiveDataFilter:
 
     @classmethod
     def clear_cache(cls) -> None:
-        """Clears the LRU cache of replacements."""
+        """Clear the LRU cache of replacements."""
         cls._filter_cached.cache_clear()
 
     @classmethod
     def mask_partial(
         cls, text: str, visible_chars: int = DEFAULT_VISIBLE_CHARS
     ) -> str:
-        """Partially masks a text, keeping a specified number of characters visible.
+        """Mask text partially, keeping a specified number of characters visible.
 
         Args:
             text: The text to be masked.
@@ -158,6 +160,7 @@ class SensitiveDataFilter:
         Example:
             >>> SensitiveDataFilter.mask_partial("sk-1234567890abcdef", 4)
             '****cdef'
+
         """
         if len(text) <= visible_chars:
             return '*' * len(text)
@@ -169,13 +172,14 @@ class SensitiveDataFilter:
 
     @classmethod
     def is_sensitive(cls, text: str) -> bool:
-        """Checks if the given text contains sensitive data.
+        """Check if the given text contains sensitive data.
 
         Args:
             text: The text to be checked.
 
         Returns:
             True if the text contains sensitive data, False otherwise.
+
         """
         if not text:
             return False

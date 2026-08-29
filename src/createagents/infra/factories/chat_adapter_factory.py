@@ -26,6 +26,7 @@ class ChatAdapterFactory:
 
         Raises:
             ValueError: If the provider is not "openai" or "ollama".
+
         """
         provider_lower = provider.lower()
 

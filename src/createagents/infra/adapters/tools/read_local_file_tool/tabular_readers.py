@@ -61,6 +61,7 @@ def read_csv_file(file_path: Path) -> str:
     Raises:
         FileReadException: If CSV parsing fails with all strategies.
         RuntimeError: If pandas is not installed.
+
     """
     pd = _require_pandas('CSV reading')
 
@@ -137,6 +138,7 @@ def read_excel_file(file_path: Path) -> str:
     Raises:
         FileReadException: If Excel reading fails with all strategies.
         RuntimeError: If pandas is not installed.
+
     """
     pd = _require_pandas('Excel reading')
 
@@ -187,6 +189,7 @@ def read_parquet_file(file_path: Path) -> str:
     Raises:
         FileReadException: If Parquet reading fails with all strategies.
         RuntimeError: If pandas is not installed.
+
     """
     pd = _require_pandas('Parquet reading')
 

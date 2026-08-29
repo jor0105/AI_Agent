@@ -28,6 +28,7 @@ class ToolSchemaFormatter:
 
         Returns:
             A dictionary formatted for Responses API's tools parameter.
+
         """
         schema = tool.get_schema()
 
@@ -53,6 +54,7 @@ class ToolSchemaFormatter:
 
         Returns:
             List of dictionaries formatted for Responses API's tools parameter.
+
         """
         ToolSchemaFormatter._logger.info(
             'Formatting %s tool(s) for OpenAI Responses API', len(tools)

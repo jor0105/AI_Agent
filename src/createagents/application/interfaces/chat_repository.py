@@ -34,6 +34,7 @@ class ChatRepository(ABC):
             Union[str, AsyncGenerator[str, None]]: The model's response.
                 - str: Complete response (if stream=False)
                 - AsyncGenerator: Token stream (if stream=True)
+
         """
 
     @abstractmethod
@@ -42,4 +43,5 @@ class ChatRepository(ABC):
 
         Returns:
             List of ChatMetrics collected during interactions.
+
         """

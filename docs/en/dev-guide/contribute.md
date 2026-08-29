@@ -71,12 +71,12 @@ Run targeted gates when applicable:
 
 ```bash
 uv run --locked --no-sync mypy src --pretty
-uv run --locked --no-sync pydocstyle src --convention=google --add-ignore=D100,D104,D107
+uv run --locked --no-sync ruff check src --select D --ignore D100,D104,D107
 uv run --locked --no-sync bandit -c pyproject.toml -r src -ll
 uv run --locked --no-sync pip-audit
 ```
 
-The full CI workflow, including lockfile checks, security, quality, typing, docstrings, and test coverage, is defined in `.github/workflows/pipeline.yml`. The local pre-commit configuration defines 40 hooks across `pre-commit` (36), `pre-push` (3), and `commit-msg` (1).
+The full CI workflow, including lockfile checks, security, quality, typing, docstrings, and test coverage, is defined in `.github/workflows/pipeline.yml`. The local pre-commit configuration defines 41 hooks across `pre-commit` (37), `pre-push` (3), and `commit-msg` (1).
 
 ### Local Quality Gate Policy
 
@@ -108,7 +108,7 @@ ______________________________________________________________________
 - [ ] Automated tests cover new features and bug fixes
 - [ ] Documentation updated (code docstrings and Markdown docs)
 - [ ] No lint warnings (Ruff, yamllint, mdformat)
-- [ ] Targeted gates (mypy, pydocstyle, Bandit, pip-audit) executed when applicable
+- [ ] Targeted gates (mypy, Ruff D, Bandit, pip-audit) executed when applicable
 - [ ] Strict docs build (`uv run --locked --no-sync mkdocs build --strict`) passes
 - [ ] Atomic, clear Conventional Commits in English
 - [ ] Pull request description clearly explains rationale

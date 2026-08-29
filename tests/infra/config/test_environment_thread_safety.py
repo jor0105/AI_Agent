@@ -1,10 +1,20 @@
 import concurrent.futures
 import os
 import threading
+from contextlib import contextmanager
+from unittest.mock import patch
 
 import pytest
 
 from createagents.infra import EnvironmentConfig
+
+
+@contextmanager
+def reset_instance_on_release():
+    try:
+        yield
+    finally:
+        EnvironmentConfig._instance = None
 
 
 @pytest.mark.unit
@@ -36,6 +46,14 @@ class TestEnvironmentConfigThreadSafety:
             thread.join()
 
         assert len({id(inst) for inst in instances}) == 1
+
+    def test_new_returns_instance_when_reset_releases_lock(self):
+        with patch.object(
+            EnvironmentConfig, '_lock', reset_instance_on_release()
+        ):
+            instance = EnvironmentConfig.__new__(EnvironmentConfig)
+
+        assert isinstance(instance, EnvironmentConfig)
 
     def test_concurrent_get_env_is_safe(self):
         results = []

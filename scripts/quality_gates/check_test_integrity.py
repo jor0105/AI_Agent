@@ -181,6 +181,63 @@ class _FileDiffState:
         ]
 
 
+def _update_file_context(
+    line: str,
+    state: _FileDiffState,
+    root: Path,
+    allow_deleted_tests: bool,
+) -> list[str] | None:
+    """Update file-level diff state, returning errors for a boundary line."""
+    if line.startswith('--- a/'):
+        state.previous_file = line[6:]
+        return []
+    if line.startswith('+++ b/'):
+        errors = state.evaluate(root, allow_deleted_tests)
+        state.reset(line[6:])
+        return errors
+    if line.startswith('+++ /dev/null'):
+        errors = state.evaluate(root, allow_deleted_tests)
+        state.reset(state.previous_file, is_deleted=True)
+        return errors
+    return None
+
+
+def _update_hunk_line_number(line: str, state: _FileDiffState) -> bool:
+    """Update the destination line number when a diff hunk starts."""
+    if not line.startswith('@@ '):
+        return False
+    match = re.search(r'\+(\d+)', line)
+    if match:
+        state.line_number = int(match.group(1)) - 1
+    return True
+
+
+def _track_removed_line(line: str, state: _FileDiffState) -> bool:
+    """Count removed assertions and report whether the line was consumed."""
+    if not line.startswith('-') or line.startswith('---'):
+        return False
+    if ASSERTION_PATTERN.search(line[1:].strip()):
+        state.removed_assertions += 1
+    return True
+
+
+def _scan_added_line(line: str, state: _FileDiffState) -> list[str]:
+    """Track one added line and return focus or skip violations."""
+    if not line.startswith('+') or line.startswith('+++'):
+        return []
+    state.line_number += 1
+    content = line[1:].strip()
+    if not content:
+        return []
+    if _has_reason(ALLOW_ASSERTION_REDUCTION_RE, content):
+        state.has_inline_reduction_reason = True
+    if ASSERTION_PATTERN.search(content):
+        state.added_assertions += 1
+    return _check_focus_or_skip_line(
+        content, state.current_file, state.line_number
+    )
+
+
 def scan_test_integrity(
     diff_text: str,
     root: Path,
@@ -196,43 +253,19 @@ def scan_test_integrity(
     state = _FileDiffState()
 
     for line in diff_text.splitlines():
-        if line.startswith('--- a/'):
-            state.previous_file = line[6:]
-            continue
-        if line.startswith('+++ b/'):
-            errors.extend(state.evaluate(root, allow_deleted_tests))
-            state.reset(line[6:])
-            continue
-        if line.startswith('+++ /dev/null'):
-            errors.extend(state.evaluate(root, allow_deleted_tests))
-            state.reset(state.previous_file, is_deleted=True)
+        boundary_errors = _update_file_context(
+            line, state, root, allow_deleted_tests
+        )
+        if boundary_errors is not None:
+            errors.extend(boundary_errors)
             continue
         if not is_test_file(state.current_file):
             continue
-        if line.startswith('@@ '):
-            match = re.search(r'\+(\d+)', line)
-            if match:
-                state.line_number = int(match.group(1)) - 1
+        if _update_hunk_line_number(line, state):
             continue
-        if line.startswith('-') and not line.startswith('---'):
-            if ASSERTION_PATTERN.search(line[1:].strip()):
-                state.removed_assertions += 1
+        if _track_removed_line(line, state):
             continue
-        if not line.startswith('+') or line.startswith('+++'):
-            continue
-        state.line_number += 1
-        content = line[1:].strip()
-        if not content:
-            continue
-        if _has_reason(ALLOW_ASSERTION_REDUCTION_RE, content):
-            state.has_inline_reduction_reason = True
-        if ASSERTION_PATTERN.search(content):
-            state.added_assertions += 1
-        errors.extend(
-            _check_focus_or_skip_line(
-                content, state.current_file, state.line_number
-            )
-        )
+        errors.extend(_scan_added_line(line, state))
 
     errors.extend(state.evaluate(root, allow_deleted_tests))
     return errors

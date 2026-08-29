@@ -13,9 +13,10 @@ class SupportedProviders:
 
     @classmethod
     def get_available_providers(cls) -> set[str]:
-        """Returns a set of the available providers.
+        """Return a set of the available providers.
 
         Returns:
             A set containing the names of the available providers.
+
         """
         return cls.__AVAILABLE_PROVIDERS.copy()

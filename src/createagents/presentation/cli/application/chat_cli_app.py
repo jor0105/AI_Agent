@@ -32,6 +32,7 @@ class ChatCLIApplication:
 
         Args:
             agent: The agent facade to interact with.
+
         """
         self._agent = agent
         self._renderer = TerminalRenderer()
@@ -102,6 +103,7 @@ class ChatCLIApplication:
 
         Returns:
             True if input is an exit command, False otherwise.
+
         """
         normalized = user_input.strip().lower()
         return normalized in ('exit', 'quit')
