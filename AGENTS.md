@@ -1,7 +1,7 @@
 # AGENTS.md
 
 > Owner: Jordan Estralioto (@jordanestralioto)
-> Last reviewed: 2026-08-27
+> Last reviewed: 2026-08-29
 > Status: Confirmed
 > Knowledge class: Agent policy
 
@@ -81,7 +81,8 @@ commands, testing, governance, and harness details.
 | Manifest and tool configuration | `pyproject.toml`                                                 | dependency metadata, Python range, build backend, and tool configuration                 |
 | Resolved dependencies           | `uv.lock`                                                        | uv-owned lockfile; never hand-edit                                                       |
 | Test configuration              | `pytest.ini`                                                     | test paths, markers, options, and the 85% coverage floor                                 |
-| Local quality hooks             | `.pre-commit-config.yaml`                                        | 41 hooks: 37 pre-commit, 3 pre-push, and 1 commit-msg                                    |
+| Secret scanning policy          | `.gitleaks.toml`                                                 | minimal default-rule policy used by local and CI Gitleaks                                |
+| Local quality hooks             | `.pre-commit-config.yaml`                                        | 44 hooks: 38 pre-commit, 4 pre-push, 1 commit-msg, and 1 manual                          |
 | Public environment names        | `.env.example`                                                   | names only for provider, retry, tool-iteration, logging, and file-tool settings          |
 | Documentation configuration     | `mkdocs.yml`                                                     | MkDocs Material site configuration and navigation                                        |
 | CI, docs, and release workflows | `.github/workflows/` (`pipeline.yml`, `docs.yml`, `publish.yml`) | quality gates/tests (`pipeline.yml`), docs deploy (`docs.yml`), and PyPI (`publish.yml`) |
@@ -93,21 +94,31 @@ commands, testing, governance, and harness details.
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | Install dependencies          | `uv sync --locked`                                                                                                                       |
 | Install hooks                 | `uv run --locked --no-sync pre-commit install --install-hooks`                                                                           |
-| Pre-commit hooks (37)         | `uv run --locked --no-sync pre-commit run --all-files`                                                                                   |
-| Pre-push hooks (3)            | `uv run --locked --no-sync pre-commit run --all-files --hook-stage pre-push`                                                             |
-| Safe local tests and coverage | `uv run --locked --no-sync pytest -m 'not integration and not slow' -ra --cov=src --cov-fail-under=85`                                   |
-| Type checking                 | `uv run --locked --no-sync mypy src --pretty`                                                                                            |
-| Docstring style               | `uv run --locked --no-sync ruff check src --select D --ignore D100,D104,D107`                                                            |
+| Pre-commit hooks (38)         | `uv run --locked --no-sync pre-commit run --all-files`                                                                                   |
+| Pre-push hooks (4)            | `uv run --locked --no-sync pre-commit run --all-files --hook-stage pre-push`                                                             |
+| Safe local tests and coverage | `uv run --locked --no-sync pytest -m 'not integration and not slow' -ra --cov`                                                           |
+| Primary type checking         | `uv run --locked --no-sync mypy src --pretty`                                                                                            |
+| Supporting type checking      | `uv run --locked --no-sync mypy tests scripts --disable-error-code no-untyped-def --pretty`                                              |
+| Ruff lint and format          | `uv run --locked --no-sync ruff check src tests scripts`                                                                                 |
 | Source security scan          | `uv run --locked --no-sync bandit -c pyproject.toml -r src -ll`                                                                          |
-| Dependency audit              | `uv run --locked --no-sync pip-audit`                                                                                                    |
+| Dependency audit              | `uv run --locked --no-sync pip-audit --timeout 60`                                                                                       |
 | Strict documentation build    | `uv run --locked --no-sync mkdocs build --strict`                                                                                        |
 | Package build                 | `uv build`                                                                                                                               |
+| Optional harness mirror check | `uv run --locked --no-sync harness-sync --check`                                                                                         |
 | Harness evidence              | `uv run --locked --no-sync python .agents/scripts/harness_verify.py --evidence-path openspec/changes/<name>/evidence/gate-report.json`   |
 | Verify harness evidence       | `uv run --locked --no-sync python .agents/scripts/harness_verify.py --verify-evidence openspec/changes/<name>/evidence/gate-report.json` |
 
 Run all Python tooling and tests directly through `uv run --locked --no-sync`.
 Use `uv sync --locked` only as explicit environment bootstrap; local hooks must
 not synchronize the environment or update dependency resolution.
+
+The normal hooks do not require `central-skills`. `.agents/` is tracked because
+it carries the portable validator projection. `.codex/`, `.claude/`, `.opencode/`,
+and `.github/prompts/` are generated ignored mirrors outside the Git index.
+`check-harness-sync` is the optional manual-only mirror check; if its external
+dependency is unavailable, its result is `skipped`, not a normal-hook pass.
+Review mutator output before staging and stage only explicit paths. In a dirty
+working tree, do not use `git add .` or `git add -A`.
 
 The harness commands apply only when an OpenSpec change exists. They accept a
 per-change JSON gate report only at
@@ -238,6 +249,8 @@ authority on declared versions and configuration.
 - `.agents/` is internal harness tooling, not product code. Its component
   manifest is `.agents/harness.json`; do not move harness content into
   `src/createagents/` or `docs/`, and do not edit generated mirrors directly.
+  Gitleaks intentionally scans every tracked `.agents/` file, while generic
+  mutating hooks exclude the five external harness roots.
 
 - Treat runtime code and accepted decisions as current state; treat proposals
   and unimplemented specs as planned state.
@@ -329,7 +342,7 @@ Before concluding code or tooling changes, use the repository's official
 validation entrypoint when applicable. Prefer repository-native commands and
 scripts over custom one-off equivalents. The required local entrypoints are
 `uv run --locked --no-sync pre-commit run --all-files` and
-`uv run --locked --no-sync pytest -m 'not integration and not slow' -ra --cov=src --cov-fail-under=85`
+`uv run --locked --no-sync pytest -m 'not integration and not slow' -ra --cov`
 for behavior changes. The aggregated agent-facing harness accepts
 `uv run --locked --no-sync python .agents/scripts/harness_verify.py --evidence-path openspec/changes/<name>/evidence/gate-report.json`
 (state which `effectiveProfile` ran). Report `passed`, `failed`, `skipped`, and

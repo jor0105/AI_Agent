@@ -3,20 +3,19 @@
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from git_index import (
+from git_changes import (
     GitInspectionError,
     StagedChange,
-    index_file_exists,
-    read_index_text,
+    changed_records,
+    read_text,
     repository_root,
-    staged_changes,
-    staged_snapshot,
+    repository_snapshot,
 )
+from process_runner import ProcessLaunchError, run_process
 
 MANIFEST_LOCKFILES: dict[str, tuple[str, ...]] = {
     'package.json': (
@@ -51,6 +50,7 @@ DEPENDENCY_KEYS = (
     'bundledDependencies',
 )
 LOCKFILE_UPDATED = frozenset({'A', 'M', 'R', 'C'})
+MANIFEST_LOCKFILE_REQUIRED = {'pyproject.toml': 'uv.lock'}
 
 
 class NativeCheckError(RuntimeError):
@@ -64,7 +64,7 @@ def _has_declared_dependencies(manifest: Path, root: Path) -> bool:
     """Return whether an indexed Node manifest declares dependencies."""
     if manifest.name != 'package.json':
         return True
-    content = read_index_text(manifest, root)
+    content = read_text(manifest, root)
     if content is None:
         return True
     try:
@@ -80,14 +80,8 @@ def _run_native_check(manifest: Path, lockfile: str, snapshot: Path) -> bool:
     """Run a native checker against the index snapshot only."""
     command = NATIVE_COMMANDS[(manifest.name, lockfile)]
     try:
-        result = subprocess.run(
-            command,
-            cwd=snapshot / manifest.parent,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError) as err:
+        result = run_process(command, cwd=snapshot / manifest.parent)
+    except ProcessLaunchError as err:
         command_text = ' '.join(command)
         raise NativeCheckError(
             f'could not execute {command_text!r} for {manifest}'
@@ -96,8 +90,64 @@ def _run_native_check(manifest: Path, lockfile: str, snapshot: Path) -> bool:
 
 
 def _status_by_path(changes: list[StagedChange]) -> dict[str, str]:
-    """Return the effective staged status for each new path."""
-    return {change.new_path: change.status for change in changes}
+    """Return the effective staged status for every represented path."""
+    statuses: dict[str, str] = {}
+    for change in changes:
+        status = change.status[:1]
+        if change.old_path is not None:
+            statuses[change.old_path] = (
+                'D' if change.new_path is None else status
+            )
+        if change.new_path is not None:
+            statuses[change.new_path] = status
+    return statuses
+
+
+def _changed_paths(changes: list[StagedChange]) -> set[str]:
+    return {
+        path
+        for change in changes
+        for path in (change.old_path, change.new_path)
+        if path is not None
+    }
+
+
+def _deleted_paths(changes: list[StagedChange]) -> set[str]:
+    return {
+        change.old_path
+        for change in changes
+        if change.old_path is not None
+        and (
+            change.status.startswith('D')
+            or (
+                change.status.startswith('R')
+                and change.old_path != change.new_path
+            )
+        )
+    }
+
+
+def _changed_manifest_paths(
+    changes: list[StagedChange], root: Path
+) -> set[Path]:
+    changed = _changed_paths(changes)
+    manifests: set[Path] = set()
+    for path in changed:
+        path_object = Path(path)
+        name = path_object.name
+        if name in MANIFEST_LOCKFILES:
+            manifests.add(path_object)
+            continue
+        for manifest_name, lockfiles in MANIFEST_LOCKFILES.items():
+            if name != manifest_name and name not in lockfiles:
+                continue
+            candidate = path_object.with_name(manifest_name)
+            if (
+                candidate.as_posix() in changed
+                or read_text(candidate, root) is not None
+            ):
+                manifests.add(candidate)
+    return manifests
 
 
 def _validate_manifest(
@@ -113,7 +163,7 @@ def _validate_manifest(
             f'{manifest}: child manifests require an explicit workspace '
             'validator; refusing to infer a shared root lockfile.'
         ]
-    if not index_file_exists(manifest, root):
+    if read_text(manifest, root) is None:
         return [
             f'{manifest}: manifest deletion is not supported by this gate.'
         ]
@@ -124,7 +174,7 @@ def _validate_manifest(
     existing = [
         lockfile
         for lockfile in candidates
-        if index_file_exists(lockfile, root)
+        if read_text(lockfile, root) is not None
     ]
     if not existing:
         return [
@@ -148,9 +198,13 @@ def _validate_manifest(
             'native read-only checker.'
         ]
 
-    deleted = [
-        lockfile for lockfile in candidates if statuses.get(lockfile) == 'D'
-    ]
+    required_lockfile = MANIFEST_LOCKFILE_REQUIRED.get(manifest.name)
+    deleted = (
+        [required_lockfile]
+        if required_lockfile is not None
+        and statuses.get(required_lockfile) == 'D'
+        else []
+    )
     if deleted:
         return [
             f'{manifest}: manifest changed while deleting lockfile(s): '
@@ -173,17 +227,26 @@ def validate_staged_lockfiles(
     native_runner: NativeRunner = _run_native_check,
 ) -> list[str]:
     """Validate every staged manifest without reading the working tree."""
-    manifests = [
-        Path(change.new_path)
-        for change in changes
-        if Path(change.new_path).name in MANIFEST_LOCKFILES
-    ]
+    manifests = sorted(_changed_manifest_paths(changes, root))
     if not manifests:
         return []
     statuses = _status_by_path(changes)
-    with staged_snapshot(root) as snapshot:
+    deleted_paths = _deleted_paths(changes)
+    with repository_snapshot(root) as snapshot:
         errors: list[str] = []
         for manifest in manifests:
+            required_lockfile = MANIFEST_LOCKFILE_REQUIRED.get(manifest.name)
+            deleted_locks = (
+                [required_lockfile]
+                if required_lockfile is not None
+                and required_lockfile in deleted_paths
+                else []
+            )
+            if deleted_locks and read_text(manifest, root) is not None:
+                errors.append(
+                    f'{manifest}: manifest remains while deleting or renaming '
+                    f'lockfile(s): {", ".join(deleted_locks)}.'
+                )
             errors.extend(
                 _validate_manifest(
                     manifest,
@@ -200,17 +263,28 @@ def main() -> int:
     """Run the staged lockfile gate and return its documented status code."""
     try:
         root = repository_root()
-        changes = staged_changes(root)
+        changes = changed_records(root)
+        changed_paths = _changed_paths(changes)
+        supported_names = set(MANIFEST_LOCKFILES) | {
+            lockfile
+            for lockfiles in MANIFEST_LOCKFILES.values()
+            for lockfile in lockfiles
+        }
+        relevant = any(
+            Path(path).name in supported_names for path in changed_paths
+        )
         errors = validate_staged_lockfiles(root, changes)
     except (GitInspectionError, NativeCheckError) as err:
         print(f'ERROR [LOCKFILE]: {err}', file=sys.stderr)
         return 2
 
-    if not any(
-        Path(change.new_path).name in MANIFEST_LOCKFILES for change in changes
-    ):
+    if not relevant:
         print('SKIP [LOCKFILE]: No staged manifest files to inspect.')
         return 0
+    if not _changed_manifest_paths(changes, root) and not errors:
+        errors = [
+            'changed dependency metadata has no manifest in the Git index.'
+        ]
     if errors:
         print(
             'FAIL [LOCKFILE]: Staged dependency metadata is invalid:',

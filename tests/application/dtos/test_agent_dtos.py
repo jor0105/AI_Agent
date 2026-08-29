@@ -1,3 +1,6 @@
+from collections.abc import Sequence
+from typing import Any, cast
+
 import pytest
 
 from createagents.application import (
@@ -42,7 +45,8 @@ class TestCreateAgentInputDTO:
             instructions='Test instructions',
         )
 
-        assert dto.validate() is None
+        dto.validate()
+        assert dto.provider == 'openai'
 
     def test_validate_empty_model(self):
         dto = CreateAgentInputDTO(
@@ -150,7 +154,8 @@ class TestCreateAgentInputDTO:
             instructions='Detailed instructions here',
         )
 
-        assert dto.validate() is None
+        dto.validate()
+        assert dto.name == 'Production Agent'
 
     def test_validate_with_config(self):
         dto = CreateAgentInputDTO(
@@ -230,7 +235,7 @@ class TestCreateAgentInputDTO:
             model='gpt-5-nano',
             name='Test',
             instructions='Test',
-            config='invalid',
+            config=cast(dict[str, Any] | None, 'invalid'),
         )
 
         with pytest.raises(ValueError, match=r"'config'.*dictionary"):
@@ -242,7 +247,7 @@ class TestCreateAgentInputDTO:
             model='gpt-5-nano',
             name='Test',
             instructions='Test',
-            history_max_size='invalid',
+            history_max_size=cast(int, 'invalid'),
         )
 
         with pytest.raises(ValueError, match='history_max_size'):
@@ -250,7 +255,7 @@ class TestCreateAgentInputDTO:
 
     def test_validate_non_string_provider(self):
         dto = CreateAgentInputDTO(
-            provider=123,
+            provider=cast(str, 123),
             model='gpt-5-nano',
             name='Test',
             instructions='Test',
@@ -365,6 +370,7 @@ class TestCreateAgentInputDTOWithTools:
 
         dto.validate()
 
+        assert dto.tools is not None
         assert len(dto.tools) == 2
 
     def test_validate_with_invalid_tool_missing_execute(self):
@@ -379,7 +385,7 @@ class TestCreateAgentInputDTOWithTools:
             model='gpt-5-nano',
             name='Test',
             instructions='Test',
-            tools=[InvalidTool()],
+            tools=cast(Sequence[str | BaseTool], [InvalidTool()]),
         )
 
         with pytest.raises(InvalidBaseToolException):
@@ -463,6 +469,7 @@ class TestCreateAgentInputDTOWithTools:
 
         dto.validate()
 
+        assert dto.tools is not None
         assert all(isinstance(tool, BaseTool) for tool in dto.tools)
 
     def test_validate_with_none_tools(self):
@@ -518,7 +525,7 @@ class TestCreateAgentInputDTOWithTools:
             model='gpt-5-nano',
             name='Test',
             instructions='Test',
-            tools=[NotCallableExecute()],
+            tools=cast(Sequence[str | BaseTool], [NotCallableExecute()]),
         )
 
         with pytest.raises(InvalidBaseToolException):
@@ -532,7 +539,7 @@ class TestCreateAgentInputDTOWithTools:
             model='gpt-5-nano',
             name='Test',
             instructions='Test',
-            tools=[123],
+            tools=cast(Sequence[str | BaseTool], [123]),
         )
 
         with pytest.raises(InvalidBaseToolException):
@@ -757,7 +764,8 @@ class TestChatInputDTO:
 
     def test_validate_success(self):
         dto = ChatInputDTO(message='Valid message')
-        assert dto.validate() is None
+        dto.validate()
+        assert dto.message == 'Valid message'
 
     def test_validate_empty_message(self):
         dto = ChatInputDTO(message='')
@@ -774,21 +782,25 @@ class TestChatInputDTO:
     def test_validate_long_message(self):
         long_message = 'A' * 10000
         dto = ChatInputDTO(message=long_message)
-        assert dto.validate() is None
+        dto.validate()
+        assert dto.message == long_message
 
     def test_validate_multiline_message(self):
         multiline = 'Line 1\nLine 2\nLine 3'
         dto = ChatInputDTO(message=multiline)
-        assert dto.validate() is None
+        dto.validate()
+        assert dto.message == multiline
 
     def test_validate_special_characters(self):
         special = 'Hello! 你好 🎉'
         dto = ChatInputDTO(message=special)
-        assert dto.validate() is None
+        dto.validate()
+        assert dto.message == special
 
     def test_validate_with_numeric_string_message(self):
         dto = ChatInputDTO(message='12345')
-        assert dto.validate() is None
+        dto.validate()
+        assert dto.message == '12345'
 
     def test_empty_string_after_numeric_validation(self):
         dto = ChatInputDTO(message='')
@@ -909,9 +921,12 @@ class TestDTOsIntegration:
             instructions='Test',
         )
 
-        assert dto.validate() is None
-        assert dto.validate() is None
-        assert dto.validate() is None
+        dto.validate()
+        dto.validate()
+        dto.validate()
+        assert dto.provider == 'openai'
+        assert dto.model == 'gpt-5-nano'
+        assert dto.name == 'Test'
 
     def test_config_preservation_through_dtos(self):
         original_config = {

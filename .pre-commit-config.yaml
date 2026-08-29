@@ -7,22 +7,23 @@
 # commit-msg: Conventional Commits validation
 # pre-push: full type checks, unit tests, and dependency audit before push
 ---
-minimum_pre_commit_version: "3.2.0"
+minimum_pre_commit_version: "4.6.2"
 
 default_install_hook_types: [pre-commit, commit-msg, pre-push]
 default_stages: [pre-commit]
-default_language_version:
-  python: python3.12
-
-# The central harness owns validation of its projected .agents/ content.
-# Repository hooks continue to validate product and repository-owned files.
+# The dedicated projection gate owns validation of tracked .agents/ content.
+# Generic hooks continue to validate product and repository-owned files.
 exclude: |
   (?x)^(
     site/|
     dist/|
     \.benchmarks/|
     \.venv/|
-    \.agents/
+    \.agents/|
+    \.claude/|
+    \.codex/|
+    \.opencode/|
+    \.github/prompts/
   )
 
 repos:
@@ -91,6 +92,7 @@ repos:
       - id: forbid-submodules
       - id: name-tests-test
         args: ["--pytest-test-first"]
+        exclude: ^tests/typing_helpers\.py$
 
   # --------------------------------------------------------------------------
   # 2. Project Integrity & Governance
@@ -103,8 +105,8 @@ repos:
           uv run --locked --no-sync python
           scripts/quality_gates/check_lockfile_sync.py
         language: system
-        files: ^(?:pyproject\.toml|uv\.lock)$
         pass_filenames: false
+        always_run: true
 
       # This gate runs when hook policy or the secret allowlist changes.
       - id: quality-gate-policy
@@ -113,8 +115,17 @@ repos:
           uv run --locked --no-sync python
           scripts/quality_gates/quality_gate_policy.py
         language: system
-        files: ^(?:\.pre-commit-config\.yaml|\.gitleaksignore|scripts/quality_gates/(?:hook_config|hook_policy|quality_gate_policy|check_test_contracts|test_contract_ast)\.py)$
         pass_filenames: false
+        always_run: true
+
+      - id: check-harness-projection
+        name: check-harness-projection
+        entry: >-
+          uv run --locked --no-sync python
+          scripts/quality_gates/check_harness_projection.py
+        language: system
+        pass_filenames: false
+        always_run: true
 
       - id: validate-agents-md
         name: validate-agents-md
@@ -123,6 +134,7 @@ repos:
           .agents/skills/agents-md-author/scripts/validate_agents_md.py
         language: system
         files: ^AGENTS\.md$
+        args: [--strict-governance]
         pass_filenames: false
 
       - id: validate-agent-protocols
@@ -140,7 +152,9 @@ repos:
           uv run --locked --no-sync python
           .agents/scripts/check-max-lines.py
         language: system
+        args: [src, tests, scripts]
         pass_filenames: false
+        always_run: true
 
   # --------------------------------------------------------------------------
   # 2.1. AI Agent Diff Sanity & Test Integrity (Fail-Closed)
@@ -161,6 +175,7 @@ repos:
           - --allow-print-file=scripts/quality_gates/check_test_contracts.py
           - --allow-print-file=scripts/quality_gates/check_test_integrity.py
           - --allow-print-file=scripts/quality_gates/quality_gate_policy.py
+          - --allow-print-file=scripts/quality_gates/resolve_ci_range.py
           - --allow-print-file=src/createagents/presentation/cli/ui/terminal_renderer.py
         pass_filenames: false
         always_run: true
@@ -171,7 +186,6 @@ repos:
           uv run --locked --no-sync python
           scripts/quality_gates/check_test_contracts.py
         language: system
-        files: ^(?:tests|test)/
         pass_filenames: false
         always_run: true
 
@@ -181,7 +195,6 @@ repos:
           uv run --locked --no-sync python
           scripts/quality_gates/check_test_integrity.py
         language: system
-        files: ^(?:tests|test)/
         pass_filenames: false
         always_run: true
 
@@ -194,7 +207,7 @@ repos:
     hooks:
       - id: bandit-src
         name: bandit (src)
-        entry: uv run --locked --no-sync bandit -q -c pyproject.toml
+        entry: uv run --locked --no-sync bandit -q -c pyproject.toml -ll
         language: system
         types: [python]
         files: ^src/.*\.py$
@@ -208,7 +221,9 @@ repos:
     hooks:
       - id: gitleaks
         # Never echo a detected secret into local or CI logs.
-        args: ["--redact"]
+        args: [--redact, --config=.gitleaks.toml]
+        pass_filenames: false
+        always_run: true
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
     rev: 451b56af716f9f0d0c2b816503a3fd0cf8b036fa  # v1.29.0
@@ -276,7 +291,7 @@ repos:
       - id: codespell
         # Source/test code and comments are English; user documentation is
         # Portuguese and is intentionally outside this spelling gate.
-        files: ^(src|tests)/.*\.py$
+        files: ^(?:src|tests|scripts)/.*\.(?:py|pyi|pyw|sh|bash)$
         args: ["--ignore-words=.codespellignore"]
 
   # --------------------------------------------------------------------------
@@ -317,12 +332,22 @@ repos:
         always_run: true
         stages: [pre-push]
 
+      - id: mypy-supporting
+        name: mypy-supporting
+        entry: >-
+          uv run --locked --no-sync mypy tests scripts
+          --disable-error-code no-untyped-def --pretty
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
       # Same selection and coverage gate as pytest coverage and CI.
       - id: pytest-unit
         name: pytest-unit
         entry: >-
           uv run --locked --no-sync pytest -q -m "not integration and not slow"
-          --cov=src --cov-fail-under=85
+          --cov
         language: system
         pass_filenames: false
         always_run: true
@@ -335,3 +360,11 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [pre-push]
+
+      - id: check-harness-sync
+        name: check-harness-sync
+        entry: uv run --locked --no-sync harness-sync --check
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [manual]

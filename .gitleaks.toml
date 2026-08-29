@@ -1,0 +1,4 @@
+title = "Create Agents AI gitleaks policy"
+
+[extend]
+useDefault = true

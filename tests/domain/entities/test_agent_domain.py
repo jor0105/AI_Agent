@@ -248,6 +248,8 @@ class TestAgent:
             instructions='You are helpful! 😊',
         )
 
+        assert agent.name is not None
+        assert agent.instructions is not None
         assert '🤖' in agent.name
         assert '😊' in agent.instructions
 
@@ -266,6 +268,7 @@ class TestAgent:
             instructions=multiline_instructions,
         )
 
+        assert agent.instructions is not None
         assert '\n' in agent.instructions
         assert 'Be polite' in agent.instructions
 
@@ -301,6 +304,7 @@ class TestAgent:
             config={'temperature': 0.7, 'max_tokens': 100, 'top_p': 0.9},
         )
 
+        assert agent.config is not None
         assert agent.config['temperature'] == 0.7
         assert agent.config['max_tokens'] == 100
         assert agent.config['top_p'] == 0.9
@@ -400,6 +404,7 @@ class TestAgent:
             config={'temperature': 0.8, 'max_tokens': 500, 'top_p': 0.95},
         )
 
+        assert agent.config is not None
         assert len(agent.config) == 3
         assert agent.config['temperature'] == 0.8
         assert agent.config['max_tokens'] == 500
@@ -414,6 +419,7 @@ class TestAgent:
             config={'temperature': 0.5},
         )
 
+        assert agent.config is not None
         assert len(agent.config) == 1
         assert agent.config['temperature'] == 0.5
 
@@ -426,6 +432,7 @@ class TestAgent:
             config={'temperature': None, 'max_tokens': None},
         )
 
+        assert agent.config is not None
         assert agent.config['temperature'] is None
         assert agent.config['max_tokens'] is None
 
@@ -447,6 +454,7 @@ class TestAgent:
             instructions='Test',
             config={'temperature': 0.0},
         )
+        assert agent_min.config is not None
         assert agent_min.config['temperature'] == 0.0
 
         agent_max = Agent(
@@ -456,6 +464,7 @@ class TestAgent:
             instructions='Test',
             config={'temperature': 2.0},
         )
+        assert agent_max.config is not None
         assert agent_max.config['temperature'] == 2.0
 
     def test_agent_with_boundary_top_p_values(self):
@@ -466,6 +475,7 @@ class TestAgent:
             instructions='Test',
             config={'top_p': 0.0},
         )
+        assert agent_min.config is not None
         assert agent_min.config['top_p'] == 0.0
 
         agent_max = Agent(
@@ -475,6 +485,7 @@ class TestAgent:
             instructions='Test',
             config={'top_p': 1.0},
         )
+        assert agent_max.config is not None
         assert agent_max.config['top_p'] == 1.0
 
     def test_agent_with_minimum_valid_max_tokens(self):
@@ -485,6 +496,7 @@ class TestAgent:
             instructions='Test',
             config={'max_tokens': 1},
         )
+        assert agent.config is not None
         assert agent.config['max_tokens'] == 1
 
     def test_agent_with_none_optional_fields(self):
@@ -507,6 +519,7 @@ class TestAgent:
             instructions='Test',
             config={'temperature': 0.5},
         )
+        assert agent.config is not None
         assert agent.config['temperature'] == 0.5
 
     def test_agent_config_with_boolean_values(self):
@@ -517,6 +530,7 @@ class TestAgent:
             instructions='Test',
             config={'temperature': 0.5},
         )
+        assert agent.config is not None
         assert isinstance(agent.config['temperature'], float)
 
     def test_agent_with_top_p_below_min(self):
@@ -561,6 +575,7 @@ class TestAgent:
                 'top_p': 0.95,
             },
         )
+        assert agent.config is not None
         assert agent.config['temperature'] == 1.5
         assert agent.config['max_tokens'] == 2048
         assert agent.config['top_p'] == 0.95
@@ -573,6 +588,7 @@ class TestAgent:
             instructions='Test',
             config={'think': True},
         )
+        assert agent_bool.config is not None
         assert agent_bool.config['think'] is True
 
         agent_str = Agent(
@@ -582,6 +598,7 @@ class TestAgent:
             instructions='Test',
             config={'think': 'medium'},
         )
+        assert agent_str.config is not None
         assert agent_str.config['think'] == 'medium'
 
     def test_agent_config_scenarios_think_invalid_type(self):
@@ -602,6 +619,7 @@ class TestAgent:
             instructions='Test',
             config={'top_k': 25},
         )
+        assert agent.config is not None
         assert agent.config['top_k'] == 25
 
     def test_agent_config_scenarios_top_k_invalid_value(self):
@@ -622,6 +640,7 @@ class TestAgent:
             instructions='Test',
             config={'stream': True},
         )
+        assert agent.config is not None
         assert agent.config['stream'] is True
 
     def test_agent_config_scenarios_stream_rejects_non_boolean(self):
@@ -862,7 +881,7 @@ class TestAgentWithTools:
             def execute(self) -> str:
                 return 'result2'
 
-        tools = [Tool1(), Tool2()]
+        tools: list[BaseTool] = [Tool1(), Tool2()]
         agent = Agent(
             provider='openai',
             model='gpt-5-nano',
@@ -871,6 +890,7 @@ class TestAgentWithTools:
             tools=tools,
         )
 
+        assert agent.tools is not None
         assert len(agent.tools) == 2
         assert agent.tools[0].name == 'tool1'
         assert agent.tools[1].name == 'tool2'

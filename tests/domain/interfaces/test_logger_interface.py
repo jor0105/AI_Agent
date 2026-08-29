@@ -1,13 +1,14 @@
 import pytest
 
 from createagents.domain.interfaces.logger_interface import LoggerInterface
+from tests.typing_helpers import invoke
 
 
 @pytest.mark.unit
 class TestLoggerInterface:
     def test_scenario_cannot_instantiate_abstract_class(self):
         with pytest.raises(TypeError):
-            LoggerInterface()
+            invoke(LoggerInterface)
 
     def test_scenario_concrete_implementation_must_implement_all_methods(
         self,
@@ -17,7 +18,7 @@ class TestLoggerInterface:
                 return None
 
         with pytest.raises(TypeError):
-            IncompleteLogger()
+            invoke(IncompleteLogger)
 
     def test_scenario_concrete_implementation_with_all_methods(self):
         class CompleteLogger(LoggerInterface):
@@ -41,8 +42,8 @@ class TestLoggerInterface:
 
     def test_scenario_debug_method_signature(self):
         class TestLogger(LoggerInterface):
-            def __init__(self):
-                self.logs = []
+            def __init__(self) -> None:
+                self.logs: list[object] = []
 
             def debug(self, message: str, *args, **kwargs) -> None:
                 self.logs.append(('debug', message, args, kwargs))
@@ -70,8 +71,8 @@ class TestLoggerInterface:
 
     def test_scenario_info_method_signature(self):
         class TestLogger(LoggerInterface):
-            def __init__(self):
-                self.logs = []
+            def __init__(self) -> None:
+                self.logs: list[object] = []
 
             def debug(self, message: str, *args, **kwargs) -> None:
                 return None
@@ -99,8 +100,8 @@ class TestLoggerInterface:
 
     def test_scenario_warning_method_signature(self):
         class TestLogger(LoggerInterface):
-            def __init__(self):
-                self.logs = []
+            def __init__(self) -> None:
+                self.logs: list[object] = []
 
             def debug(self, message: str, *args, **kwargs) -> None:
                 return None
@@ -128,8 +129,8 @@ class TestLoggerInterface:
 
     def test_scenario_error_method_signature(self):
         class TestLogger(LoggerInterface):
-            def __init__(self):
-                self.logs = []
+            def __init__(self) -> None:
+                self.logs: list[object] = []
 
             def debug(self, message: str, *args, **kwargs) -> None:
                 return None
@@ -157,8 +158,8 @@ class TestLoggerInterface:
 
     def test_scenario_critical_method_signature(self):
         class TestLogger(LoggerInterface):
-            def __init__(self):
-                self.logs = []
+            def __init__(self) -> None:
+                self.logs: list[object] = []
 
             def debug(self, message: str, *args, **kwargs) -> None:
                 return None

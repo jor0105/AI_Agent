@@ -35,16 +35,16 @@ jobs:
           enable-cache: false
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked
 
       - name: Security analysis with Bandit
         run: |
-          uv run bandit -c pyproject.toml -r src -ll
+          uv run --locked --no-sync bandit -c pyproject.toml -r src -ll
           echo "✅ Security analysis passed"
 
       - name: Check for vulnerable dependencies
         run: |
-          uv run pip-audit
+          uv run --locked --no-sync pip-audit --timeout 60
           echo "✅ No vulnerable dependencies in release"
 
   # --------------------------------------------------------------------------
@@ -79,14 +79,13 @@ jobs:
           enable-cache: false
 
       - name: Install dependencies
-        run: uv sync --no-dev
+        run: uv sync --locked --no-dev --group release
 
       - name: Build package
         run: uv build
 
       - name: Check package distribution
-        run: |
-          uv run --with twine twine check dist/*
+        run: uv run --locked --no-sync twine check dist/*
 
       - name: Publish to PyPI using Trusted Publishers
         # pypa/gh-action-pypi-publish, pinned from branch release/v1

@@ -3,6 +3,7 @@ import logging
 import os
 import tempfile
 from pathlib import Path
+from typing import cast
 
 from createagents.infra import (
     JSONFormatter,
@@ -305,6 +306,8 @@ class TestLoggingConfig:
 
         handlers = LoggingConfig.get_handlers()
         formatter = handlers[0].formatter
+        assert formatter is not None
+        assert formatter._fmt is not None
         assert 'asctime' not in formatter._fmt
 
     def test_configure_custom_format_string(self):
@@ -313,6 +316,7 @@ class TestLoggingConfig:
 
         handlers = LoggingConfig.get_handlers()
         formatter = handlers[0].formatter
+        assert formatter is not None
         assert formatter._fmt == custom_format
 
     def test_file_rotation_settings(self):
@@ -472,13 +476,13 @@ class TestLoggingIntegration:
         assert result == test_path
 
     def test_resolve_log_file_path_with_bool(self):
-        result = LoggingConfig._resolve_log_file_path(True)
+        result = LoggingConfig._resolve_log_file_path(cast(str, True))
 
         assert isinstance(result, str)
         assert result != 'True'
 
     def test_resolve_log_file_path_with_invalid_type(self):
-        result = LoggingConfig._resolve_log_file_path(12345)
+        result = LoggingConfig._resolve_log_file_path(cast(str, 12345))
 
         assert isinstance(result, str)
 
@@ -615,10 +619,12 @@ class TestLoggingIntegration:
 
     def test_resolve_log_file_path_with_exception_handling(self):
         class UnconvertibleObject:
-            def __str__(self):
+            def __str__(self) -> str:
                 raise ValueError('Cannot convert to string')
 
-        result = LoggingConfig._resolve_log_file_path(UnconvertibleObject())
+        result = LoggingConfig._resolve_log_file_path(
+            cast(str, UnconvertibleObject())
+        )
 
         assert isinstance(result, str)
         assert result == LoggingConfig.DEFAULT_LOG_PATH or result == os.getenv(

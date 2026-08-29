@@ -1,3 +1,5 @@
+from typing import cast
+
 import pytest
 
 from createagents.domain import Message, MessageRole
@@ -63,7 +65,7 @@ class TestMessage:
         message = Message(role=MessageRole.USER, content='Test')
 
         with pytest.raises(AttributeError):
-            message.content = 'New content'
+            message.__setattr__('content', 'New content')
 
     def test_message_validation_empty_content(self):
         with pytest.raises(
@@ -81,7 +83,7 @@ class TestMessage:
         with pytest.raises(
             ValueError, match="The 'role' must be an instance of MessageRole"
         ):
-            Message(role='user', content='Hello')
+            Message(role=cast(MessageRole, 'user'), content='Hello')
 
     def test_to_dict_conversion(self):
         message = Message(role=MessageRole.USER, content='Hello')
@@ -185,10 +187,10 @@ class TestMessage:
         message = Message(role=MessageRole.USER, content='Test')
 
         with pytest.raises(AttributeError):
-            message.content = 'New'
+            message.__setattr__('content', 'New')
 
         with pytest.raises(AttributeError):
-            message.role = MessageRole.ASSISTANT
+            message.__setattr__('role', MessageRole.ASSISTANT)
 
     def test_message_to_dict_consistency(self):
         message = Message(role=MessageRole.USER, content='Test')
@@ -258,7 +260,7 @@ class TestToolMessages:
         message = Message(role=MessageRole.TOOL, content='Result')
 
         with pytest.raises(AttributeError):
-            message.content = 'New result'
+            message.__setattr__('content', 'New result')
 
     def test_tool_message_equality(self):
         msg1 = Message(role=MessageRole.TOOL, content='Same')

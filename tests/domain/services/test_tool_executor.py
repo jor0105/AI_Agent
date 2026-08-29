@@ -1,5 +1,4 @@
 import ast
-import operator
 import time
 from typing import Any, ClassVar
 from unittest.mock import Mock
@@ -14,25 +13,40 @@ from createagents.domain.interfaces import LoggerInterface
 
 def _evaluate_number(node: ast.AST) -> int | float:
     """Evaluate the small arithmetic subset used by the calculator fixture."""
-    if isinstance(node, ast.Constant) and type(node.value) in {int, float}:
-        return node.value
+    if isinstance(node, ast.Constant):
+        value = node.value
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return value
 
-    binary_operations = {
-        ast.Add: operator.add,
-        ast.Sub: operator.sub,
-        ast.Mult: operator.mul,
-        ast.Div: operator.truediv,
-    }
-    if isinstance(node, ast.BinOp) and type(node.op) in binary_operations:
-        operation = binary_operations[type(node.op)]
-        return operation(
-            _evaluate_number(node.left), _evaluate_number(node.right)
-        )
+    if isinstance(node, ast.BinOp):
+        return _evaluate_binary(node)
 
-    unary_operations = {ast.UAdd: operator.pos, ast.USub: operator.neg}
-    if isinstance(node, ast.UnaryOp) and type(node.op) in unary_operations:
-        return unary_operations[type(node.op)](_evaluate_number(node.operand))
+    if isinstance(node, ast.UnaryOp):
+        return _evaluate_unary(node)
 
+    raise ValueError('Only numeric arithmetic is supported')
+
+
+def _evaluate_binary(node: ast.BinOp) -> int | float:
+    left = _evaluate_number(node.left)
+    right = _evaluate_number(node.right)
+    if isinstance(node.op, ast.Add):
+        return left + right
+    if isinstance(node.op, ast.Sub):
+        return left - right
+    if isinstance(node.op, ast.Mult):
+        return left * right
+    if isinstance(node.op, ast.Div):
+        return left / right
+    raise ValueError('Only numeric arithmetic is supported')
+
+
+def _evaluate_unary(node: ast.UnaryOp) -> int | float:
+    value = _evaluate_number(node.operand)
+    if isinstance(node.op, ast.UAdd):
+        return +value
+    if isinstance(node.op, ast.USub):
+        return -value
     raise ValueError('Only numeric arithmetic is supported')
 
 
@@ -56,7 +70,7 @@ class MockLogger(LoggerInterface):
 
 
 @pytest.fixture
-def mock_logger():
+def mock_logger() -> MockLogger:
     """Fixture to provide a mock logger for tests."""
     return MockLogger()
 
@@ -101,7 +115,7 @@ class MockGreeterTool(BaseTool):
 
 class TestToolExecutor:
     def test_initialization_with_tools(self, mock_logger):
-        tools = [MockCalculatorTool(), MockGreeterTool()]
+        tools: list[BaseTool] = [MockCalculatorTool(), MockGreeterTool()]
         executor = ToolExecutor(tools, mock_logger)
 
         assert executor.get_available_tool_names() == ['calculator', 'greeter']
@@ -112,7 +126,7 @@ class TestToolExecutor:
         assert executor.get_available_tool_names() == []
 
     def test_has_tool(self, mock_logger):
-        tools = [MockCalculatorTool()]
+        tools: list[BaseTool] = [MockCalculatorTool()]
         executor = ToolExecutor(tools, mock_logger)
 
         assert executor.has_tool('calculator') is True
@@ -120,7 +134,7 @@ class TestToolExecutor:
 
     @pytest.mark.asyncio
     async def test_execute_tool_success(self, mock_logger):
-        tools = [MockCalculatorTool()]
+        tools: list[BaseTool] = [MockCalculatorTool()]
         executor = ToolExecutor(tools, mock_logger)
 
         result = await executor.execute_tool('calculator', expression='2 + 2')
@@ -128,6 +142,7 @@ class TestToolExecutor:
         assert isinstance(result, ToolExecutionResult)
         assert result.success is True
         assert result.tool_name == 'calculator'
+        assert isinstance(result.result, str)
         assert '4' in result.result
         assert result.error is None
         assert result.execution_time_ms is not None
@@ -135,12 +150,13 @@ class TestToolExecutor:
 
     @pytest.mark.asyncio
     async def test_execute_tool_with_kwargs(self, mock_logger):
-        tools = [MockGreeterTool()]
+        tools: list[BaseTool] = [MockGreeterTool()]
         executor = ToolExecutor(tools, mock_logger)
 
         result = await executor.execute_tool('greeter', name='Alice')
 
         assert result.success is True
+        assert isinstance(result.result, str)
         assert 'Alice' in result.result
 
     @pytest.mark.asyncio
@@ -151,22 +167,24 @@ class TestToolExecutor:
 
         assert result.success is False
         assert result.tool_name == 'nonexistent'
+        assert result.error is not None
         assert 'not found' in result.error.lower()
         assert result.execution_time_ms is not None
 
     @pytest.mark.asyncio
     async def test_execute_tool_with_invalid_arguments(self, mock_logger):
-        tools = [MockCalculatorTool()]
+        tools: list[BaseTool] = [MockCalculatorTool()]
         executor = ToolExecutor(tools, mock_logger)
 
         result = await executor.execute_tool('calculator')
 
         assert result.success is False
+        assert result.error is not None
         assert 'invalid arguments' in result.error.lower()
 
     @pytest.mark.asyncio
     async def test_execute_tool_with_execution_error(self, mock_logger):
-        tools = [MockCalculatorTool()]
+        tools: list[BaseTool] = [MockCalculatorTool()]
         executor = ToolExecutor(tools, mock_logger)
 
         result = await executor.execute_tool(
@@ -180,7 +198,7 @@ class TestToolExecutor:
     async def test_execute_tool_rejects_non_arithmetic_expression(
         self, mock_logger
     ):
-        tools = [MockCalculatorTool()]
+        tools: list[BaseTool] = [MockCalculatorTool()]
         executor = ToolExecutor(tools, mock_logger)
 
         result = await executor.execute_tool(
@@ -237,15 +255,16 @@ class TestToolExecutorEdgeCases:
             name = 'nullable'
             description = 'Accepts None values'
 
-            def execute(self, value=None) -> str:
+            def execute(self, value: object = None) -> str:
                 return f'Value: {value}'
 
-        tools = [NullableTool()]
+        tools: list[BaseTool] = [NullableTool()]
         executor = ToolExecutor(tools, mock_logger)
 
         result = await executor.execute_tool('nullable', value=None)
 
         assert result.success is True
+        assert isinstance(result.result, str)
         assert 'None' in result.result
 
     @pytest.mark.asyncio
@@ -258,7 +277,7 @@ class TestToolExecutorEdgeCases:
                 time.sleep(0.01)
                 return 'done'
 
-        tools = [SlowTool()]
+        tools: list[BaseTool] = [SlowTool()]
         executor = ToolExecutor(tools, mock_logger)
 
         result = await executor.execute_tool('slow')
@@ -275,7 +294,7 @@ class TestToolExecutorEdgeCases:
             def execute(self) -> str:
                 raise RuntimeError('Tool error')
 
-        tools = [FailingTool()]
+        tools: list[BaseTool] = [FailingTool()]
         executor = ToolExecutor(tools, mock_logger)
 
         result = await executor.execute_tool('failing')
@@ -296,7 +315,8 @@ class TestToolExecutorEdgeCases:
                 raise failure
 
         logger = Mock(spec=LoggerInterface)
-        executor = ToolExecutor([FailingTool()], logger)
+        tools: list[BaseTool] = [FailingTool()]
+        executor = ToolExecutor(tools, logger)
 
         result = await executor.execute_tool('failing')
 
@@ -316,7 +336,7 @@ class TestToolExecutorEdgeCases:
             def execute(self, arg1: str) -> str:
                 return arg1
 
-        tools = [SimpleToolWithKwargs()]
+        tools: list[BaseTool] = [SimpleToolWithKwargs()]
         executor = ToolExecutor(tools, mock_logger)
 
         result = await executor.execute_tool(
@@ -324,6 +344,7 @@ class TestToolExecutorEdgeCases:
         )
 
         assert result.success is False
+        assert result.error is not None
         assert (
             'invalid arguments' in result.error.lower()
             or 'unexpected' in result.error.lower()
@@ -335,10 +356,10 @@ class TestToolExecutorEdgeCases:
             name = 'complex'
             description = 'Returns complex data'
 
-            def execute(self) -> dict:
+            def execute(self) -> dict[str, object]:
                 return {'data': [1, 2, 3], 'nested': {'key': 'value'}}
 
-        tools = [ComplexReturnTool()]
+        tools: list[BaseTool] = [ComplexReturnTool()]
         executor = ToolExecutor(tools, mock_logger)
 
         result = await executor.execute_tool('complex')
@@ -361,7 +382,7 @@ class TestToolExecutorEdgeCases:
             def execute(self) -> str:
                 return 'two'
 
-        tools = [Tool1(), Tool2()]
+        tools: list[BaseTool] = [Tool1(), Tool2()]
         executor = ToolExecutor(tools, mock_logger)
 
         names = executor.get_available_tool_names()
@@ -386,7 +407,7 @@ class TestToolExecutorEdgeCases:
             def execute(self) -> str:
                 return 'second'
 
-        tools = [Tool1(), Tool2()]
+        tools: list[BaseTool] = [Tool1(), Tool2()]
         executor = ToolExecutor(tools, mock_logger)
 
         result = await executor.execute_tool('duplicate')
@@ -403,12 +424,13 @@ class TestToolExecutorEdgeCases:
             def execute(self, text: str) -> str:
                 return f'Received: {text}'
 
-        tools = [UnicodeTool()]
+        tools: list[BaseTool] = [UnicodeTool()]
         executor = ToolExecutor(tools, mock_logger)
 
         result = await executor.execute_tool('unicode', text='你好世界 🌍')
 
         assert result.success is True
+        assert isinstance(result.result, str)
         assert '你好世界' in result.result
         assert '🌍' in result.result
 

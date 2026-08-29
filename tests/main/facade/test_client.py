@@ -1,8 +1,12 @@
+from collections.abc import Sequence
+from typing import cast
 from unittest.mock import Mock, patch
 
 import pytest
 
 from createagents.domain import (
+    BaseTool,
+    ChatMetrics,
     InvalidAgentConfigException,
     InvalidBaseToolException,
     InvalidProviderException,
@@ -488,8 +492,6 @@ class TestCreateAgentMetrics:
         'createagents.main.facade.client.AgentComposer.create_chat_use_case'
     )
     def test_get_metrics_returns_list(self, mock_create_chat):
-        from createagents.infra.config.metrics import ChatMetrics
-
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
             ChatMetrics(model='gpt-5-nano', latency_ms=100.0)
@@ -551,8 +553,6 @@ class TestCreateAgentMetrics:
         'createagents.main.facade.client.AgentComposer.create_chat_use_case'
     )
     def test_get_metrics_with_multiple_metrics(self, mock_create_chat):
-        from createagents.infra.config.metrics import ChatMetrics
-
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
             ChatMetrics(model='gpt-5-nano', latency_ms=100.0, tokens_used=50),
@@ -577,8 +577,6 @@ class TestCreateAgentMetrics:
         'createagents.main.facade.client.AgentComposer.create_chat_use_case'
     )
     def test_export_metrics_json(self, mock_create_chat):
-        from createagents.infra.config.metrics import ChatMetrics
-
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
             ChatMetrics(model='gpt-5-nano', latency_ms=100.0, tokens_used=50)
@@ -603,8 +601,6 @@ class TestCreateAgentMetrics:
     )
     def test_export_metrics_json_to_file(self, mock_create_chat, tmp_path):
         import json
-
-        from createagents.infra.config.metrics import ChatMetrics
 
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
@@ -634,8 +630,6 @@ class TestCreateAgentMetrics:
         'createagents.main.facade.client.AgentComposer.create_chat_use_case'
     )
     def test_export_metrics_prometheus(self, mock_create_chat):
-        from createagents.infra.config.metrics import ChatMetrics
-
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
             ChatMetrics(model='gpt-5-nano', latency_ms=100.0)
@@ -660,8 +654,6 @@ class TestCreateAgentMetrics:
     def test_export_metrics_prometheus_to_file(
         self, mock_create_chat, tmp_path
     ):
-        from createagents.infra.config.metrics import ChatMetrics
-
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
             ChatMetrics(model='gpt-5-nano', latency_ms=100.0)
@@ -914,8 +906,6 @@ class TestCreateAgentEdgeCases:
     def test_export_metrics_to_nonexistent_directory(
         self, mock_create_chat, tmp_path
     ):
-        from createagents.infra.config.metrics import ChatMetrics
-
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
             ChatMetrics(model='gpt-5', latency_ms=100.0)
@@ -971,8 +961,6 @@ class TestCreateAgentEdgeCases:
     def test_get_metrics_does_not_modify_internal_state(
         self, mock_create_chat
     ):
-        from createagents.infra.config.metrics import ChatMetrics
-
         mock_use_case = Mock()
 
         def get_metrics_side_effect():
@@ -1009,8 +997,6 @@ class TestCreateAgentEdgeCases:
         'createagents.main.facade.client.AgentComposer.create_chat_use_case'
     )
     def test_export_metrics_json_without_filepath(self, mock_create_chat):
-        from createagents.infra.config.metrics import ChatMetrics
-
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
             ChatMetrics(model='gpt-5', latency_ms=100.0)
@@ -1033,8 +1019,6 @@ class TestCreateAgentEdgeCases:
     def test_export_metrics_prometheus_without_filepath(
         self, mock_create_chat
     ):
-        from createagents.infra.config.metrics import ChatMetrics
-
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
             ChatMetrics(model='gpt-5', latency_ms=100.0)
@@ -1347,7 +1331,7 @@ class TestCreateAgentEdgeCases:
                 model='gpt-5',
                 name='Test',
                 instructions='Test',
-                tools=[123],
+                tools=cast(Sequence[str | BaseTool], [123]),
             )
 
     def test_initialization_with_tool_missing_attributes_raises_error(self):
@@ -1360,7 +1344,7 @@ class TestCreateAgentEdgeCases:
                 model='gpt-5',
                 name='Test',
                 instructions='Test',
-                tools=[InvalidTool()],
+                tools=cast(Sequence[str | BaseTool], [InvalidTool()]),
             )
 
 

@@ -1,8 +1,9 @@
-from typing import ClassVar
+from typing import ClassVar, cast
 
 import pytest
 
 from createagents.domain import BaseTool
+from tests.typing_helpers import invoke
 
 
 class ConcreteTestTool(BaseTool):
@@ -61,7 +62,10 @@ class ComplexParametersTool(BaseTool):
     }
 
     def execute(
-        self, query: str, limit: int = 10, filters: dict | None = None
+        self,
+        query: str,
+        limit: int = 10,
+        filters: dict[str, object] | None = None,
     ) -> str:
         return f'Query: {query}, Limit: {limit}, Filters: {filters}'
 
@@ -72,7 +76,7 @@ class TestBaseTool:
         with pytest.raises(
             TypeError, match="Can't instantiate abstract class"
         ):
-            BaseTool()
+            invoke(BaseTool)
 
     def test_concrete_implementation_can_be_instantiated(self):
         tool = ConcreteTestTool()
@@ -88,7 +92,7 @@ class TestBaseTool:
                 name = 'incomplete'
                 description = 'No execute method'
 
-            IncompleteToolNoExecute()
+            invoke(IncompleteToolNoExecute)
 
     # assertion-reduction-reason: exact schema values replace presence checks.
     def test_name_attribute_is_accessible(self):
@@ -289,7 +293,8 @@ class TestToolInheritance:
         tool = CustomParamsTool()
 
         assert tool.parameters['type'] == 'custom'
-        assert 'x' in tool.parameters['properties']
+        properties = cast(dict[str, object], tool.parameters['properties'])
+        assert 'x' in properties
 
 
 @pytest.mark.unit
@@ -314,26 +319,36 @@ class TestToolParameterSchemas:
 
         params = tool.parameters
         required = params.get('required', [])
-        all_props = params['properties'].keys()
+        all_props = cast(dict[str, object], params['properties']).keys()
+        required_names = cast(list[str], required)
 
-        optional = set(all_props) - set(required)
+        optional = set(all_props) - set(required_names)
         assert 'limit' in optional or 'filters' in optional
 
     def test_parameters_with_default_values(self):
         tool = ComplexParametersTool()
 
-        limit_param = tool.parameters['properties']['limit']
+        properties = cast(
+            dict[str, dict[str, object]], tool.parameters['properties']
+        )
+        limit_param = properties['limit']
         assert 'default' in limit_param
         assert limit_param['default'] == 10
 
     def test_parameters_with_nested_objects(self):
         tool = ComplexParametersTool()
 
-        filters = tool.parameters['properties']['filters']
+        properties = cast(
+            dict[str, dict[str, object]], tool.parameters['properties']
+        )
+        filters = properties['filters']
         assert filters['type'] == 'object'
         assert 'properties' in filters
 
-        date_range = filters['properties']['date_range']
+        nested_properties = cast(
+            dict[str, dict[str, object]], filters['properties']
+        )
+        date_range = nested_properties['date_range']
         assert date_range['type'] == 'object'
         assert 'properties' in date_range
 
@@ -400,9 +415,14 @@ class TestToolDocumentation:
     def test_parameter_descriptions_exist(self):
         tool = ConcreteTestTool()
 
-        for prop in tool.parameters['properties'].values():
+        properties = cast(
+            dict[str, dict[str, object]], tool.parameters['properties']
+        )
+        for prop in properties.values():
             assert 'description' in prop
-            assert len(prop['description']) > 0
+            description = prop['description']
+            assert isinstance(description, str)
+            assert len(description) > 0
 
     def test_complex_tool_has_detailed_schema(self):
         tool = ComplexParametersTool()
@@ -472,7 +492,7 @@ class TestToolEdgeCases:
             name = 'dict_tool'
             description = 'Returns dict'
 
-            def execute(self) -> dict:
+            def execute(self) -> dict[str, str]:
                 return {'key': 'value'}
 
         string_tool = StringTool()

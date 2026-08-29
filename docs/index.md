@@ -313,8 +313,7 @@ Quer adicionar um novo provedor ou criar uma ferramenta?
 4. Execute os testes locais seguros:
 
    ```bash
-   uv run --locked --no-sync pytest -m 'not integration and not slow' -ra \
-       --cov=src --cov-fail-under=85
+   uv run --locked --no-sync pytest -m 'not integration and not slow' -ra --cov
    ```
 
 5. Verifique os demais gates descritos no guia.

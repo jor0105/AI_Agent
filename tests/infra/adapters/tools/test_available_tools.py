@@ -29,14 +29,14 @@ def fake_read_local_file_tool(monkeypatch):
         description = 'A fake local-file tool for catalog tests.'
         construction_count = 0
 
-        def __init__(self):
+        def __init__(self) -> None:
             type(self).construction_count += 1
 
-        def execute(self, **kwargs):
+        def execute(self, **kwargs: object) -> str:
             return 'fake file content'
 
     fake_module = types.ModuleType(OPTIONAL_TOOL_MODULE)
-    fake_module.ReadLocalFileTool = FakeReadLocalFileTool
+    fake_module.__dict__['ReadLocalFileTool'] = FakeReadLocalFileTool
     monkeypatch.setitem(sys.modules, OPTIONAL_TOOL_MODULE, fake_module)
     return FakeReadLocalFileTool
 

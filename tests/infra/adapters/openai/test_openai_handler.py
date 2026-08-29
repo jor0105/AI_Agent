@@ -1,8 +1,9 @@
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
-from createagents.domain import ChatException
+from createagents.domain import BaseTool, ChatException
 from createagents.infra.adapters.openai.openai_handler import OpenAIHandler
 
 IA_OPENAI_TEST_1: str = 'gpt-5-nano'
@@ -16,8 +17,11 @@ class TestOpenAIHandler:
         self.handler = OpenAIHandler(self.mock_client)
 
     def _make_response(
-        self, output_text='', tool_calls=None, usage_attrs=None
-    ):
+        self,
+        output_text: str = '',
+        tool_calls: object = None,
+        usage_attrs: dict[str, object] | None = None,
+    ) -> MagicMock:
         mock_response = MagicMock()
         mock_response.output_text = output_text
 
@@ -98,6 +102,7 @@ class TestOpenAIHandler:
         metrics = self.handler.get_metrics()
         assert len(metrics) == 1
         assert metrics[0].success is False
+        assert metrics[0].error_message is not None
         assert 'API Error' in metrics[0].error_message
 
     @patch(
@@ -147,7 +152,7 @@ class TestOpenAIHandler:
         self.mock_client.call_api.side_effect = [response1, response2]
 
         # Execute
-        tools = [Mock(name='test_tool')]
+        tools: list[BaseTool] = [cast(BaseTool, Mock(name='test_tool'))]
         response = await self.handler.execute_tool_loop(
             model=IA_OPENAI_TEST_1,
             instructions='Instr',

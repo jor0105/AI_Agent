@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -51,7 +52,7 @@ class TestChatCommandHandler:
         mock_formatter.assert_called_once_with('raw response')
 
     def test_scenario_execute_streaming_flow(self):
-        async def token_generator():
+        async def token_generator() -> AsyncGenerator[str, None]:
             yield 'Hello'
             yield ' World'
 

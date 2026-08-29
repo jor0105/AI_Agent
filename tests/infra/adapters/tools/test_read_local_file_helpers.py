@@ -48,7 +48,7 @@ except ImportError:
 def fake_tiktoken_module():
     """Provide an isolated tiktoken module without fetching its encoding data."""
     module = ModuleType('tiktoken')
-    module.get_encoding = Mock()
+    module.__dict__['get_encoding'] = Mock()
     with patch.dict('sys.modules', {'tiktoken': module}):
         yield module
 

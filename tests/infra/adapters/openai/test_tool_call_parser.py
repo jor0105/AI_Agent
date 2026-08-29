@@ -1,5 +1,5 @@
 import json
-from typing import Any
+from typing import Any, cast
 from unittest.mock import Mock
 
 import pytest
@@ -223,7 +223,7 @@ class TestToolCallParser:
         result = ToolCallParser.format_tool_results_for_llm(
             tool_call_id='call_123',
             tool_name='calculate',
-            result=42,
+            result=cast(str, 42),
         )
 
         assert result['output'] == '42'
@@ -241,7 +241,7 @@ class TestToolCallParser:
         result = ToolCallParser.format_tool_results_for_llm(
             tool_call_id='call_123',
             tool_name='api_call',
-            result=complex_result,
+            result=cast(str, complex_result),
         )
 
         assert 'data' in result['output']
@@ -480,6 +480,7 @@ Line 3"""
 
         result = ToolCallParser.get_assistant_message_with_tool_calls(response)
 
+        assert result is not None
         assert result[0]['id'] == 'r_123'
         assert result[0]['summary'] == ['Step 1', 'Step 2']
         assert result[1]['id'] == 'fc_456'

@@ -86,7 +86,7 @@ class TestAgentChat(TestCase):
 Use `pytest` with coverage tracking:
 
 ```bash
-uv run --locked --no-sync pytest -m 'not integration and not slow' -ra --cov=src --cov-fail-under=85
+uv run --locked --no-sync pytest -m 'not integration and not slow' -ra --cov
 ```
 
 ## Extending Metrics

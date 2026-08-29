@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+from typing import cast
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -91,7 +93,7 @@ class TestOpenAIChatAdapter:
             history=[],
         )
 
-        assert list(response) == ['Hello']
+        assert list(cast(Iterable[str], response)) == ['Hello']
         mock_stream_handler.handle_stream.assert_called_once()
         mock_handler_cls.assert_not_called()
 

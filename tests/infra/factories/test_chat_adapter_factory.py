@@ -1,3 +1,4 @@
+from typing import cast
 from unittest.mock import Mock, patch
 
 import pytest
@@ -76,7 +77,7 @@ class TestChatAdapterFactory:
 
     def test_none_provider_raises(self):
         with pytest.raises(AttributeError):
-            ChatAdapterFactory.create(provider=None)
+            ChatAdapterFactory.create(provider=cast(str, None))
 
 
 @pytest.mark.unit

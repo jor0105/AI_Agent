@@ -307,8 +307,7 @@ Looking to add a new provider or build a custom tool?
 4. Run safe local tests:
 
    ```bash
-   uv run --locked --no-sync pytest -m 'not integration and not slow' -ra \
-       --cov=src --cov-fail-under=85
+   uv run --locked --no-sync pytest -m 'not integration and not slow' -ra --cov
    ```
 
 5. Verify remaining quality gates described in the guide.

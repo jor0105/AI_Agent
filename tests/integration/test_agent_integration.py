@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Any
 
 import pytest
 
@@ -24,7 +25,7 @@ IA_OPENAI_TEST_2: str = 'gpt-5-nano'
 # allow-assertion-reduction: Replaced broad exception swallowing with specific public-contract assertions during facade relocation.
 
 
-def _get_openai_api_key():
+def _get_openai_api_key() -> str:
     from createagents.infra.adapters.openai.client_openai import ClientOpenAI
     from createagents.infra.config.environment import EnvironmentConfig
 
@@ -43,7 +44,7 @@ def _get_openai_api_key():
         return api_key
 
 
-def _check_ollama_available():
+def _check_ollama_available() -> None:
     # Integration-only probe for an optional local Ollama installation.
     import subprocess  # nosec B404
 
@@ -62,7 +63,7 @@ def _check_ollama_available():
         pytest.skip('Ollama is not installed or not responding')
 
 
-def _check_ollama_model_available(model: str):
+def _check_ollama_model_available(model: str) -> None:
     # Integration-only probe for an optional local Ollama installation.
     import subprocess  # nosec B404
 
@@ -81,28 +82,28 @@ def _check_ollama_model_available(model: str):
 
 
 class _SimpleTool(BaseTool):
-    def __init__(self, name: str, description: str):
+    def __init__(self, name: str, description: str) -> None:
         self.name = name
         self.description = description
 
-    def execute(self, *args, **kwargs):
+    def execute(self, *args: object, **kwargs: object) -> str:
         return 'simple-result'
 
 
 class _StubChatRepository(ChatRepository):
-    def __init__(self):
+    def __init__(self) -> None:
         self._metrics: list[ChatMetrics] = []
         self._call_count = 0
 
     async def chat(
         self,
         model: str,
-        instructions,
-        config,
-        tools,
-        history,
+        instructions: str | None,
+        config: dict[str, Any] | None,
+        tools: list[BaseTool] | None,
+        history: list[dict[str, str]],
         user_ask: str,
-    ):
+    ) -> str:
         self._call_count += 1
         self._metrics.append(
             ChatMetrics(
@@ -114,15 +115,17 @@ class _StubChatRepository(ChatRepository):
         )
         return f'Stub response #{self._call_count} to: {user_ask}'
 
-    def get_metrics(self):
+    def get_metrics(self) -> list[ChatMetrics]:
         return self._metrics
 
 
 @pytest.fixture
-def stub_chat_repository(monkeypatch):
+def stub_chat_repository(monkeypatch) -> _StubChatRepository:
     stub_repo = _StubChatRepository()
 
-    def _fake_create(cls, provider):
+    def _fake_create(
+        cls: type[ChatAdapterFactory], provider: str
+    ) -> ChatRepository:
         return stub_repo
 
     monkeypatch.setattr(
@@ -402,6 +405,7 @@ class TestCreateAgentChatOpenAI:
 
         response2 = await agent.chat('What is my name?')
         assert response2 is not None
+        assert isinstance(response2, str)
         assert 'Jordan' in response2 or 'jordan' in response2.lower()
 
     @pytest.mark.asyncio
@@ -491,6 +495,7 @@ class TestCreateAgentChatOllama:
 
         response2 = await agent.chat('What is my favorite color?')
         assert response2 is not None
+        assert isinstance(response2, str)
         assert 'blue' in response2.lower() or 'color' in response2.lower()
 
     @pytest.mark.asyncio
@@ -892,6 +897,7 @@ class TestCreateAgentToolAndMetricsOffline:
         )
 
         response = await agent.chat('Hello stub integration')
+        assert isinstance(response, str)
         assert 'Stub response' in response
 
         metrics = agent.get_metrics()

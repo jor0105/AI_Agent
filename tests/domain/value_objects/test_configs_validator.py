@@ -1,3 +1,5 @@
+from typing import cast
+
 import pytest
 
 from createagents.domain import InvalidAgentConfigException, SupportedConfigs
@@ -188,12 +190,14 @@ class TestThinkValidation:
     def test_validate_think_with_dict_should_fail(self):
         # Dicts are no longer accepted
         with pytest.raises(InvalidAgentConfigException, match='think'):
-            SupportedConfigs.validate_think({'type': 'enabled'})
+            SupportedConfigs.validate_think(
+                cast(bool | str | None, {'type': 'enabled'})
+            )
 
     def test_validate_think_with_empty_dict_should_fail(self):
         # Empty dicts are no longer accepted
         with pytest.raises(InvalidAgentConfigException, match='think'):
-            SupportedConfigs.validate_think({})
+            SupportedConfigs.validate_think(cast(bool | str | None, {}))
 
     def test_validate_think_with_invalid_string_value(self):
         with pytest.raises(InvalidAgentConfigException, match='think'):
@@ -201,15 +205,17 @@ class TestThinkValidation:
 
     def test_validate_think_with_invalid_type_int(self):
         with pytest.raises(InvalidAgentConfigException, match='think'):
-            SupportedConfigs.validate_think(1)
+            SupportedConfigs.validate_think(cast(bool | str | None, 1))
 
     def test_validate_think_with_invalid_type_float(self):
         with pytest.raises(InvalidAgentConfigException, match='think'):
-            SupportedConfigs.validate_think(0.5)
+            SupportedConfigs.validate_think(cast(bool | str | None, 0.5))
 
     def test_validate_think_with_invalid_type_list(self):
         with pytest.raises(InvalidAgentConfigException, match='think'):
-            SupportedConfigs.validate_think(['enabled'])
+            SupportedConfigs.validate_think(
+                cast(bool | str | None, ['enabled'])
+            )
 
     def test_validate_think_error_message_format(self):
         with pytest.raises(InvalidAgentConfigException) as exc_info:
@@ -251,11 +257,11 @@ class TestTopKValidation:
 
     def test_validate_top_k_with_float_value(self):
         with pytest.raises(InvalidAgentConfigException, match='top_k'):
-            SupportedConfigs.validate_top_k(10.5)
+            SupportedConfigs.validate_top_k(cast(int | None, 10.5))
 
     def test_validate_top_k_with_string_value(self):
         with pytest.raises(InvalidAgentConfigException, match='top_k'):
-            SupportedConfigs.validate_top_k('10')
+            SupportedConfigs.validate_top_k(cast(int | None, '10'))
 
     def test_validate_top_k_with_boolean_value(self):
         with pytest.raises(InvalidAgentConfigException, match='top_k'):
@@ -280,9 +286,9 @@ class TestStreamValidation:
 
     def test_validate_stream_scenarios_rejects_invalid_types(self):
         with pytest.raises(InvalidAgentConfigException, match='stream'):
-            SupportedConfigs.validate_stream('yes')
+            SupportedConfigs.validate_stream(cast(bool | None, 'yes'))
         with pytest.raises(InvalidAgentConfigException, match='stream'):
-            SupportedConfigs.validate_stream(1)
+            SupportedConfigs.validate_stream(cast(bool | None, 1))
 
 
 @pytest.mark.unit

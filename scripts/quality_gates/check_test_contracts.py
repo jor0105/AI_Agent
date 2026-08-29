@@ -1,4 +1,4 @@
-"""Audit complete staged or working-tree Python test snapshots."""
+"""Audit complete staged or revision Python test snapshots."""
 
 from __future__ import annotations
 
@@ -8,12 +8,15 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from git_index import (
+from git_changes import (
     GitInspectionError,
     indexed_paths,
+    is_external_path,
     normalize_path,
-    read_index_text,
+    read_text,
     repository_root,
+    revision_paths,
+    verify_revision,
 )
 from test_contract_ast import TestContractVisitor, Violation
 
@@ -21,6 +24,8 @@ from test_contract_ast import TestContractVisitor, Violation
 def is_test_file(file_path: str) -> bool:
     """Return whether a repository path belongs to tests."""
     normalized = normalize_path(file_path).lower()
+    if is_external_path(normalized):
+        return False
     if normalized.startswith(('.venv/', 'venv/', '.git/', 'site/', 'dist/')):
         return False
     return (
@@ -50,33 +55,33 @@ def audit_source(source: str, file_path: str) -> list[Violation]:
 def audit_test_files(
     root: Path,
     paths: Sequence[str] | None = None,
-    from_working_tree: bool = False,
+    revision: str | None = None,
 ) -> list[Violation]:
-    """Audit selected, working-tree, or complete staged test files."""
+    """Audit selected or complete test files from one Git snapshot."""
     if paths is not None:
-        target_paths = sorted(p for p in paths if is_test_file(p))
-    elif from_working_tree:
         target_paths = sorted(
-            normalize_path(path.relative_to(root))
-            for path in root.rglob('*.py')
-            if is_test_file(str(path.relative_to(root)))
+            normalize_path(path) for path in paths if is_test_file(path)
         )
     else:
-        target_paths = sorted(
-            p for p in indexed_paths(root) if is_test_file(p)
-        )
+        if revision is None:
+            target_paths = sorted(
+                p for p in indexed_paths(root) if is_test_file(p)
+            )
+        else:
+            resolved = verify_revision(revision, root)
+            target_paths = sorted(
+                p for p in revision_paths(root, resolved) if is_test_file(p)
+            )
 
     violations: list[Violation] = []
     for rel_path in target_paths:
-        if from_working_tree:
-            full_path = root / rel_path
-            if not full_path.exists():
-                continue
-            content = full_path.read_text(encoding='utf-8')
-        else:
-            content = read_index_text(rel_path, root)
-            if content is None:
-                continue
+        content = (
+            read_text(rel_path, root)
+            if revision is None
+            else read_text(rel_path, root, revision)
+        )
+        if content is None:
+            continue
         violations.extend(audit_source(content, rel_path))
     return violations
 
@@ -84,11 +89,7 @@ def audit_test_files(
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the test contract quality gate."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        '--working-tree',
-        action='store_true',
-        help='Inspect working-tree files instead of the staged Git index.',
-    )
+    parser.add_argument('--revision', metavar='REV')
     parser.add_argument(
         'files', nargs='*', help='Optional specific test files.'
     )
@@ -98,7 +99,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         root = repository_root()
         paths = args.files if args.files else None
         violations = audit_test_files(
-            root=root, paths=paths, from_working_tree=args.working_tree
+            root=root, paths=paths, revision=args.revision
         )
     except (GitInspectionError, OSError, UnicodeError) as err:
         print(f'ERROR [TEST_CONTRACTS]: {err}', file=sys.stderr)

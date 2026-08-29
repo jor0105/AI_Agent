@@ -120,7 +120,7 @@ Run models **locally** (processing on `localhost` with zero API costs; if `OLLAM
 
 ### Install Ollama
 
-- **Linux:** `curl -fsSL https://ollama.com/install.sh | sh` (or download from [ollama.com/download/linux](https://ollama.com/download/linux))
+- **Linux:** Download the official installer from [ollama.com/download/linux](https://ollama.com/download/linux), review the page's instructions, and execute the local file.
 - **macOS:** Download installer from [ollama.com/download/mac](https://ollama.com/download/mac) (or run `brew install ollama`)
 - **Windows:** Download official installer from [ollama.com/download/windows](https://ollama.com/download/windows)
 
@@ -199,8 +199,8 @@ cd Create-Agents-AI
 ### 2. Install with uv
 
 ```bash
-# Install uv if needed
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# Install uv by following the official instructions at
+# https://docs.astral.sh/uv/getting-started/installation/
 
 # Base install enforcing lockfile
 uv sync --locked

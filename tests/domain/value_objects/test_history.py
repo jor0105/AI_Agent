@@ -1,3 +1,5 @@
+from typing import cast
+
 import pytest
 
 from createagents.domain import History, Message, MessageRole
@@ -59,7 +61,7 @@ class TestHistory:
         with pytest.raises(
             TypeError, match='Only Message objects can be added'
         ):
-            history.add('Not a message')
+            history.add(cast(Message, 'Not a message'))
 
     def test_add_user_message(self):
         history = History()
@@ -143,7 +145,7 @@ class TestHistory:
         assert result[1] == {'role': 'assistant', 'content': 'Hi there!'}
 
     def test_from_dict_list_empty(self):
-        data = []
+        data: list[dict[str, str]] = []
         history = History.from_dict_list(data, max_size=5)
 
         assert len(history) == 0
@@ -189,7 +191,7 @@ class TestHistory:
             ValueError,
             match="The history's max size must be greater than zero",
         ):
-            History(max_size=None)
+            History(max_size=cast(int, None))
         with pytest.raises(
             ValueError,
             match="The history's max size must be greater than zero",

@@ -1,4 +1,5 @@
 import re
+from typing import cast
 
 import pytest
 
@@ -140,9 +141,9 @@ class TestSanitize:
         assert result == ''
 
     def test_sanitize_non_string_input(self):
-        assert TextSanitizer.sanitize(123) == 123
-        assert TextSanitizer.sanitize(None) is None
-        assert TextSanitizer.sanitize([]) == []
+        assert cast(object, TextSanitizer.sanitize(cast(str, 123))) == 123
+        assert cast(object, TextSanitizer.sanitize(cast(str, None))) is None
+        assert cast(object, TextSanitizer.sanitize(cast(str, []))) == []
 
     def test_sanitize_narrow_nbsp(self):
         text = 'Hello\u202fWorld'
@@ -252,8 +253,14 @@ class TestSanitize:
 @pytest.mark.unit
 class TestFormatMarkdownForTerminal:
     def test_format_non_string_input(self):
-        assert MarkdownTerminalFormatter.format(123) == 123
-        assert MarkdownTerminalFormatter.format(None) is None
+        assert (
+            cast(object, MarkdownTerminalFormatter.format(cast(str, 123)))
+            == 123
+        )
+        assert (
+            cast(object, MarkdownTerminalFormatter.format(cast(str, None)))
+            is None
+        )
 
     def test_format_empty_string(self):
         result = MarkdownTerminalFormatter.format('')
@@ -652,17 +659,26 @@ class TestEdgeCasesAndErrorHandling:
         assert 'word' in result_formatted
 
     def test_none_handling(self):
-        assert TextSanitizer.sanitize(None) is None
-        assert MarkdownTerminalFormatter.format(None) is None
+        assert cast(object, TextSanitizer.sanitize(cast(str, None))) is None
+        assert (
+            cast(object, MarkdownTerminalFormatter.format(cast(str, None)))
+            is None
+        )
 
     def test_numeric_input_handling(self):
-        assert TextSanitizer.sanitize(42) == 42
-        assert MarkdownTerminalFormatter.format(3.14) == 3.14
+        assert cast(object, TextSanitizer.sanitize(cast(str, 42))) == 42
+        assert (
+            cast(object, MarkdownTerminalFormatter.format(cast(str, 3.14)))
+            == 3.14
+        )
 
     def test_list_input_handling(self):
         lst = [1, 2, 3]
-        assert TextSanitizer.sanitize(lst) == lst
-        assert MarkdownTerminalFormatter.format(lst) == lst
+        assert cast(object, TextSanitizer.sanitize(cast(str, lst))) == lst
+        assert (
+            cast(object, MarkdownTerminalFormatter.format(cast(str, lst)))
+            == lst
+        )
 
     def test_unicode_edge_cases(self):
         test_cases = [

@@ -1,3 +1,5 @@
+from collections.abc import AsyncGenerator, Iterable
+
 import pytest
 
 from createagents.application.dtos.streaming_response_dto import (
@@ -5,7 +7,7 @@ from createagents.application.dtos.streaming_response_dto import (
 )
 
 
-async def mock_generator(tokens):
+async def mock_generator(tokens: Iterable[str]) -> AsyncGenerator[str, None]:
     for token in tokens:
         yield token
 

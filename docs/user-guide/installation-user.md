@@ -121,7 +121,7 @@ Permite rodar modelos de IA **localmente** (processamento em `localhost` sem cus
 
 ### Instalar Ollama
 
-- **Linux:** `curl -fsSL https://ollama.com/install.sh | sh` (ou baixe em [ollama.com/download/linux](https://ollama.com/download/linux))
+- **Linux:** Baixe o instalador oficial em [ollama.com/download/linux](https://ollama.com/download/linux), revise as instruções da página e execute o arquivo localmente.
 - **macOS:** Baixe o instalador em [ollama.com/download/mac](https://ollama.com/download/mac) (ou execute `brew install ollama`)
 - **Windows:** Baixe o instalador oficial em [ollama.com/download/windows](https://ollama.com/download/windows)
 
@@ -200,8 +200,8 @@ cd Create-Agents-AI
 ### 2. Instalar com uv
 
 ```bash
-# Instale o uv se necessário
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# Instale o uv seguindo as instruções oficiais em
+# https://docs.astral.sh/uv/getting-started/installation/
 
 # Instalação básica respeitando o lockfile
 uv sync --locked

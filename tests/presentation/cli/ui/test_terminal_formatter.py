@@ -76,11 +76,17 @@ class _FakeShutil:
     swapped.
     """
 
-    def __init__(self, result=None, error=None):
+    def __init__(
+        self,
+        result: os.terminal_size | None = None,
+        error: type[Exception] | None = None,
+    ) -> None:
         self._result = result
         self._error = error
 
-    def get_terminal_size(self, *args, **kwargs):
+    def get_terminal_size(
+        self, *args: object, **kwargs: object
+    ) -> os.terminal_size | None:
         if self._error is not None:
             raise self._error('no tty')
         return self._result
@@ -125,7 +131,7 @@ class TestWrapText:
 @pytest.mark.unit
 class TestFormatRoundedBoxLayout:
     @staticmethod
-    def _fixed_width(monkeypatch, width=60):
+    def _fixed_width(monkeypatch: pytest.MonkeyPatch, width: int = 60) -> None:
         monkeypatch.setattr(
             TerminalFormatter,
             'get_terminal_width',

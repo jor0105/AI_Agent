@@ -1,9 +1,11 @@
+from collections.abc import AsyncIterator, Iterable, Iterator
 from types import SimpleNamespace
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
-from createagents.domain import ChatException
+from createagents.domain import BaseTool, ChatException
 from createagents.infra.adapters.openai.openai_stream_handler import (
     OpenAIStreamHandler,
 )
@@ -12,15 +14,16 @@ IA_OPENAI_TEST_1: str = 'gpt-5-nano'
 
 
 class FakeStream:
-    def __init__(self, events):
-        self._events = list(events)
-        self._iterator = None
+    def __init__(self, events: Iterable[object]) -> None:
+        self._events: list[object] = list(events)
+        self._iterator: Iterator[object] | None = None
 
-    def __aiter__(self):
+    def __aiter__(self) -> AsyncIterator[object]:
         self._iterator = iter(self._events)
         return self
 
-    async def __anext__(self):
+    async def __anext__(self) -> object:
+        assert self._iterator is not None
         try:
             return next(self._iterator)
         except StopIteration as exc:
@@ -136,7 +139,7 @@ class TestOpenAIStreamHandler:
             instructions='Instr',
             messages=[{'role': 'user', 'content': 'Hi'}],
             config={'stream': True},
-            tools=tools,
+            tools=cast(list[BaseTool], tools),
         )
 
         collected = [token async for token in generator]
@@ -169,6 +172,7 @@ class TestOpenAIStreamHandler:
         metrics = self.handler.get_metrics()
         assert len(metrics) == 1
         assert metrics[0].success is False
+        assert metrics[0].error_message is not None
         assert 'Stream Error' in metrics[0].error_message
 
 
@@ -183,14 +187,14 @@ class TestCompletedResponseFallback:
     """
 
     @staticmethod
-    def _completed(output):
+    def _completed(output: object) -> SimpleNamespace:
         return SimpleNamespace(
             type='response.completed',
             response=SimpleNamespace(response_output=None, output=output),
         )
 
     @staticmethod
-    async def _collect(handler):
+    async def _collect(handler: OpenAIStreamHandler) -> list[str]:
         return [
             token
             async for token in handler.handle_stream(
@@ -202,7 +206,7 @@ class TestCompletedResponseFallback:
             )
         ]
 
-    def _handler(self, output):
+    def _handler(self, output: object) -> OpenAIStreamHandler:
         client = MagicMock()
         client.call_api = AsyncMock(
             return_value=FakeStream([self._completed(output)])

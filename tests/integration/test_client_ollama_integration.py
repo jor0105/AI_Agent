@@ -1,5 +1,6 @@
 import contextlib
 import os
+from collections.abc import Generator
 
 import pytest
 
@@ -13,7 +14,7 @@ IA_OLLAMA_TEST_2: str = (
 )
 
 
-def _check_ollama_available():
+def _check_ollama_available() -> None:
     # Integration-only probe for an optional local Ollama installation.
     import subprocess  # nosec B404
 
@@ -32,7 +33,7 @@ def _check_ollama_available():
         pytest.skip('Ollama is not installed or not responding')
 
 
-def _check_model_available(model: str):
+def _check_model_available(model: str) -> None:
     # Integration-only probe for an optional local Ollama installation.
     import subprocess  # nosec B404
 
@@ -51,10 +52,9 @@ def _check_model_available(model: str):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def teardown_ollama_models():
+def teardown_ollama_models() -> Generator[None, None, None]:
     yield
 
-    # Integration-only teardown of optional local Ollama models.
     import subprocess  # nosec B404
 
     if os.getenv('CI'):
@@ -627,7 +627,6 @@ class TestOllamaChatAdapterToolsIntegration:
             user_ask='What is the current Unix timestamp? Use the current_date tool.',
         )
 
-        assert response1 is not None
         assert isinstance(response1, str)
         assert len(response1) > 0
 
@@ -794,7 +793,8 @@ class TestOllamaChatAdapterToolsIntegration:
         )
 
         assert response1 is not None
-        history = [
+        assert isinstance(response1, str)
+        history: list[dict[str, str]] = [
             {'role': 'user', 'content': "What is today's date in UTC?"},
             {'role': 'assistant', 'content': response1},
         ]

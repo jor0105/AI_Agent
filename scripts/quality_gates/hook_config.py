@@ -25,7 +25,7 @@ class _HookBlock:
             if not match:
                 continue
             value = match.group('value').strip()
-            if value not in {'>', '>-', '|', '|-'}:
+            if value and value not in {'>', '>-', '|', '|-'}:
                 return value
             indent = len(match.group('indent'))
             continuation: list[str] = []

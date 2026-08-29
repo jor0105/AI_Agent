@@ -479,6 +479,7 @@ class TestGetAgentConfigUseCase:
 
         output = use_case.execute(agent)
 
+        assert output.tools is not None
         assert len(output.tools) == 2
         assert all(isinstance(t, BaseTool) for t in output.tools)
 
@@ -529,6 +530,7 @@ class TestGetAgentConfigUseCase:
 
         output = use_case.execute(agent)
 
+        assert output.tools is not None
         assert output.tools[0] is tool
 
     def test_execute_with_tools_and_history(self):
@@ -555,6 +557,7 @@ class TestGetAgentConfigUseCase:
 
         output = use_case.execute(agent)
 
+        assert output.tools is not None
         assert len(output.tools) == 1
         assert len(output.history) == 2
 
@@ -582,6 +585,7 @@ class TestGetAgentConfigUseCase:
 
         output = use_case.execute(agent)
 
+        assert output.tools is not None
         assert len(output.tools) == 1
         assert output.config == config
 

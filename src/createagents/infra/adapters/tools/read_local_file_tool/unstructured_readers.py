@@ -2,13 +2,29 @@ import io
 import sys
 import warnings
 from collections.abc import Callable
+from importlib import import_module
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from .....domain import FileReadException
 from ....config import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
+
+
+def _load_unstructured_partitioner(
+    module_name: str, function_name: str, purpose: str
+) -> Callable[..., Any]:
+    """Load an optional unstructured partitioner by module name."""
+    try:
+        module = import_module(module_name)
+        partitioner = getattr(module, function_name)
+    except (ImportError, AttributeError) as e:
+        raise RuntimeError(
+            f'unstructured is required for {purpose}. '
+            'Install with: pip install createagents[file-tools]'
+        ) from e
+    return cast(Callable[..., Any], partitioner)
 
 
 def _partition_quietly(
@@ -149,15 +165,9 @@ def read_pdf_file(file_path: Path) -> str:
         RuntimeError: If unstructured is not installed.
 
     """
-    try:
-        from unstructured.partition.pdf import (
-            partition_pdf,
-        )
-    except ImportError as e:
-        raise RuntimeError(
-            'unstructured is required for PDF reading. '
-            'Install with: pip install createagents[file-tools]'
-        ) from e
+    partition_pdf = _load_unstructured_partitioner(
+        'unstructured.partition.pdf', 'partition_pdf', 'PDF reading'
+    )
 
     try:
         logger.debug('Reading PDF file: %s', file_path)
@@ -211,15 +221,9 @@ def read_document_file(file_path: Path) -> str:
         RuntimeError: If unstructured is not installed.
 
     """
-    try:
-        from unstructured.partition.auto import (
-            partition,
-        )
-    except ImportError as e:
-        raise RuntimeError(
-            'unstructured is required for document reading. '
-            'Install with: pip install createagents[file-tools]'
-        ) from e
+    partition = _load_unstructured_partitioner(
+        'unstructured.partition.auto', 'partition', 'document reading'
+    )
 
     try:
         logger.debug('Reading document file: %s', file_path)

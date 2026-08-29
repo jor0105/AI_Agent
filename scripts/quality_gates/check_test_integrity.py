@@ -9,11 +9,13 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from git_index import (
+from git_changes import (
     GitInspectionError,
-    read_index_text,
+    is_external_path,
+    read_text,
     repository_root,
-    staged_diff,
+    unified_diff,
+    validated_revision_range,
 )
 
 STRICT_FOCUS_PATTERNS = (
@@ -55,7 +57,11 @@ POLICY_PATHS = ('.test-deletions.json', '.test-integrity-policy.json')
 
 def is_test_file(file_path: str) -> bool:
     """Return whether a repository path belongs to a test suite."""
+    if not file_path:
+        return False
     path = Path(file_path)
+    if is_external_path(file_path):
+        return False
     name = path.name.lower()
     posix_path = path.as_posix().lower()
     return (
@@ -92,10 +98,16 @@ def _has_reason(pattern: re.Pattern[str], content: str) -> bool:
     return match is not None and _reason_is_present(match.group('reason'))
 
 
-def is_test_deletion_approved(file_path: str, root: Path) -> bool:
+def is_test_deletion_approved(
+    file_path: str, root: Path, policy_revision: str | None = None
+) -> bool:
     """Return whether the indexed deletion policy explicitly permits a file."""
     for policy_path in POLICY_PATHS:
-        content = read_index_text(policy_path, root)
+        content = (
+            read_text(policy_path, root)
+            if policy_revision is None
+            else read_text(policy_path, root, policy_revision)
+        )
         if content is None:
             continue
         try:
@@ -157,13 +169,13 @@ class _FileDiffState:
         self.has_inline_reduction_reason = False
         self.is_deleted = is_deleted
 
-    def evaluate(self, root: Path, allow_deleted_tests: bool) -> list[str]:
+    def evaluate(self, root: Path, policy_revision: str | None) -> list[str]:
         """Return the accumulated integrity failures for this file."""
         if not self.current_file or not is_test_file(self.current_file):
             return []
         if self.is_deleted:
-            if allow_deleted_tests or is_test_deletion_approved(
-                self.current_file, root
+            if is_test_deletion_approved(
+                self.current_file, root, policy_revision
             ):
                 return []
             return [
@@ -185,18 +197,18 @@ def _update_file_context(
     line: str,
     state: _FileDiffState,
     root: Path,
-    allow_deleted_tests: bool,
+    policy_revision: str | None,
 ) -> list[str] | None:
     """Update file-level diff state, returning errors for a boundary line."""
     if line.startswith('--- a/'):
         state.previous_file = line[6:]
         return []
     if line.startswith('+++ b/'):
-        errors = state.evaluate(root, allow_deleted_tests)
+        errors = state.evaluate(root, policy_revision)
         state.reset(line[6:])
         return errors
     if line.startswith('+++ /dev/null'):
-        errors = state.evaluate(root, allow_deleted_tests)
+        errors = state.evaluate(root, policy_revision)
         state.reset(state.previous_file, is_deleted=True)
         return errors
     return None
@@ -242,19 +254,19 @@ def scan_test_integrity(
     diff_text: str,
     root: Path,
     *,
-    allow_deleted_tests: bool = False,
+    policy_revision: str | None = None,
 ) -> list[str]:
     """Scan a staged diff and return test-integrity violations.
 
-    All auxiliary evidence is loaded through ``read_index_text`` so an
-    unstaged file cannot make an unsafe staged commit appear compliant.
+    Local auxiliary evidence is loaded through the Git index so an unstaged
+    file cannot make an unsafe staged commit appear compliant.
     """
     errors: list[str] = []
     state = _FileDiffState()
 
     for line in diff_text.splitlines():
         boundary_errors = _update_file_context(
-            line, state, root, allow_deleted_tests
+            line, state, root, policy_revision
         )
         if boundary_errors is not None:
             errors.extend(boundary_errors)
@@ -267,23 +279,41 @@ def scan_test_integrity(
             continue
         errors.extend(_scan_added_line(line, state))
 
-    errors.extend(state.evaluate(root, allow_deleted_tests))
+    errors.extend(state.evaluate(root, policy_revision))
     return errors
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     """Run the staged test-integrity check."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('files', nargs='*')
-    parser.add_argument('--allow-deleted-tests', action='store_true')
-    args = parser.parse_args()
+    parser.add_argument(
+        '--range', dest='revision_range', metavar='BASE...HEAD'
+    )
+    args = parser.parse_args(argv)
+    if args.revision_range and args.files:
+        print(
+            'ERROR [TEST_INTEGRITY]: --range cannot be combined with paths.',
+            file=sys.stderr,
+        )
+        return 2
     try:
         root = repository_root()
-        diff_text = staged_diff(root, args.files, context=1)
+        range_ids = (
+            validated_revision_range(args.revision_range, root)
+            if args.revision_range
+            else None
+        )
+        diff_text = unified_diff(
+            root,
+            args.revision_range,
+            paths=args.files,
+            context=1,
+        )
         errors = scan_test_integrity(
             diff_text,
             root,
-            allow_deleted_tests=args.allow_deleted_tests,
+            policy_revision=range_ids[1] if range_ids else None,
         )
     except GitInspectionError as err:
         print(f'ERROR [TEST_INTEGRITY]: {err}', file=sys.stderr)

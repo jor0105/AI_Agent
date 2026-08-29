@@ -388,8 +388,8 @@ class TestReadLocalFileTool:
             assert 'Content 1' in results[1]
             assert 'Content 2' in results[2]
         finally:
-            for f in files:
-                Path(f).unlink()
+            for file_path in files:
+                Path(file_path).unlink()
 
     def test_error_format_consistency(self):
         tool = ReadLocalFileTool()

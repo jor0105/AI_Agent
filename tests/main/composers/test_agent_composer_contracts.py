@@ -2,7 +2,11 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from createagents.application import ChatInputDTO, ChatRepository
+from createagents.application import (
+    ChatInputDTO,
+    ChatOutputDTO,
+    ChatRepository,
+)
 from createagents.domain import Agent
 from createagents.main import AgentComposer
 
@@ -33,6 +37,7 @@ class TestAgentComposerContracts:
 
             output_dto = await use_case.execute(agent, input_dto)
 
+            assert isinstance(output_dto, ChatOutputDTO)
             assert output_dto.response == 'Injected response'
             fake_repo.chat.assert_awaited_once_with(
                 model='gpt-5-mini',

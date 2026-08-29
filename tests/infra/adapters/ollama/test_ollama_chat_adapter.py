@@ -12,13 +12,17 @@ IA_OLLAMA_TEST_2: str = 'gemma3:4b'
 # allow-assertion-reduction: Removed Ollama stop-process lifecycle cases target retired adapter behavior.
 
 
-def _mock_response(content='Response', tool_calls=None, get_return=None):
+def _mock_response(
+    content: str | None = 'Response',
+    tool_calls: object = None,
+    get_return: object = None,
+) -> MagicMock:
     m = MagicMock()
     m.message = MagicMock()
     m.message.content = content
     m.message.tool_calls = tool_calls
 
-    def get_side_effect(key, default=None):
+    def get_side_effect(key: object, default: object = None) -> object:
         if get_return is not None:
             return get_return
         return default
@@ -407,6 +411,7 @@ class TestOllamaChatAdapter:
             user_ask='Question 🎉',
         )
 
+        assert isinstance(response, str)
         assert '你好' in response
         assert '🎉' in response
 
@@ -431,6 +436,7 @@ class TestOllamaChatAdapter:
             user_ask='Multi\nline\nquestion',
         )
 
+        assert isinstance(response, str)
         assert '\n' in response
         assert 'Line 1' in response
 

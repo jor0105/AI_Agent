@@ -85,7 +85,7 @@ class TestToolSchemaFormatter:
         assert params['required'] == ['query']
 
     def test_format_tools_for_responses_api_single_tool(self):
-        tools = [MockSearchTool()]
+        tools: list[BaseTool] = [MockSearchTool()]
 
         result = ToolSchemaFormatter.format_tools_for_responses_api(tools)
 
@@ -94,7 +94,7 @@ class TestToolSchemaFormatter:
         assert result[0]['name'] == 'web_search'
 
     def test_format_tools_for_responses_api_multiple_tools(self):
-        tools = [MockWeatherTool(), MockSearchTool()]
+        tools: list[BaseTool] = [MockWeatherTool(), MockSearchTool()]
 
         result = ToolSchemaFormatter.format_tools_for_responses_api(tools)
 
@@ -111,7 +111,7 @@ class TestToolSchemaFormatter:
         assert result['parameters']['properties'] == {}
 
     def test_format_tools_for_responses_api_empty_list(self):
-        tools = []
+        tools: list[BaseTool] = []
 
         result = ToolSchemaFormatter.format_tools_for_responses_api(tools)
 

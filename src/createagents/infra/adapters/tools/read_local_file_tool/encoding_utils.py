@@ -1,9 +1,25 @@
+from importlib import import_module
 from pathlib import Path
+from typing import Protocol, TypedDict, cast
 
 from ....config import LoggingConfig
 from .constants import COMMON_ENCODINGS
 
 logger = LoggingConfig.get_logger(__name__)
+
+
+class _DetectionResult(TypedDict, total=False):
+    """Fields returned by the optional chardet detector."""
+
+    encoding: str | None
+    confidence: float
+
+
+class _ChardetModule(Protocol):
+    """Subset of the optional chardet module used by this module."""
+
+    def detect(self, raw_data: bytes) -> _DetectionResult:
+        """Detect the encoding of a byte sequence."""
 
 
 def detect_encoding(file_path: Path) -> str:
@@ -17,14 +33,14 @@ def detect_encoding(file_path: Path) -> str:
 
     """
     try:
-        import chardet
+        chardet = cast(_ChardetModule, import_module('chardet'))
 
         try:
             with open(file_path, 'rb') as file:
                 raw_data = file.read(100000)  # Read first 100KB for detection
                 result = chardet.detect(raw_data)
                 detected_encoding = result.get('encoding', 'utf-8')
-                confidence = result.get('confidence', 0)
+                confidence = result.get('confidence', 0.0)
 
                 logger.debug(
                     'Detected encoding: %s (confidence: %.2f)',

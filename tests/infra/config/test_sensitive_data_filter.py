@@ -1,5 +1,6 @@
 import concurrent.futures
 import threading
+from typing import cast
 
 from createagents.infra import SensitiveDataFilter
 
@@ -164,7 +165,7 @@ class TestSensitiveDataFilter:
         assert result == ''
 
     def test_filter_none(self):
-        result = SensitiveDataFilter.filter(None)
+        result = SensitiveDataFilter.filter(cast(str, None))
         assert result is None
 
     def test_filter_normal_text(self):
@@ -316,6 +317,7 @@ class TestSensitiveDataFilter:
 
     def test_patterns_order_is_documented(self):
         docstring = SensitiveDataFilter.__doc__
+        assert docstring is not None
         assert 'ordem' in docstring.lower() or 'order' in docstring.lower()
         assert 'JWT' in docstring
         assert 'API' in docstring
@@ -520,7 +522,7 @@ class TestSensitiveDataFilter:
         assert 'Normal text.' in result
 
     def test_is_sensitive_returns_false_for_none(self):
-        result = SensitiveDataFilter.is_sensitive(None)
+        result = SensitiveDataFilter.is_sensitive(cast(str, None))
         assert result is False
 
     def test_mask_partial_with_negative_visible_chars(self):

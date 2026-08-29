@@ -9,6 +9,7 @@ detector actually detects anything.
 
 import importlib.util
 import pathlib
+from types import ModuleType
 
 import grimp
 import pytest
@@ -21,7 +22,7 @@ HOOK_PATH = (
 PACKAGE = 'createagents'
 
 
-def _load_hook():
+def _load_hook() -> ModuleType:
     """Import the hook by path, since it is not an installed module."""
     spec = importlib.util.spec_from_file_location('_cycle_hook', HOOK_PATH)
     assert spec is not None and spec.loader is not None

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -12,6 +13,17 @@ sys.path.insert(
 )
 
 import check_test_contracts as gate
+
+
+def _git(root: Path, *args: str) -> str:
+    result = subprocess.run(
+        ['git', *args],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout.strip()
 
 
 @pytest.mark.unit
@@ -381,19 +393,66 @@ def test_changed_good():
         )
         monkeypatch.setattr(
             gate,
-            'read_index_text',
+            'read_text',
             lambda path, root: contents.get(path),
         )
 
         assert gate.main([]) == 1
         assert 'tests/unchanged.py' in capsys.readouterr().err
 
-    def test_working_tree_mode_reads_all_test_files(self, tmp_path):
-        test_file = tmp_path / 'tests' / 'test_example.py'
+    def test_complete_revision_audit_reads_the_exact_commit(
+        self, tmp_path: Path
+    ) -> None:
+        _git(tmp_path, 'init')
+        _git(tmp_path, 'config', 'user.email', 'quality@example.invalid')
+        _git(tmp_path, 'config', 'user.name', 'Quality Gate')
+        test_file = tmp_path / 'tests' / 'test_contract.py'
         test_file.parent.mkdir()
         test_file.write_text(
-            'def test_valid():\n    value = 1\n    assert value == 1\n',
+            'def test_contract(value):\n    assert value is not None\n',
             encoding='utf-8',
         )
+        _git(tmp_path, 'add', '--', 'tests/test_contract.py')
+        _git(tmp_path, 'commit', '-m', 'valid contract')
+        valid_revision = _git(tmp_path, 'rev-parse', 'HEAD')
 
-        assert gate.audit_test_files(tmp_path, from_working_tree=True) == []
+        test_file.write_text(
+            "def test_contract(value):\n    assert hasattr(value, 'field')\n",
+            encoding='utf-8',
+        )
+        _git(tmp_path, 'add', '--', 'tests/test_contract.py')
+        _git(tmp_path, 'commit', '-m', 'invalid contract')
+        invalid_revision = _git(tmp_path, 'rev-parse', 'HEAD')
+
+        assert gate.audit_test_files(tmp_path, revision=valid_revision) == []
+        violations = gate.audit_test_files(tmp_path, revision=invalid_revision)
+        assert [violation.category for violation in violations] == [
+            'HASATTR_PROHIBITED'
+        ]
+
+    def test_complete_discovery_excludes_external_test_projections(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            gate,
+            'indexed_paths',
+            lambda root: [
+                '.agents/tests/test_external.py',
+                'tests/test_product.py',
+            ],
+        )
+        monkeypatch.setattr(
+            gate,
+            'read_text',
+            lambda path, root: (
+                'def test_bad():\n    assert hasattr(object(), "x")\n'
+                if path.startswith('.agents/')
+                else 'def test_good():\n    assert 1 == 1\n'
+            ),
+        )
+
+        violations = gate.audit_test_files(Path.cwd())
+
+        assert [violation.file_path for violation in violations] == [
+            'tests/test_product.py'
+        ]

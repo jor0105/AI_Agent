@@ -54,11 +54,11 @@ jobs:
       - name: Install dependencies
         run: |
           if [[ "${{ matrix.install_extras }}" == "true" ]]; then
-            uv sync --all-extras
+            uv sync --locked --all-extras
           else
             # The optional document stack currently has no spaCy wheel for
             # CPython 3.14; validate the core package on that interpreter.
-            uv sync
+            uv sync --locked
           fi
 
       # --------------------------------------------------------------------------
@@ -72,28 +72,67 @@ jobs:
       # --------------------------------------------------------------------------
       - name: Security analysis with Bandit
         run: |
-          uv run bandit -c pyproject.toml -r src -ll
+          uv run --locked --no-sync bandit -c pyproject.toml -r src -ll
           echo "✅ Security analysis passed"
 
       - name: Check for vulnerable dependencies
         run: |
-          uv run pip-audit
+          uv run --locked --no-sync pip-audit --timeout 60
           echo "✅ No vulnerable dependencies found"
 
       # --------------------------------------------------------------------------
       # 3. Code Quality & Formatting
       # --------------------------------------------------------------------------
       - name: Run pre-commit (all hooks)
-        run: uv run pre-commit run --all-files --show-diff-on-failure
+        run: >-
+          uv run --locked --no-sync pre-commit run --all-files
+          --show-diff-on-failure
 
       - name: Type check with mypy
         if: matrix.run_mypy == true
-        run: uv run mypy src --pretty
-
-      - name: Docstring style check
         run: |
-          uv run ruff check src --select D --ignore D100,D104,D107
-          echo "✅ Docstring style check passed"
+          uv run --locked --no-sync mypy src --pretty
+          uv run --locked --no-sync mypy tests scripts \
+            --disable-error-code no-untyped-def --pretty
+
+      - name: Resolve CI range
+        id: ci-range
+        run: |
+          range=$(uv run --locked --no-sync python \
+            scripts/quality_gates/resolve_ci_range.py)
+          echo "range=$range" >> "$GITHUB_OUTPUT"
+
+      - name: Check changed diff policy
+        env:
+          CI_RANGE: ${{ steps.ci-range.outputs.range }}
+        run: |
+          diff_allowlist=(
+            scripts/check-import-cycles.py
+            scripts/quality_gates/check_diff_sanity.py
+            scripts/quality_gates/check_harness_projection.py
+            scripts/quality_gates/check_lockfile_sync.py
+            scripts/quality_gates/check_test_contracts.py
+            scripts/quality_gates/check_test_integrity.py
+            scripts/quality_gates/quality_gate_policy.py
+            scripts/quality_gates/resolve_ci_range.py
+            src/createagents/presentation/cli/ui/terminal_renderer.py
+          )
+          uv run --locked --no-sync python \
+            scripts/quality_gates/check_diff_sanity.py \
+            --range "$CI_RANGE" \
+            "${diff_allowlist[@]/#/--allow-print-file=}"
+          uv run --locked --no-sync python \
+            scripts/quality_gates/check_test_integrity.py \
+            --range "$CI_RANGE"
+
+      - name: Check checked-out repository contracts
+        run: |
+          uv run --locked --no-sync python \
+            scripts/quality_gates/check_test_contracts.py --revision HEAD
+          uv run --locked --no-sync python \
+            scripts/quality_gates/quality_gate_policy.py --revision HEAD
+          uv run --locked --no-sync python \
+            scripts/quality_gates/check_harness_projection.py --revision HEAD
 
       # --------------------------------------------------------------------------
       # 4. Tests
@@ -102,9 +141,8 @@ jobs:
         env:
           PYTHONPATH: .
         run: |
-          uv run pytest -m "not integration and not slow" \
-                 --cov=src --cov-report=xml --cov-report=term-missing \
-                 --cov-fail-under=85
+          uv run --locked --no-sync pytest -m "not integration and not slow" \
+                 --cov --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage to Codecov
         # v4
@@ -123,3 +161,24 @@ jobs:
           name: coverage-report-py${{ matrix.python-version }}
           path: coverage.xml
           if-no-files-found: ignore
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: "8.30.0"
+          GITLEAKS_CONFIG: ".gitleaks.toml"
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"

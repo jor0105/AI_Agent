@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import sys
@@ -9,7 +10,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from git_index import GitInspectionError, repository_root, staged_snapshot
+from git_changes import (
+    GitInspectionError,
+    changed_records,
+    repository_root,
+    repository_snapshot,
+)
 
 LOCK_PATH = Path('.agents/harness.lock.json')
 MANIFEST_PATH = Path('.agents/harness.json')
@@ -35,6 +41,10 @@ def _read_json(path: Path) -> dict[str, Any]:
         payload = json.loads(path.read_text(encoding='utf-8'))
     except FileNotFoundError as err:
         raise HarnessProjectionError(f'{path.as_posix()} is missing.') from err
+    except (OSError, UnicodeError) as err:
+        raise HarnessProjectionError(
+            f'{path.as_posix()} could not be read: {err}.'
+        ) from err
     except json.JSONDecodeError as err:
         raise HarnessProjectionError(
             f'{path.as_posix()} is invalid JSON: {err}.'
@@ -312,18 +322,46 @@ def validate_harness_projection(snapshot: Path) -> list[str]:
     return errors
 
 
-def main() -> int:
-    """Run the staged harness-projection gate."""
+def _is_harness_path(path: str) -> bool:
+    return path == '.agents' or path.startswith('.agents/')
+
+
+def _snapshot_errors(snapshot: Path) -> list[str]:
+    if not (snapshot / LOCK_PATH).is_file():
+        return ['.agents/harness.lock.json is missing from the snapshot.']
+    return validate_harness_projection(snapshot)
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Run the staged or exact-revision harness-projection gate."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--revision', metavar='REV')
+    args = parser.parse_args(argv)
     try:
         root = repository_root()
-        with staged_snapshot(root) as snapshot:
-            if not (snapshot / LOCK_PATH).is_file():
-                print(
-                    'SKIP [HARNESS_PROJECTION]: No staged harness lock exists.'
-                )
+        if args.revision:
+            with repository_snapshot(
+                root, args.revision, scope='repository'
+            ) as snapshot:
+                errors = _snapshot_errors(snapshot)
+        else:
+            changes = changed_records(root, scope='repository')
+            if not any(
+                _is_harness_path(path)
+                for change in changes
+                for path in (change.old_path, change.new_path)
+                if path is not None
+            ):
+                print('SKIP [HARNESS_PROJECTION]: No staged .agents changes.')
                 return 0
-            errors = validate_harness_projection(snapshot)
-    except (GitInspectionError, HarnessProjectionError) as err:
+            with repository_snapshot(root, scope='repository') as snapshot:
+                errors = _snapshot_errors(snapshot)
+    except (
+        GitInspectionError,
+        HarnessProjectionError,
+        OSError,
+        UnicodeError,
+    ) as err:
         print(f'ERROR [HARNESS_PROJECTION]: {err}', file=sys.stderr)
         return 2
     if errors:

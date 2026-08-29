@@ -1,4 +1,5 @@
 import os
+from typing import cast
 
 import openai
 import pytest
@@ -18,7 +19,7 @@ IA_OPENAI_TEST_2: str = (
 # allow-assertion-reduction: Replaced weak broad-exception assertions with concrete OpenAI and relocated-tool contract checks.
 
 
-def _get_openai_api_key():
+def _get_openai_api_key() -> str:
     from createagents.infra.adapters.openai.client_openai import ClientOpenAI
     from createagents.infra.config.environment import EnvironmentConfig
 
@@ -587,9 +588,9 @@ class TestOpenAIChatAdapterIntegration:
                 metric.completion_tokens,
             ]
         ):
-            assert (
-                metric.tokens_used
-                == metric.prompt_tokens + metric.completion_tokens
+            assert metric.tokens_used == (
+                cast(int, metric.prompt_tokens)
+                + cast(int, metric.completion_tokens)
             )
 
     @pytest.mark.asyncio
@@ -670,7 +671,7 @@ class TestClientOpenAIIntegration:
         )
 
         api_key = _get_openai_api_key()
-        client = ClientOpenAI.get_client(api_key)
+        client = ClientOpenAI.get_client(api_key, timeout=30, max_retries=3)
 
         assert client is not None
         assert isinstance(client, openai.AsyncOpenAI)
@@ -682,7 +683,7 @@ class TestClientOpenAIIntegration:
         )
 
         api_key = _get_openai_api_key()
-        client = ClientOpenAI.get_client(api_key)
+        client = ClientOpenAI.get_client(api_key, timeout=30, max_retries=3)
 
         assert isinstance(client, openai.AsyncOpenAI)
 
@@ -693,7 +694,7 @@ class TestClientOpenAIIntegration:
         )
 
         api_key = _get_openai_api_key()
-        client = ClientOpenAI.get_client(api_key)
+        client = ClientOpenAI.get_client(api_key, timeout=30, max_retries=3)
 
         models = await client.models.list()
         assert models is not None
@@ -709,7 +710,7 @@ class TestClientOpenAIIntegration:
         _get_openai_api_key()
 
         invalid_key = 'sk-invalid-test-key-12345'
-        client = ClientOpenAI.get_client(invalid_key)
+        client = ClientOpenAI.get_client(invalid_key, 30, 3)
 
         assert client is not None
 
@@ -723,9 +724,8 @@ class TestClientOpenAIIntegration:
         )
 
         api_key = _get_openai_api_key()
-
-        client1 = ClientOpenAI.get_client(api_key)
-        client2 = ClientOpenAI.get_client(api_key)
+        client1 = ClientOpenAI.get_client(api_key, timeout=30, max_retries=3)
+        client2 = ClientOpenAI.get_client(api_key, timeout=30, max_retries=3)
 
         assert client1 is not None
         assert client2 is not None
@@ -759,7 +759,7 @@ class TestClientOpenAIIntegration:
 
         _get_openai_api_key()
 
-        client = ClientOpenAI.get_client(invalid_key)
+        client = ClientOpenAI.get_client(invalid_key, 30, 3)
         assert client is not None
 
         with pytest.raises(openai.OpenAIError):
@@ -773,7 +773,7 @@ class TestClientOpenAIIntegration:
 
         _get_openai_api_key()
 
-        client = ClientOpenAI.get_client(None)
+        client = ClientOpenAI.get_client(cast(str, None), 30, 3)
         assert client is not None
 
         models = await client.models.list()
@@ -977,7 +977,7 @@ class TestOpenAIAdapterConfigsReais:
         tokens_limited = metrics_limited[-1].completion_tokens
 
         adapter2 = OpenAIChatAdapter()
-        config_unlimited = {}
+        config_unlimited: dict[str, int] = {}
         await adapter2.chat(
             model=IA_OPENAI_TEST_2,
             instructions='Answer.',
@@ -1403,8 +1403,8 @@ class TestOpenAIChatAdapterToolsIntegration:
             user_ask="What is today's date in UTC?",
         )
 
-        assert response1 is not None
-        history = [
+        assert isinstance(response1, str)
+        history: list[dict[str, str]] = [
             {'role': 'user', 'content': "What is today's date in UTC?"},
             {'role': 'assistant', 'content': response1},
         ]

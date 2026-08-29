@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -8,6 +10,7 @@ from createagents.application import (
 )
 from createagents.domain import (
     Agent,
+    BaseTool,
     InvalidAgentConfigException,
     InvalidProviderException,
 )
@@ -294,7 +297,7 @@ class TestAgentComposer:
                 model='gpt-5-nano',
                 name='Test',
                 instructions='Test',
-                history_max_size='10',
+                history_max_size=cast(int, '10'),
             )
 
     def test_create_agent_with_float_history_max_size_raises_error(self):
@@ -304,7 +307,7 @@ class TestAgentComposer:
                 model='gpt-5-nano',
                 name='Test',
                 instructions='Test',
-                history_max_size=10.5,
+                history_max_size=cast(int, 10.5),
             )
 
     def test_create_agent_with_valid_history_max_size(self):
@@ -326,7 +329,7 @@ class TestAgentComposer:
                 model='gpt-5-nano',
                 name='Test',
                 instructions='Test',
-                config='not_a_dict',
+                config=cast(dict[str, Any] | None, 'not_a_dict'),
             )
 
     def test_create_agent_with_list_config_raises_error(self):
@@ -336,7 +339,7 @@ class TestAgentComposer:
                 model='gpt-5-nano',
                 name='Test',
                 instructions='Test',
-                config=['invalid'],
+                config=cast(dict[str, Any] | None, ['invalid']),
             )
 
     def test_create_agent_with_empty_config(self):
@@ -497,6 +500,7 @@ class TestAgentComposer:
             config=original_config,
         )
 
+        assert agent.config is not None
         assert agent.config['temperature'] == 0.7
         original_config['temperature'] = 0.9
         assert agent.config['temperature'] == 0.9
@@ -543,6 +547,7 @@ class TestAgentComposer:
         )
 
         assert agent.config == config
+        assert agent.config is not None
         assert agent.config['temperature'] == 0.7
         assert agent.config['top_p'] == 0.9
 
@@ -555,6 +560,8 @@ class TestAgentComposer:
             config={},
         )
 
+        assert agent.name is not None
+        assert agent.instructions is not None
         assert '测试代理' in agent.name
         assert '🤖' in agent.name
         assert '日本語' in agent.instructions
@@ -693,6 +700,7 @@ class TestAgentComposer:
             tools=[tool],
         )
 
+        assert agent.tools is not None
         assert len(agent.tools) == 1
         assert agent.tools[0] is tool
 
@@ -722,6 +730,7 @@ class TestAgentComposer:
             tools=tools,
         )
 
+        assert agent.tools is not None
         assert len(agent.tools) == 2
         assert all(isinstance(t, BaseTool) for t in agent.tools)
 
@@ -775,6 +784,7 @@ class TestAgentComposer:
                 instructions='Test',
                 tools=[tool],
             )
+            assert agent.tools is not None
             assert len(agent.tools) == 1
 
     def test_create_agent_with_invalid_tool_raises_error(self):
@@ -786,7 +796,7 @@ class TestAgentComposer:
                 model='gpt-5-nano',
                 name='Test',
                 instructions='Test',
-                tools=[123],
+                tools=cast(Sequence[str | BaseTool], [123]),
             )
 
     def test_create_agent_with_tool_missing_name_raises_error(self):
@@ -804,7 +814,7 @@ class TestAgentComposer:
                 model='gpt-5-nano',
                 name='Test',
                 instructions='Test',
-                tools=[InvalidTool()],
+                tools=cast(Sequence[str | BaseTool], [InvalidTool()]),
             )
 
     def test_create_agent_with_tool_missing_description_raises_error(self):
@@ -822,7 +832,7 @@ class TestAgentComposer:
                 model='gpt-5-nano',
                 name='Test',
                 instructions='Test',
-                tools=[InvalidTool()],
+                tools=cast(Sequence[str | BaseTool], [InvalidTool()]),
             )
 
     def test_create_agent_with_tool_missing_execute_raises_error(self):
@@ -838,7 +848,7 @@ class TestAgentComposer:
                 model='gpt-5-nano',
                 name='Test',
                 instructions='Test',
-                tools=[InvalidTool()],
+                tools=cast(Sequence[str | BaseTool], [InvalidTool()]),
             )
 
     def test_create_agent_with_tool_non_string_name_raises_error(self):
@@ -857,7 +867,7 @@ class TestAgentComposer:
                 model='gpt-5-nano',
                 name='Test',
                 instructions='Test',
-                tools=[InvalidTool()],
+                tools=cast(Sequence[str | BaseTool], [InvalidTool()]),
             )
 
     def test_create_agent_with_tool_non_string_description_raises_error(self):
@@ -876,7 +886,7 @@ class TestAgentComposer:
                 model='gpt-5-nano',
                 name='Test',
                 instructions='Test',
-                tools=[InvalidTool()],
+                tools=cast(Sequence[str | BaseTool], [InvalidTool()]),
             )
 
     def test_create_agent_with_tool_non_callable_execute_raises_error(self):
@@ -893,7 +903,7 @@ class TestAgentComposer:
                 model='gpt-5-nano',
                 name='Test',
                 instructions='Test',
-                tools=[InvalidTool()],
+                tools=cast(Sequence[str | BaseTool], [InvalidTool()]),
             )
 
     def test_create_agent_tools_preserved_with_all_params(self):
@@ -918,6 +928,7 @@ class TestAgentComposer:
             history_max_size=15,
         )
 
+        assert agent.tools is not None
         assert len(agent.tools) == 1
         assert agent.config == config
         assert agent.history.max_size == 15

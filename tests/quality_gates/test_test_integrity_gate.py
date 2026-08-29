@@ -8,6 +8,7 @@ from pathlib import Path
 
 import check_test_integrity as gate
 import pytest
+from git_changes import unified_diff
 
 
 def _join_fixture(*parts: str) -> str:
@@ -15,15 +16,16 @@ def _join_fixture(*parts: str) -> str:
     return ''.join(parts)
 
 
-def _git(root: Path, *args: str) -> None:
+def _git(root: Path, *args: str) -> str:
     """Run a successful Git command in an isolated test repository."""
-    subprocess.run(
+    result = subprocess.run(
         ['git', *args],
         cwd=root,
         capture_output=True,
         text=True,
         check=True,
     )
+    return result.stdout.strip()
 
 
 def _assertion_reduction_diff() -> str:
@@ -115,7 +117,7 @@ class TestStagedTestIntegrity:
         def staged_content(path: str, root: Path) -> str | None:
             return policy if path == '.test-deletions.json' else None
 
-        monkeypatch.setattr(gate, 'read_index_text', staged_content)
+        monkeypatch.setattr(gate, 'read_text', staged_content)
 
         assert gate.is_test_deletion_approved('tests/test_guard.py', tmp_path)
 
@@ -183,3 +185,45 @@ class TestStagedTestIntegrity:
         assert 'test-integrity' in output
         assert '[TEST_DELETION]' in output
         assert '(no files to check)Skipped' not in output
+
+    def test_staged_and_revision_modes_enforce_the_same_reduction(
+        self, tmp_path: Path
+    ) -> None:
+        _git(tmp_path, 'init')
+        _git(tmp_path, 'config', 'user.email', 'quality@example.invalid')
+        _git(tmp_path, 'config', 'user.name', 'Quality Gate')
+        test_file = tmp_path / 'tests' / 'test_guard.py'
+        test_file.parent.mkdir()
+        test_file.write_text(
+            'def test_guard():\n'
+            '    assert first_condition()\n'
+            '    assert second_condition()\n',
+            encoding='utf-8',
+        )
+        _git(tmp_path, 'add', '--', 'tests/test_guard.py')
+        _git(tmp_path, 'commit', '-m', 'complete assertions')
+        base_revision = _git(tmp_path, 'rev-parse', 'HEAD')
+
+        test_file.write_text(
+            'def test_guard():\n    assert first_condition()\n',
+            encoding='utf-8',
+        )
+        _git(tmp_path, 'add', '--', 'tests/test_guard.py')
+        staged_errors = gate.scan_test_integrity(
+            unified_diff(tmp_path, context=1), tmp_path
+        )
+        _git(tmp_path, 'commit', '-m', 'weaken assertions')
+        head_revision = _git(tmp_path, 'rev-parse', 'HEAD')
+        revision_errors = gate.scan_test_integrity(
+            unified_diff(
+                tmp_path,
+                f'{base_revision}...{head_revision}',
+                context=1,
+            ),
+            tmp_path,
+            policy_revision=head_revision,
+        )
+
+        assert staged_errors == revision_errors
+        assert len(staged_errors) == 1
+        assert '[TEST_INTEGRITY]' in staged_errors[0]

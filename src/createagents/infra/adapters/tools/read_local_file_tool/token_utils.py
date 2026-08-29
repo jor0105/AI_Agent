@@ -1,15 +1,27 @@
-from typing import TYPE_CHECKING
+from importlib import import_module
+from typing import Protocol, cast
 
 from ....config import LoggingConfig
 from .constants import TIKTOKEN_ENCODING
 
-if TYPE_CHECKING:
-    import tiktoken
-
 logger = LoggingConfig.get_logger(__name__)
 
 
-def initialize_tiktoken() -> 'tiktoken.Encoding':
+class _TokenEncoding(Protocol):
+    """Subset of a tiktoken encoding required by this module."""
+
+    def encode(self, text: str) -> list[int]:
+        """Encode text into token identifiers."""
+
+
+class _TiktokenModule(Protocol):
+    """Subset of the optional tiktoken module used by this module."""
+
+    def get_encoding(self, encoding_name: str) -> _TokenEncoding:
+        """Load a named token encoding."""
+
+
+def initialize_tiktoken() -> _TokenEncoding:
     """Initialize the tiktoken encoder for token counting.
 
     Returns:
@@ -20,8 +32,7 @@ def initialize_tiktoken() -> 'tiktoken.Encoding':
 
     """
     try:
-        import tiktoken
-
+        tiktoken = cast(_TiktokenModule, import_module('tiktoken'))
         encoding = tiktoken.get_encoding(TIKTOKEN_ENCODING)
         logger.debug('Initialized tiktoken encoder: %s', TIKTOKEN_ENCODING)
         return encoding
@@ -40,7 +51,7 @@ def initialize_tiktoken() -> 'tiktoken.Encoding':
         raise RuntimeError(error_msg) from e
 
 
-def count_tokens(text: str, encoding: 'tiktoken.Encoding') -> int:
+def count_tokens(text: str, encoding: _TokenEncoding) -> int:
     """Count the number of tokens in the given text.
 
     Args:

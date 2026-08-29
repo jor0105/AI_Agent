@@ -41,8 +41,7 @@ ______________________________________________________________________
     uv run --locked --no-sync pre-commit install --install-hooks
     uv run --locked --no-sync pre-commit run --all-files
     uv run --locked --no-sync pre-commit run --all-files --hook-stage pre-push
-    uv run --locked --no-sync pytest -m 'not integration and not slow' -ra \
-        --cov=src --cov-fail-under=85
+    uv run --locked --no-sync pytest -m 'not integration and not slow' -ra --cov
     uv run --locked --no-sync mkdocs build --strict
     ```
 
@@ -62,7 +61,7 @@ The safe local test command selects unit tests and components that do not rely o
 
 ```bash
 uv run --locked --no-sync pytest -m 'not integration and not slow' -ra \
-    --cov=src --cov-fail-under=85
+    --cov
 ```
 
 Tests hitting external APIs must be marked with `@pytest.mark.integration` and are excluded from default local runs to avoid consuming provider quotas. Tests marked as `slow` are also excluded from safe local runs.
@@ -71,12 +70,14 @@ Run targeted gates when applicable:
 
 ```bash
 uv run --locked --no-sync mypy src --pretty
-uv run --locked --no-sync ruff check src --select D --ignore D100,D104,D107
+uv run --locked --no-sync mypy tests scripts \
+    --disable-error-code no-untyped-def --pretty
+uv run --locked --no-sync ruff check src tests scripts
 uv run --locked --no-sync bandit -c pyproject.toml -r src -ll
-uv run --locked --no-sync pip-audit
+uv run --locked --no-sync pip-audit --timeout 60
 ```
 
-The full CI workflow, including lockfile checks, security, quality, typing, docstrings, and test coverage, is defined in `.github/workflows/pipeline.yml`. The local pre-commit configuration defines 41 hooks across `pre-commit` (37), `pre-push` (3), and `commit-msg` (1).
+The full CI workflow, including lockfile checks, security, quality, typing, docstrings, and test coverage, is defined in `.github/workflows/pipeline.yml`. The local pre-commit configuration defines 44 hooks: 38 `pre-commit`, 4 `pre-push`, 1 `commit-msg`, and 1 `manual`.
 
 ### Local Quality Gate Policy
 
@@ -88,17 +89,38 @@ uv lock
 uv sync --locked
 ```
 
-The `quality-gate-policy` runs when hook configuration, policy code, or `.gitleaksignore` changes. It enforces immutable pins for remote hooks, forbids dependency sync within hooks, and preserves essential gates. Tool configurations for Ruff, pytest, and Bandit remain canonical in their respective configuration files without duplication. Modifications to `.gitleaksignore` require security review. `diff-sanity` blocks `print()` by default, including in scripts and the CLI; legitimate output must be authorized per file with `--allow-print-file=<path>`. Bypasses require the explicit `allow-bypass: <reason>` marker, and `# noqa` is never accepted. Generated harness projections do not receive auto-formatting; staged hash validation belongs to the central harness.
+The `quality-gate-policy` runs when hook configuration, `.gitleaks.toml`, `.gitleaksignore`, workflows, or any quality-gate module changes. It enforces immutable pins for remote hooks, forbids dependency synchronization or resolution within validation hooks, and preserves essential gates. Ruff owns general lint, complexity, `print()`, and docstrings; Bandit owns Python security checks. No separate pydocstyle gate exists.
+
+`diff-sanity` blocks `print()` by default, including in scripts and the CLI. Legitimate output must use the repeatable `--allow-print-file=<path>` argument, which accepts only an exact repository file. Debug artifacts, stubs, suppressions, and bypass commands cannot be authorized by comments. Generated harness projections and their mirrors do not receive auto-formatting; staged `.agents/` hashes are checked by the dedicated verifier.
+
+`.agents/` remains tracked to transport portable validators. `.codex/`, `.claude/`, `.opencode/`, and `.github/prompts/` are generated, ignored mirrors outside the Git index. Normal hooks do not require `central-skills`; the optional central mirror check is manual only:
+
+```bash
+uv run --locked --no-sync harness-sync --check
+```
+
+If `central-skills` is not installed, this manual check is `skipped`; that does not turn a normal-hook failure into an approval.
+
+Gitleaks is the deliberate exception: it scans every tracked file, including `.agents/`, with redacted output. Dependency updates stay outside validation hooks and use deliberate `uv lock` followed by `uv sync --locked`. A DNS or network failure from `pip-audit` is an `external_failure`, never an approval.
+
+Review mutator output (`ruff-check`, `ruff-format`, `mdformat`, and whitespace fixers) before staging. Stage only explicit paths:
+
+```bash
+git add -- path/to/changed-file.py path/to/changed-test.py
+git diff --cached --check
+```
+
+Do not use `git add .` or `git add -A` in a dirty working tree, because unrelated files can enter the reviewed change.
 
 Line length checks are validated in pre-commit by the `check-max-lines` hook
 against the technical debt baseline (`.max-lines-baseline.json`), and can also
 be run on demand for structural audits:
 
 ```bash
-uv run --locked --no-sync python .agents/scripts/check-max-lines.py
+uv run --locked --no-sync python .agents/scripts/check-max-lines.py src tests scripts
 ```
 
-Pre-push runs `mypy` across `src/`, safe tests with coverage, and `pip-audit`. Any external dependency audit failure (such as network unavailability) must be reported as `external_failure`, never summarized as a pass.
+Pre-push runs both `mypy` scopes, safe tests with `--cov`, and `pip-audit --timeout 60`. Any external dependency audit failure (such as network unavailability) must be reported as `external_failure`, never summarized as a pass.
 
 ______________________________________________________________________
 
@@ -108,7 +130,7 @@ ______________________________________________________________________
 - [ ] Automated tests cover new features and bug fixes
 - [ ] Documentation updated (code docstrings and Markdown docs)
 - [ ] No lint warnings (Ruff, yamllint, mdformat)
-- [ ] Targeted gates (mypy, Ruff D, Bandit, pip-audit) executed when applicable
+- [ ] Targeted gates (mypy, Ruff, Bandit, pip-audit) executed when applicable
 - [ ] Strict docs build (`uv run --locked --no-sync mkdocs build --strict`) passes
 - [ ] Atomic, clear Conventional Commits in English
 - [ ] Pull request description clearly explains rationale

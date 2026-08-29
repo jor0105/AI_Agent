@@ -1,18 +1,24 @@
 import logging
+from collections.abc import AsyncIterator, Iterable, Iterator
 from types import SimpleNamespace
 from typing import ClassVar
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
-from createagents.domain import BaseTool
+from createagents.domain import BaseTool, ChatMetrics
 from createagents.infra.adapters.ollama.ollama_stream_handler import (
     OllamaStreamHandler,
 )
 
 
 class FakeChunk:
-    def __init__(self, content='', tool_calls=None, metrics=None):
+    def __init__(
+        self,
+        content: str = '',
+        tool_calls: object = None,
+        metrics: dict[str, int] | None = None,
+    ) -> None:
         metrics = metrics or {}
         self.message = SimpleNamespace(content=content, tool_calls=tool_calls)
         self.prompt_eval_count = metrics.get('prompt_eval_count')
@@ -23,15 +29,16 @@ class FakeChunk:
 
 
 class FakeStream:
-    def __init__(self, chunks):
-        self._chunks = list(chunks)
-        self._iterator = None
+    def __init__(self, chunks: Iterable[FakeChunk]) -> None:
+        self._chunks: list[FakeChunk] = list(chunks)
+        self._iterator: Iterator[FakeChunk] | None = None
 
-    def __aiter__(self):
+    def __aiter__(self) -> AsyncIterator[FakeChunk]:
         self._iterator = iter(self._chunks)
         return self
 
-    async def __anext__(self):
+    async def __anext__(self) -> FakeChunk:
+        assert self._iterator is not None
         try:
             return next(self._iterator)
         except StopIteration as exc:
@@ -46,7 +53,7 @@ class DummyTool(BaseTool):
         'properties': {},
     }
 
-    def execute(self, **kwargs):
+    def execute(self, **kwargs: object) -> dict[str, object]:
         return kwargs
 
 
@@ -54,7 +61,7 @@ class DummyTool(BaseTool):
 class TestOllamaStreamHandler:
     def test_record_stream_error_preserves_exception_traceback(self):
         logger = Mock(spec=logging.Logger)
-        metrics_store = []
+        metrics_store: list[ChatMetrics] = []
 
         with patch(
             'createagents.infra.adapters.ollama.ollama_stream_handler.LoggingConfig.get_logger',
@@ -77,7 +84,7 @@ class TestOllamaStreamHandler:
 
     @pytest.mark.asyncio
     async def test_handle_stream_scenarios_yields_tokens_without_tools(self):
-        metrics_store = []
+        metrics_store: list[ChatMetrics] = []
         client = MagicMock()
         chunks = [
             FakeChunk(content='Hel'),
@@ -118,7 +125,7 @@ class TestOllamaStreamHandler:
     async def test_handle_stream_scenarios_executes_tool_calls(
         self, mock_tool_executor
     ):
-        metrics_store = []
+        metrics_store: list[ChatMetrics] = []
         client = MagicMock()
         tool_call = SimpleNamespace(
             function=SimpleNamespace(name='dummy', arguments={'value': 1})

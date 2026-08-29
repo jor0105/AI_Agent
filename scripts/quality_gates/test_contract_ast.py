@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 import operator
 import re
-from collections.abc import Iterator
+from collections.abc import Container, Iterator
 from dataclasses import dataclass
 
 _MANGLED_ATTRIBUTE_RE = re.compile(r'^_[A-Za-z0-9_]+__[A-Za-z0-9_]+$')
@@ -28,6 +28,8 @@ _TEST_EVIDENCE_NAMES = frozenset(
 
 def _contains(left: object, right: object) -> bool:
     """Return whether the right literal container contains the left value."""
+    if not isinstance(right, Container):
+        raise TypeError('right-hand comparison value is not a container')
     return operator.contains(right, left)
 
 

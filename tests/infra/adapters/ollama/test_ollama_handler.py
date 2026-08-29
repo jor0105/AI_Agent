@@ -4,18 +4,23 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from createagents.domain import BaseTool
+from createagents.domain import BaseTool, ChatMetrics
 from createagents.infra.adapters.ollama.ollama_handler import OllamaHandler
 
 
 class FakeMessage:
-    def __init__(self, content, tool_calls=None):
+    def __init__(self, content: str | None, tool_calls: object = None) -> None:
         self.content = content
         self.tool_calls = tool_calls
 
 
-class FakeResponse(dict):
-    def __init__(self, content, tool_calls=None, metrics=None):
+class FakeResponse(dict[str, int]):
+    def __init__(
+        self,
+        content: str | None,
+        tool_calls: object = None,
+        metrics: dict[str, int] | None = None,
+    ) -> None:
         super().__init__(metrics or {})
         self.message = FakeMessage(content, tool_calls)
 
@@ -28,7 +33,7 @@ class DummyTool(BaseTool):
         'properties': {},
     }
 
-    def execute(self, **kwargs):
+    def execute(self, **kwargs: object) -> dict[str, object]:
         return kwargs
 
 
@@ -36,7 +41,7 @@ class DummyTool(BaseTool):
 class TestOllamaHandler:
     @pytest.mark.asyncio
     async def test_execute_tool_loop_scenarios_returns_final_response(self):
-        metrics_store = []
+        metrics_store: list[ChatMetrics] = []
         client = MagicMock()
         client.call_api = AsyncMock(
             return_value=FakeResponse(
@@ -64,7 +69,7 @@ class TestOllamaHandler:
     async def test_execute_tool_loop_scenarios_executes_tool_calls(
         self, mock_tool_executor
     ):
-        metrics_store = []
+        metrics_store: list[ChatMetrics] = []
         client = MagicMock()
         tool_call = SimpleNamespace(
             function=SimpleNamespace(name='dummy', arguments={'value': 1})

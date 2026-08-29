@@ -3,12 +3,12 @@ from unittest.mock import Mock
 
 import pytest
 
+from createagents.domain import ChatMetrics
 from createagents.infra.adapters.common.metrics_recorder import (
     OllamaMetricsRecorder,
     OpenAIMetricsRecorder,
     ProviderUsage,
 )
-from createagents.infra.config.metrics import ChatMetrics
 
 # allow-assertion-reduction: Generic provider cases were replaced by provider-specific recorder coverage below.
 

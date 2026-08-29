@@ -1,3 +1,6 @@
+from collections.abc import Sequence
+from typing import Any, cast
+
 import pytest
 
 from createagents.application import CreateAgentInputDTO, CreateAgentUseCase
@@ -386,7 +389,7 @@ class TestCreateAgentUseCase:
             name='Test',
             instructions='Test',
         )
-        input_dto.history_max_size = 5.5
+        input_dto.history_max_size = cast(int, 5.5)
 
         with pytest.raises(InvalidAgentConfigException):
             use_case.execute(input_dto)
@@ -399,7 +402,7 @@ class TestCreateAgentUseCase:
             name='Test',
             instructions='Test',
         )
-        input_dto.config = 'invalid'
+        input_dto.config = cast(dict[str, Any] | None, 'invalid')
 
         with pytest.raises(InvalidAgentConfigException):
             use_case.execute(input_dto)
@@ -412,7 +415,7 @@ class TestCreateAgentUseCase:
             name='Test',
             instructions='Test',
         )
-        input_dto.config = ['invalid']
+        input_dto.config = cast(dict[str, Any] | None, ['invalid'])
 
         with pytest.raises(InvalidAgentConfigException):
             use_case.execute(input_dto)
@@ -467,6 +470,7 @@ class TestCreateAgentUseCase:
             config={'temperature': 0.0},
         )
         agent = use_case.execute(input_dto)
+        assert agent.config is not None
         assert agent.config['temperature'] == 0.0
 
         input_dto = CreateAgentInputDTO(
@@ -477,6 +481,7 @@ class TestCreateAgentUseCase:
             config={'temperature': 2.0},
         )
         agent = use_case.execute(input_dto)
+        assert agent.config is not None
         assert agent.config['temperature'] == 2.0
 
     def test_execute_with_invalid_max_tokens_zero_raises_error(self):
@@ -529,6 +534,7 @@ class TestCreateAgentUseCase:
         )
 
         agent = use_case.execute(input_dto)
+        assert agent.config is not None
         assert agent.config['max_tokens'] == 500
 
     def test_execute_with_invalid_top_p_too_high_raises_error(self):
@@ -568,6 +574,7 @@ class TestCreateAgentUseCase:
             config={'top_p': 0.0},
         )
         agent = use_case.execute(input_dto)
+        assert agent.config is not None
         assert agent.config['top_p'] == 0.0
 
         input_dto = CreateAgentInputDTO(
@@ -578,6 +585,7 @@ class TestCreateAgentUseCase:
             config={'top_p': 1.0},
         )
         agent = use_case.execute(input_dto)
+        assert agent.config is not None
         assert agent.config['top_p'] == 1.0
 
     def test_execute_with_unsupported_config_key_raises_error(self):
@@ -627,6 +635,7 @@ class TestCreateAgentUseCase:
         assert agent.model == 'gpt-4'
         assert agent.name == 'Advanced Agent'
         assert agent.instructions == 'You are an advanced AI assistant'
+        assert agent.config is not None
         assert agent.config['temperature'] == 0.8
         assert agent.config['max_tokens'] == 2000
         assert agent.config['top_p'] == 0.95
@@ -639,9 +648,12 @@ class TestCreateAgentUseCaseToolResolution:
     """Tool names become instances here, using the injected registry."""
 
     @staticmethod
-    def _tool(name='web_search', description='Searches the web'):
+    def _tool(
+        name: str = 'web_search',
+        description: str = 'Searches the web',
+    ) -> BaseTool:
         class _Tool(BaseTool):
-            def execute(self, *args, **kwargs):
+            def execute(self, *args: object, **kwargs: object) -> str:
                 return 'result'
 
         tool = _Tool()
@@ -649,10 +661,14 @@ class TestCreateAgentUseCaseToolResolution:
         tool.description = description
         return tool
 
-    def _use_case(self, tools=None):
+    def _use_case(
+        self, tools: dict[str, BaseTool] | None = None
+    ) -> CreateAgentUseCase:
         return CreateAgentUseCase(tool_registry=StubToolRegistry(tools))
 
-    def _dto(self, tools):
+    def _dto(
+        self, tools: Sequence[str | BaseTool] | None
+    ) -> CreateAgentInputDTO:
         return CreateAgentInputDTO(
             provider='openai',
             model='gpt-5-nano',
