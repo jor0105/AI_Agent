@@ -134,7 +134,7 @@ class TestInitializeTiktoken:
     def test_initialize_tiktoken_raises_on_import_error(self):
         with (
             patch(
-                'builtins.__import__',
+                'createagents.infra.adapters.tools.read_local_file_tool.token_utils.import_module',
                 side_effect=ImportError('tiktoken missing'),
             ),
             pytest.raises(
