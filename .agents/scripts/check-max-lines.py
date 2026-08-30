@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import stat
 import subprocess
 import sys
@@ -27,6 +28,7 @@ POLICY_NAME = '.max-lines.toml'
 BASELINE_NAME = '.max-lines-baseline.json'
 INVENTORY_PATH = 'docs/large-files-inventory.md'
 INVENTORY_TITLE = '# Large Files Inventory'
+SCANNER_PATH = 'scripts/check-max-lines.py'
 
 SUFFIXES = frozenset(
     [
@@ -245,6 +247,11 @@ RECORD_KEYS = (
 
 Rule = tuple[str, str, str | None]
 Policy = tuple[tuple[str, ...], tuple[Rule, ...], bool]
+LEGACY_SELF_HOSTING_RULE: Rule = (
+    SCANNER_PATH,
+    'skip',
+    'self-hosting gate implementation',
+)
 
 
 class ConfigError(Exception):
@@ -522,24 +529,83 @@ def _int(value: object, name: str) -> int:
     return value
 
 
-def load_policy(root: Path) -> Policy:
-    path = root / POLICY_NAME
-    if not path.is_file():
-        return (), (), False
+def _artifact_path(root: Path, relative: str) -> Path:
+    target = root
+    parts = Path(relative).parts
+    for index, part in enumerate(parts):
+        target /= part
+        try:
+            info = target.lstat()
+        except FileNotFoundError:
+            continue
+        except OSError as exc:
+            raise ConfigError(
+                f'cannot inspect artifact {relative}: {exc}'
+            ) from exc
+        if stat.S_ISLNK(info.st_mode):
+            raise ConfigError(f'artifact path is a symbolic link: {relative}')
+        if index < len(parts) - 1 and not stat.S_ISDIR(info.st_mode):
+            raise ConfigError(
+                f'artifact directory is not a directory: {relative}'
+            )
+        if index == len(parts) - 1 and not stat.S_ISREG(info.st_mode):
+            raise ConfigError(f'artifact is not a regular file: {relative}')
+    return target
+
+
+def _read_artifact(root: Path, relative: str) -> bytes | None:
+    path = _artifact_path(root, relative)
+    flags = os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0)
     try:
-        data = tomllib.loads(path.read_text(encoding='utf-8'))
-    except tomllib.TOMLDecodeError as exc:
+        with os.fdopen(os.open(path, flags), 'rb') as artifact:
+            return artifact.read()
+    except FileNotFoundError:
+        return None
+    except OSError as exc:
+        raise ConfigError(f'cannot read artifact {relative}: {exc}') from exc
+
+
+def _write_artifact(root: Path, relative: str, data: bytes) -> None:
+    path = _artifact_path(root, relative)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise ConfigError(
+            f'cannot create artifact directory {relative}: {exc}'
+        ) from exc
+    path = _artifact_path(root, relative)
+    flags = (
+        os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, 'O_NOFOLLOW', 0)
+    )
+    try:
+        with os.fdopen(os.open(path, flags, 0o666), 'wb') as artifact:
+            artifact.write(data)
+    except OSError as exc:
+        raise ConfigError(f'cannot write artifact {relative}: {exc}') from exc
+
+
+def load_policy(root: Path) -> Policy:
+    data = _read_artifact(root, POLICY_NAME)
+    if data is None:
+        return (), (), False
+    return _parse_policy_bytes(data)
+
+
+def _parse_policy_bytes(data: bytes) -> Policy:
+    try:
+        parsed = tomllib.loads(data.decode('utf-8'))
+    except (UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
         raise ConfigError(f'invalid policy: {exc}') from exc
-    for key in set(data) - {
+    for key in set(parsed) - {
         'version',
         'source_extensions',
         'rules',
         'inventory',
     }:
         raise ConfigError(f'policy forbids key {key!r}')
-    if _int(data.get('version'), 'policy version') != 1:
+    if _int(parsed.get('version'), 'policy version') != 1:
         raise ConfigError('policy must declare version = 1')
-    raw = data.get('source_extensions', [])
+    raw = parsed.get('source_extensions', [])
     if not isinstance(raw, list) or not all(
         isinstance(item, str) for item in raw
     ):
@@ -551,7 +617,8 @@ def load_policy(root: Path) -> Policy:
         if ext in extensions:
             raise ConfigError(f'duplicate source extension {ext!r}')
         extensions.append(ext)
-    inventory = data.get('inventory')
+    rules = tuple(_parse_rule(item) for item in parsed.get('rules', []))
+    inventory = parsed.get('inventory')
     enforce = False
     if inventory is not None:
         if not isinstance(inventory, dict):
@@ -565,7 +632,7 @@ def load_policy(root: Path) -> Policy:
             raise ConfigError('inventory enforce must be a boolean')
     return (
         tuple(extensions),
-        tuple(_parse_rule(item) for item in data.get('rules', [])),
+        rules,
         enforce,
     )
 
@@ -645,10 +712,24 @@ def parse_baseline(data: bytes) -> list[BaselineEntry]:
     return entries
 
 
-def blob_at(root: Path, rev: str, path: str) -> bytes | None:
-    if git(root, ['rev-parse', '--verify', rev + '^{commit}']).returncode:
+def _commit_at(root: Path, rev: str, *, required: bool = False) -> str | None:
+    proc = git(root, ['rev-parse', '--verify', rev + '^{commit}'])
+    if proc.returncode:
+        if required:
+            raise ConfigError(
+                f'cannot read required baseline predecessor {rev}'
+            )
         return None
-    listing = git(root, ['ls-tree', '-z', rev, '--', path])
+    return proc.stdout.decode('ascii', 'replace').strip()
+
+
+def blob_at(
+    root: Path, rev: str, path: str, *, required: bool = False
+) -> bytes | None:
+    commit = _commit_at(root, rev, required=required)
+    if commit is None:
+        return None
+    listing = git(root, ['ls-tree', '-z', commit, '--', path])
     if listing.returncode:
         raise ConfigError(f'cannot read Git revision {rev}')
     for entry in listing.stdout.split(b'\0'):
@@ -658,10 +739,23 @@ def blob_at(root: Path, rev: str, path: str) -> bytes | None:
             else ''
         )
         if name == path:
-            shown = git(root, ['show', rev + ':' + path])
+            shown = git(root, ['show', commit + ':' + path])
             if shown.returncode:
                 raise ConfigError(f'cannot read baseline at revision {rev}')
             return shown.stdout
+    return None
+
+
+def first_parent(root: Path, rev: str) -> str | None:
+    commit = _commit_at(root, rev)
+    if commit is None:
+        return None
+    proc = git(root, ['cat-file', '-p', commit])
+    if proc.returncode:
+        raise ConfigError(f'cannot read Git revision {rev}')
+    for line in proc.stdout.splitlines():
+        if line.startswith(b'parent '):
+            return line[7:].decode('ascii', 'replace')
     return None
 
 
@@ -682,16 +776,21 @@ def history_commits(root: Path, rev: str | None) -> list[str]:
 def validate_baseline(
     root: Path,
     current_bytes: bytes | None,
+    policy: Policy,
     evaluated: dict[str, tuple[str, int]],
 ) -> list[str]:
     worktree = parse_baseline(current_bytes) if current_bytes else []
     current = current_bytes or b''
     head_bytes = blob_at(root, 'HEAD', BASELINE_NAME)
-    predecessor = (
-        head_bytes
-        if current != head_bytes
-        else blob_at(root, 'HEAD^', BASELINE_NAME)
-    )
+    if current != head_bytes:
+        predecessor = head_bytes
+    else:
+        parent = first_parent(root, 'HEAD')
+        predecessor = (
+            blob_at(root, parent, BASELINE_NAME, required=True)
+            if parent is not None
+            else None
+        )
     if not current:
         if not predecessor:
             return []
@@ -702,31 +801,37 @@ def validate_baseline(
         ]
     if predecessor:
         return _transition_check(
-            worktree, parse_baseline(predecessor), evaluated
+            root, worktree, parse_baseline(predecessor), policy, evaluated
         )
-    earlier = history_commits(root, 'HEAD^') if _rev_ok(root, 'HEAD^') else []
+    parent = first_parent(root, 'HEAD')
+    if parent is None:
+        earlier = []
+    else:
+        _commit_at(root, parent, required=True)
+        earlier = history_commits(root, parent)
     if earlier:
         return ['baseline reintroduced after historical removal']
     return _bootstrap_check(worktree, evaluated)
 
 
-def _rev_ok(root: Path, rev: str) -> bool:
-    return (
-        git(root, ['rev-parse', '--verify', rev + '^{commit}']).returncode == 0
-    )
-
-
 def _transition_check(
+    root: Path,
     worktree: list[BaselineEntry],
     predecessor: list[BaselineEntry],
+    policy: Policy,
     evaluated: dict[str, tuple[str, int]],
 ) -> list[str]:
     violations: list[str] = []
     older = {entry.path: entry for entry in predecessor}
+    added = [entry for entry in worktree if entry.path not in older]
+    scanner_conversion = _is_self_hosting_conversion(
+        root, added, policy, evaluated
+    )
     for entry in worktree:
         previous = older.get(entry.path)
         if previous is None:
-            violations.append(f'baseline added entry: {entry.path}')
+            if not (scanner_conversion and entry.path == SCANNER_PATH):
+                violations.append(f'baseline added entry: {entry.path}')
         elif (entry.classification, entry.limit, entry.action) != (
             previous.classification,
             previous.limit,
@@ -748,6 +853,40 @@ def _transition_check(
         and evaluated.get(entry.path, (None, 0))[1] > entry.limit
     )
     return violations
+
+
+def _is_self_hosting_conversion(
+    root: Path,
+    added: list[BaselineEntry],
+    policy: Policy,
+    evaluated: dict[str, tuple[str, int]],
+) -> bool:
+    if len(added) != 1 or added[0].path != SCANNER_PATH:
+        return False
+    cls, count = evaluated.get(SCANNER_PATH, ('', 0))
+    entry = added[0]
+    if (
+        cls != 'production'
+        or count <= LIMITS[cls]
+        or LEGACY_SELF_HOSTING_RULE in policy[1]
+        or (
+            entry.classification,
+            entry.limit,
+            entry.cap,
+            entry.action,
+        )
+        != ('production', LIMITS['production'], count, ACTIONS['production'])
+    ):
+        return False
+    historical = blob_at(root, 'HEAD', POLICY_NAME)
+    if historical is None:
+        return False
+    try:
+        rules = _parse_policy_bytes(historical)[1]
+    except ConfigError:
+        return False
+    matching = [rule for rule in rules if match_glob(rule[0], SCANNER_PATH)]
+    return matching == [LEGACY_SELF_HOSTING_RULE]
 
 
 def _bootstrap_check(
@@ -880,28 +1019,26 @@ def _execute(args: argparse.Namespace) -> tuple[int, Outcome]:
             )
             + '\n'
         )
-        (root / BASELINE_NAME).write_text(payload, encoding='utf-8')
+        _write_artifact(root, BASELINE_NAME, payload.encode('utf-8'))
         return 0, evaluate(
             root, policy, parse_baseline(payload.encode('utf-8')), ()
         )
-    baseline_path = root / BASELINE_NAME
-    current = baseline_path.read_bytes() if baseline_path.is_file() else None
+    current = _read_artifact(root, BASELINE_NAME)
     baseline = parse_baseline(current) if current else []
     outcome = evaluate(root, policy, baseline, raw_selectors)
     outcome.violations.extend(
-        validate_baseline(root, current, outcome.evaluated)
+        validate_baseline(root, current, policy, outcome.evaluated)
     )
     entries = {entry.path: entry for entry in baseline}
     if args.write_inventory:
-        target = root / INVENTORY_PATH
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(
-            render_inventory(outcome.records, entries), encoding='utf-8'
+        _write_artifact(
+            root,
+            INVENTORY_PATH,
+            render_inventory(outcome.records, entries).encode('utf-8'),
         )
     if args.write_inventory or args.check_inventory or policy[2]:
         expected = render_inventory(outcome.records, entries).encode('utf-8')
-        target = root / INVENTORY_PATH
-        actual = target.read_bytes() if target.is_file() else b''
+        actual = _read_artifact(root, INVENTORY_PATH) or b''
         if actual != expected:
             outcome.violations.append(
                 'inventory is stale; regenerate with --write-inventory'

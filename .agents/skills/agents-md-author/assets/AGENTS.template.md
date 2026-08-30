@@ -10,7 +10,7 @@ repository.
 
 ## System Overview
 
-<!-- AGENTS_AUTHOR: Explain the system's mission, users, boundaries, inputs, outputs, downstream consumers, and non-negotiable invariants. Begin with a direct identity statement: "<Project> is ...". -->
+<!-- AGENTS_AUTHOR: Explain the system's mission, users, macro boundaries, inputs, outputs, downstream consumers, and non-negotiable invariants. Begin with a direct identity statement: "<Project> is ...". Link to owner documents instead of inventorying private modules or dependencies. -->
 
 <!-- AGENTS_AUTHOR: State the design priorities in order when the project has an evidenced priority model. Do not manufacture one. -->
 
@@ -22,7 +22,7 @@ repository.
 
 ## Pipeline Architecture
 
-<!-- AGENTS_AUTHOR: Describe the runtime path from entrypoint through major components to outputs. Name boundaries, gates, ownership, and consumers only when evidenced. If the project is not a data pipeline, explain the actual request/runtime/build flow while retaining this heading. -->
+<!-- AGENTS_AUTHOR: Describe the executable runtime path from entrypoint through major roles to outputs. Preserve evidenced, stable, high-routing anchors such as the public facade, composition root, factory/registry, extension owner, and canonical validation entrypoint. Do not reproduce every private class, adapter, or internal step. If the project is not a data pipeline, explain the actual request/runtime/build flow while retaining this heading. -->
 
 <!-- AGENTS_AUTHOR: Add an explicit navigation route: where an agent starts for architecture, which owning document or module it opens next, and where details intentionally live. Use existing relative links only. -->
 
@@ -38,11 +38,11 @@ repository.
 | ------------------------------ | ---------------------------------------------------------- |
 | <!-- AGENTS_AUTHOR: action --> | <!-- AGENTS_AUTHOR: verified repository-native command --> |
 
-<!-- AGENTS_AUTHOR: State public runtime variables, supported values, and configuration behavior confirmed by code, manifests, CI, or current documentation. Never copy secret values. -->
+<!-- AGENTS_AUTHOR: State configuration behavior and only the public variables that change recurring agent decisions. Link to the configuration owner for defaults and exhaustive lists. Never copy secret values. -->
 
 ## Technical Stack
 
-<!-- AGENTS_AUTHOR: List exact languages, runtimes, dependency managers, command runners, frameworks, primary libraries, formatter, linter, typechecker, test framework, security tooling, and deployment tooling that repository evidence confirms. Include versions only when declared. -->
+<!-- AGENTS_AUTHOR: List stable languages, runtimes, dependency managers, command runners, frameworks, structural libraries, and decision-critical quality, security, build, and deployment tooling. Include concise formatter/linter policy values when they directly constrain new code. Include versions only when declared. Do not turn manifests or hook rosters into prose. -->
 
 ## Mandatory Rules
 
@@ -99,7 +99,8 @@ repository.
 - framework: exact framework and the project pattern new work must preserve;
 - quality: exact format, lint, typecheck, test, and official validation commands;
 - invariants: project-specific data, security, ownership, compatibility, or layering rules;
-- navigation: exact first document for architecture and the owner of detailed contracts.
+- navigation: exact first document for architecture and the owner of detailed contracts;
+- routing and extension: concrete entrypoint, composition/dispatch owner, registration point, public export, and canonical gate when those paths are stable and recurring.
 Use direct wording such as "Use `uv run` for Python commands" rather than "use the correct manager". -->
 
 ## Execution Policy

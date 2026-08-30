@@ -44,9 +44,7 @@ EVIDENCE_REPORT_RE = re.compile(
     r'^openspec/changes/[^/]+/evidence/'
     r'(?:gate-report|verification-report)\.json$'
 )
-# A pre-commit config has exactly one kind of `- id:` entry, so the hook
-# roster can be read without a YAML parser. See the module docstring for why
-# a parser is not an option here.
+# Parse the simple hook roster without third-party dependencies.
 HOOK_ID_RE = re.compile(r'^\s*-\s+id:\s*([A-Za-z0-9._-]+)\s*$')
 COMMIT_MSG_STAGE_RE = re.compile(r'^\s*stages:\s*\[[^\]]*commit-msg')
 PRE_PUSH_STAGE_RE = re.compile(r'^\s*stages:\s*\[[^\]]*pre-push')
@@ -279,7 +277,8 @@ def run_gate(hook_id: str) -> dict[str, Any]:
             message.unlink(missing_ok=True)
     duration, finished = time.monotonic() - start, datetime.now(UTC)
     passed = completed.returncode == 0
-    tail = (completed.stdout or completed.stderr).strip().splitlines()
+    streams = (completed.stdout, completed.stderr)
+    output = '\n'.join(filter(None, streams)).strip()
     return {
         'gateId': hook_id,
         'label': hook_id,
@@ -291,7 +290,7 @@ def run_gate(hook_id: str) -> dict[str, Any]:
         'finishedAt': finished.isoformat(),
         'durationSeconds': round(duration, 3),
         'exitCode': completed.returncode,
-        'outcome': 'passed' if passed else (tail[-1] if tail else 'failed'),
+        'outcome': output or ('passed' if passed else 'failed'),
     }
 
 

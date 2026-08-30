@@ -108,6 +108,12 @@ Use código, manifests, deploy config, ADRs aceitos e docs vigentes. Não deduza
 camadas pelos nomes de diretório. Um inventário sem fluxo e sem “onde começar”
 não satisfaz esta seção.
 
+Preserve paths concretos quando forem âncoras estáveis de alto roteamento, como
+facade ou entrypoint público, composition root, factory/registry, owner de
+extensão e gate canônico. Isso não é inventário: essas âncoras definem onde o
+agente começa, implementa, registra ou valida. Omita a anatomia interna que não
+muda nenhuma dessas decisões.
+
 ### `Configuration & Runtime`
 
 A tabela de superfícies deve incluir, quando existirem:
@@ -134,6 +140,11 @@ Liste explicitamente:
 - data/database/queue quando centrais;
 - formatter, linter, typechecker e test framework;
 - tooling de segurança, build, deploy e documentação.
+
+Inclua valores pequenos e estáveis de formatter/linter quando eles restringirem
+diretamente novas implementações, como largura de linha, estilo de aspas,
+convenção de docstrings ou limite de complexidade. Deixe seleções extensas de
+regras e exceções na configuração owner.
 
 Omitir uma categoria inexistente é correto. Esconder stack confirmada atrás de
 “use o tooling do projeto” não é.
@@ -165,7 +176,9 @@ de regra:
 - documento inicial para arquitetura e owner dos detalhes.
 
 Detalhes de função, lista extensa de módulos e procedimentos incidentais
-pertencem aos documentos owner, não a esta seção.
+pertencem aos documentos owner, não a esta seção. Paths de alto roteamento e
+regras de extensão são diferentes: mantenha-os quando evitarem que o agente
+edite a camada errada, omita um registro/export ou use o gate incorreto.
 
 ### `Execution Policy`
 

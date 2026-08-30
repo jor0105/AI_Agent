@@ -21,7 +21,7 @@
     },
     {
       "hasScripts": true,
-      "hash": "sha256:981bd353a98a9165c3f2daf970bd2072b1d637567e391c763f8a2c10497567b6",
+      "hash": "sha256:ac7e8e3924ad3b3a90eb892d477bd6628217c6acd64ec2881f59c4204222dc18",
       "id": "skills/agents-md-author",
       "selectedBy": "manifest"
     },
@@ -117,13 +117,13 @@
     },
     {
       "hasScripts": true,
-      "hash": "sha256:5db7bf6899957884864118233416fb193be5e384923916837ba38c3563448dfe",
+      "hash": "sha256:c7fa7f8b9bfe94721c2a3824de3189578b688a452b71488e4050c4f1513a420b",
       "id": "tools/check-max-lines",
       "selectedBy": "manifest"
     },
     {
       "hasScripts": true,
-      "hash": "sha256:0d3f679552a19dd895b8527d8d414477c507b11bb020d3e6956bcecae8631a3a",
+      "hash": "sha256:291218833050ec31883d08c0744676da526b256baa16085ce39b2683683b8b55",
       "id": "tools/harness-verify",
       "selectedBy": "manifest"
     },

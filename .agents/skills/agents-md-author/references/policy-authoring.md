@@ -146,6 +146,11 @@ Se existir um entrypoint agregador oficial, torne-o a regra principal e use
 comandos individuais apenas para validação direcionada. A regra deve dizer qual
 comando executar antes de concluir e como reportar falha ou skip.
 
+Se o repositório possui uma política fechada de formatter/linter, registre o
+entrypoint canônico e os poucos valores estáveis que restringem todo código novo
+(por exemplo, largura, aspas, docstrings e complexidade). Não copie a seleção
+exaustiva de regras, o roster de exceções ou cada etapa interna do agregador.
+
 Não invente “100% coverage”, benchmark ou SLO. Qualidade forte significa gates
 reais, invariantes e comportamento de falha explícito, não números decorativos.
 

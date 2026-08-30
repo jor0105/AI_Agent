@@ -5,294 +5,219 @@
 > Status: Confirmed
 > Knowledge class: Agent policy
 
-Operating policy for coding agents working in this repository. It gives agents
-the system map, durable engineering rules, official commands, and safe limits;
-detailed contracts remain in their owning documentation.
+Operational policy for coding agents working in this repository. This file is a
+durable system map, a development policy, and a navigation aid. Detailed
+implementation, provider, CLI, and harness contracts belong to their owning
+documents.
 
 ## System Overview
 
-**Create Agents AI** (PyPI package `createagents`) is a Python library for
-building conversational AI agents with pluggable OpenAI and Ollama providers,
-extensible tools, conversation history, metrics, and an interactive terminal
-CLI. Python applications consume its public exports from
-`src/createagents/__init__.py`; the public facade is
-`src/createagents/main/facade/client.py`. The repository owns the framework and
-its CLI, not the external provider services.
+Create Agents AI (PyPI package createagents) is a Python library and terminal
+CLI for applications that build conversational AI agents. Consumers configure an
+agent, message it, and optionally supply tools; the library returns complete or
+streaming responses, conversation state, metrics, and terminal output.
 
-The runtime boundary accepts agent configuration, user messages, tools, and
-environment configuration. It produces complete or streaming responses,
-conversation state, metrics, and terminal output. Non-negotiable invariants are
-the inward dependency direction, provider isolation behind application ports,
-explicit composition in `src/createagents/main/composers/agent_composer.py`,
-and silent library logging until the consumer opts in through `LoggingConfig`.
-The `.agents/` harness is a development aid, not part of the published product.
+The product supports pluggable provider and tool integrations while keeping
+external services outside the repository boundary. Its non-negotiable
+invariants are inward Clean Architecture dependencies, provider isolation behind
+application ports, explicit composition of concrete dependencies, and silent
+library logging until a consumer configures it.
 
-**The product is not the harness.** Two unrelated things are called "agent" here:
-
-|         | What it is                                        | Where                                  | Published    |
-| ------- | ------------------------------------------------- | -------------------------------------- | ------------ |
-| Product | the library consumers install                     | `src/createagents/`, `docs/`, `tests/` | yes, to PyPI |
-| Harness | tooling that assists whoever develops the product | `.agents/` + hidden mirrors            | no           |
-
-`.claude/`, `.codex/`, `.opencode/`, `opencode.json` and `.github/agents/` are
-gitignored on purpose and never ship; `uv build` packages only `src/`.
+The .agents directory is internal development harness tooling, not published
+product code. Do not treat harness configuration or generated client mirrors as
+part of the createagents package contract.
 
 ## Success Metrics
 
-| Metric        | Target                                                   |
-| ------------- | -------------------------------------------------------- |
-| Coverage gate | 85% (`pytest.ini`, `.github/workflows/pipeline.yml`)     |
-| Python matrix | >= 3.12 (`pyproject.toml`; CI runs 3.12, 3.13, and 3.14) |
+| Metric           | Target                                                  |
+| ---------------- | ------------------------------------------------------- |
+| Coverage gate    | 85% minimum, enforced by pytest.ini and CI              |
+| Supported Python | >=3.12,\<4.0; CI validates CPython 3.12, 3.13, and 3.14 |
 
 ## Pipeline Architecture
 
-A library plus a CLI, not a data pipeline. The runtime starts at
-`src/createagents/main/facade/client.py` (`CreateAgent`), which delegates
-construction and dependency wiring to
+This is a library plus a CLI, not a data pipeline. Runtime starts at
+`src/createagents/main/facade/client.py` (`CreateAgent`) and delegates concrete
+construction to
 `src/createagents/main/composers/agent_composer.py` (`AgentComposer`). The
-composition root creates the application use cases in
-`src/createagents/application/use_cases/`, injects ports, and obtains provider
-adapters through `src/createagents/infra/factories/chat_adapter_factory.py`
-(`ChatAdapterFactory`). Provider implementations live under
-`src/createagents/infra/adapters/`; the current providers are OpenAI and Ollama.
+composer builds use cases from `src/createagents/application/use_cases/` and
+resolves provider ports through
+`src/createagents/infra/factories/chat_adapter_factory.py`
+(`ChatAdapterFactory`), whose implementations live under
+`src/createagents/infra/adapters/`. The runtime returns a response or stream and
+updates conversation history and metrics.
 
-The dependency direction is `src/createagents/presentation/` /
-`src/createagents/infra/` → `src/createagents/application/` →
-`src/createagents/domain/`. `src/createagents/application/` must depend only on
-`src/createagents/domain/`; `src/createagents/main/` is the composition root
-that knows the concrete infrastructure. The terminal entrypoint is
-`src/createagents/presentation/cli/application/chat_cli_app.py`; its command
-handlers are resolved by the CLI registry. `CreateAgent.start_cli()` reaches
-that presentation layer lazily, so consumers that only use the library do not
-need to start the terminal UI.
+Dependencies point inward: presentation and infrastructure depend on
+application and domain abstractions; application depends on domain behavior and
+ports declared under `src/createagents/application/interfaces/`; domain remains
+independent of outer layers. The public package exports in
+`src/createagents/__init__.py` and the facade are semver-relevant boundaries.
+The terminal boundary is
+`src/createagents/presentation/cli/application/chat_cli_app.py`; the facade
+reaches it lazily through `CreateAgent.start_cli()`.
 
-For navigation, open [README.md](README.md) for identity and onboarding, then
-[docs/dev-guide/architecture-developer.md](docs/dev-guide/architecture-developer.md)
-for the macro design and
-[docs/dev-guide/cli-architecture.md](docs/dev-guide/cli-architecture.md) for the
-terminal boundary. Use [docs/dev-guide/contribute.md](docs/dev-guide/contribute.md)
-for the contribution workflow and the sources in Related Documentation for
-commands, testing, governance, and harness details.
+For a safe first change, read README.md for product identity, then
+docs/dev-guide/architecture-developer.md for layer ownership. Read
+docs/dev-guide/cli-architecture.md only for terminal changes and
+docs/dev-guide/contribute.md for quality gates and extension procedures. Those
+documents own module-level details and registration steps.
 
 ## Configuration & Runtime
 
-| Surface                         | Location                                                         | Purpose                                                                                  |
-| ------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Manifest and tool configuration | `pyproject.toml`                                                 | dependency metadata, Python range, build backend, and tool configuration                 |
-| Resolved dependencies           | `uv.lock`                                                        | uv-owned lockfile; never hand-edit                                                       |
-| Test configuration              | `pytest.ini`                                                     | test paths, markers, options, and the 85% coverage floor                                 |
-| Secret scanning policy          | `.gitleaks.toml`                                                 | minimal default-rule policy used by local and CI Gitleaks                                |
-| Local quality hooks             | `.pre-commit-config.yaml`                                        | 44 hooks: 38 pre-commit, 4 pre-push, 1 commit-msg, and 1 manual                          |
-| Public environment names        | `.env.example`                                                   | names only for provider, retry, tool-iteration, logging, and file-tool settings          |
-| Documentation configuration     | `mkdocs.yml`                                                     | MkDocs Material site configuration and navigation                                        |
-| CI, docs, and release workflows | `.github/workflows/` (`pipeline.yml`, `docs.yml`, `publish.yml`) | quality gates/tests (`pipeline.yml`), docs deploy (`docs.yml`), and PyPI (`publish.yml`) |
-| Agent harness manifest          | `.agents/harness.json`                                           | internal component declarations for agents, skills, tools, and workflows                 |
+| Surface                                   | Location                       | Purpose                                                                           |
+| ----------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------- |
+| Package, build, and quality configuration | pyproject.toml                 | Python range, dependencies, build backend, import boundaries, and tool settings   |
+| Resolved dependencies                     | uv.lock                        | Locked uv dependency state; never hand-edit                                       |
+| Public runtime configuration              | .env.example                   | Public environment variable names and documented defaults; never copy real values |
+| Test configuration                        | pytest.ini                     | Test markers, discovery, and the coverage floor                                   |
+| Local quality hooks                       | .pre-commit-config.yaml        | Repository-owned validation and formatting hooks                                  |
+| CI quality contract                       | .github/workflows/pipeline.yml | Supported Python matrix and required CI gates                                     |
+| Documentation site                        | mkdocs.yml                     | MkDocs Material configuration and navigation                                      |
+| Internal harness                          | .agents/harness.json           | Development harness declaration; open only for harness work                       |
 
 ### Commands
 
-| Action                        | Command                                                                                                                                  |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Install dependencies          | `uv sync --locked`                                                                                                                       |
-| Install hooks                 | `uv run --locked --no-sync pre-commit install --install-hooks`                                                                           |
-| Pre-commit hooks (38)         | `uv run --locked --no-sync pre-commit run --all-files`                                                                                   |
-| Pre-push hooks (4)            | `uv run --locked --no-sync pre-commit run --all-files --hook-stage pre-push`                                                             |
-| Safe local tests and coverage | `uv run --locked --no-sync pytest -m 'not integration and not slow' -ra --cov`                                                           |
-| Primary type checking         | `uv run --locked --no-sync mypy src --pretty`                                                                                            |
-| Supporting type checking      | `uv run --locked --no-sync mypy tests scripts --disable-error-code no-untyped-def --pretty`                                              |
-| Ruff lint and format          | `uv run --locked --no-sync ruff check src tests scripts`                                                                                 |
-| Source security scan          | `uv run --locked --no-sync bandit -c pyproject.toml -r src -ll`                                                                          |
-| Dependency audit              | `uv run --locked --no-sync pip-audit --timeout 60`                                                                                       |
-| Strict documentation build    | `uv run --locked --no-sync mkdocs build --strict`                                                                                        |
-| Package build                 | `uv build`                                                                                                                               |
-| Optional harness mirror check | `uv run --locked --no-sync harness-sync --check`                                                                                         |
-| Harness evidence              | `uv run --locked --no-sync python .agents/scripts/harness_verify.py --evidence-path openspec/changes/<name>/evidence/gate-report.json`   |
-| Verify harness evidence       | `uv run --locked --no-sync python .agents/scripts/harness_verify.py --verify-evidence openspec/changes/<name>/evidence/gate-report.json` |
+| Action                            | Command                                                                                   |
+| --------------------------------- | ----------------------------------------------------------------------------------------- |
+| Bootstrap locked dependencies     | uv sync --locked                                                                          |
+| Install repository hooks          | uv run --locked --no-sync pre-commit install --install-hooks                              |
+| Run pre-commit validation         | uv run --locked --no-sync pre-commit run --all-files                                      |
+| Run pre-push validation           | uv run --locked --no-sync pre-commit run --all-files --hook-stage pre-push                |
+| Run safe local tests and coverage | uv run --locked --no-sync pytest -m 'not integration and not slow' -ra --cov              |
+| Type-check product code           | uv run --locked --no-sync mypy src --pretty                                               |
+| Type-check tests and scripts      | uv run --locked --no-sync mypy tests scripts --disable-error-code no-untyped-def --pretty |
+| Lint product, tests, and scripts  | uv run --locked --no-sync ruff check src tests scripts                                    |
+| Scan product source               | uv run --locked --no-sync bandit -c pyproject.toml -r src -ll                             |
+| Audit dependencies                | uv run --locked --no-sync pip-audit --timeout 60                                          |
+| Build documentation strictly      | uv run --locked --no-sync mkdocs build --strict                                           |
+| Build the package                 | uv build                                                                                  |
 
-Run all Python tooling and tests directly through `uv run --locked --no-sync`.
-Use `uv sync --locked` only as explicit environment bootstrap; local hooks must
-not synchronize the environment or update dependency resolution.
+Run Python tooling through uv run --locked --no-sync. Use uv sync --locked only
+as deliberate environment bootstrap or when the task explicitly changes locked
+dependencies. Do not introduce pip, Poetry, or another lockfile for repository
+development.
 
-The normal hooks do not require `central-skills`. `.agents/` is tracked because
-it carries the portable validator projection. `.codex/`, `.claude/`, `.opencode/`,
-and `.github/prompts/` are generated ignored mirrors outside the Git index.
-`check-harness-sync` is the optional manual-only mirror check; if its external
-dependency is unavailable, its result is `skipped`, not a normal-hook pass.
-Review mutator output before staging and stage only explicit paths. In a dirty
-working tree, do not use `git add .` or `git add -A`.
-
-The harness commands apply only when an OpenSpec change exists. They accept a
-per-change JSON gate report only at
-`openspec/changes/<name>/evidence/gate-report.json`; `<name>` is an existing
-change directory, not an arbitrary filesystem path. The first command creates
-the report and the second re-checks an existing report. The report uses the
-`harness` effective profile and must be current before it is trusted.
-
-Public environment names, with no values copied into this policy, are
-`OPENAI_API_KEY`, `OPENAI_TIMEOUT`, `OPENAI_MAX_RETRIES`,
-`OPENAI_MAX_TOOL_ITERATIONS`, `OLLAMA_HOST`, `OLLAMA_MAX_RETRIES`,
-`OLLAMA_MAX_TOOL_ITERATIONS`, `LOG_LEVEL`, `LOG_TO_FILE`, `LOG_FILE_PATH`,
-`LOG_JSON_FORMAT`, and `FILE_TOOL_BASE_DIR`. OpenAI requires
-`OPENAI_API_KEY`; Ollama requires a reachable server. The package installs a
-`NullHandler` and remains silent until logging is explicitly configured through
-`LoggingConfig`.
+Use .env.example for public configuration names and provider prerequisites. It
+is not a source of secret values; never read, print, copy, or commit a real .env
+file.
 
 ## Technical Stack
 
-Python `>=3.12,<4.0` is managed and run with `uv`. The application framework is
-Create Agents AI itself; no web framework is confirmed. The package uses the
-runtime libraries `openai`, `ollama`, `python-dotenv`, `defusedxml`, and `rich`,
-with optional file-tool dependencies declared separately in `pyproject.toml`.
-It follows Clean Architecture and SOLID. `setuptools` is the packaging/build
-backend, not the dependency manager. Quality and documentation tooling includes
-Ruff (79-column, single-quote format, including Google-style docstrings via
-the D rules), mypy, pytest,
-pytest-cov, pytest-asyncio, Bandit, pip-audit, import-linter, the cycle detector
-at `scripts/check-import-cycles.py`, mdformat, yamllint, actionlint, codespell,
-gitleaks, zizmor, MkDocs Material, and setuptools. `pyproject.toml` is the
-authority on declared versions and configuration.
+The package targets Python >=3.12,\<4.0, uses uv for dependency management and
+command execution, and uses setuptools as its build backend. It follows Clean
+Architecture and SOLID with provider adapters for OpenAI and Ollama.
+
+Ruff formats and lints with a 79-character line length, single-quote formatting,
+Google-style docstrings, and McCabe complexity capped at 10. Mypy type-checks;
+pytest and pytest-cov validate behavior and coverage; Bandit scans product
+source; pip-audit audits dependencies; import-linter and
+`scripts/check-import-cycles.py` protect boundaries; pre-commit coordinates
+local checks; and MkDocs Material builds documentation. `pyproject.toml` owns
+the exact rule selection and scoped exceptions; do not treat an existing
+per-file ignore as general precedent.
 
 ## Mandatory Rules
 
 - Do not write irrelevant comments in code.
-
-- Verify files before editing; do not assume structure or behavior. A claim
-  about current behavior needs a path you opened, not a recollection.
-
+- Verify files before editing; do not assume structure or behavior.
 - Plan before modifying and keep scope small, reviewable, and verifiable.
-  Deliver only what is necessary to satisfy the request end-to-end; do not
-  bundle unrequested changes or mix structural refactors with bug fixes.
-
 - Write well-factored code with clear single responsibility per function,
   class, or module; do not create monolithic functions that handle multiple
   concerns.
-
 - Never leave duplicated logic; extract common functionality into shared
   functions or modules.
-
 - Never introduce circular imports or mutual module dependencies.
-
-- Tests must prove relevant behavior, edge cases, and regressions, not
-  merely nominal line coverage. Mirror the layer touched under `tests/`. Mark
-  external API tests with `@pytest.mark.integration` and slow tests with
-  `@pytest.mark.slow`; do not spend external provider quota in safe local runs.
-
-- Always act as a skeptic: verify hypotheses empirically instead of
-  accepting them, whether they came from the user or from you. Never flatter
-  the user or engage in sycophantic agreement.
-
+- Deliver only what is necessary to satisfy the request end-to-end; do not
+  bundle unrequested changes or mix structural refactors with bug fixes.
+- Tests must prove relevant behavior, edge cases, and regressions, not merely
+  nominal line coverage. Mark live-provider tests as integration and slow tests
+  as slow; do not spend provider quota in safe local validation.
+- Always act as a skeptic: verify hypotheses empirically instead of accepting
+  them, whether they came from the user or from you. Never flatter the user or
+  engage in sycophantic agreement.
 - Do not write code files whose sole purpose is to re-export other files or
   modules without added value.
-
-- `__init__.py` files must never contain code or implementation logic; they
-  must only contain explicit exports.
-
-- Never edit generated mirrors or generated files directly; change the source
-  and re-run its generation or sync command.
-
-- Chat is Portuguese (or adapted to the user's preferred language). Product
-  documentation is maintained bilingually in both Portuguese (`docs/`) and
-  English (`docs/en/`). Code, comments, Git commits/branches/PRs, and planning
-  artifacts are English. Commit messages use Conventional Commits.
-
-- Use `uv` for every dependency operation and `uv run --locked --no-sync` for
-  every Python tool or test. Never use `pip install`, Poetry, or a second
-  lockfile for repository development. The supported Python range is
-  `>=3.12,<4.0`.
-
-- Follow the repository's established naming, formatting, ownership, and module
-  boundaries. Use `src/createagents/` as the real package root and prefer
-  repository-native entrypoints and official scripts before ad hoc commands.
-
-- Preserve Clean Architecture and SOLID: the existing ports, adapters, use
-  cases, and composition patterns are the framework to extend; do not add
-  a competing framework or parallel architectural path without an explicit
-  decision.
-
-- `src/createagents/domain/` imports nothing above it;
-  `src/createagents/application/` imports **only** `src/createagents/domain/`,
-  never `src/createagents/infra/`, `src/createagents/main/`, or
-  `src/createagents/presentation/`. If an application component
-  needs infrastructure, declare a port in
-  `src/createagents/application/interfaces/` and let
-  `src/createagents/main/composers/agent_composer.py` inject it. A function-level
-  import hides a cycle instead of removing it.
-
-- All dependency wiring goes in
-  `src/createagents/main/composers/agent_composer.py`. Never instantiate
-  adapters or use cases from `src/createagents/presentation/` or
-  `src/createagents/main/facade/`.
-
-- New provider adapters belong under `src/createagents/infra/adapters/` and are
-  registered in `ChatAdapterFactory` at
-  `src/createagents/infra/factories/chat_adapter_factory.py`. New tools implement
-  `BaseTool` from `src/createagents/domain/`. New CLI handlers belong under
+- __init__.py files must contain only explicit exports, never implementation
+  logic.
+- Never edit generated mirrors directly; change their canonical source and run
+  the documented generation or synchronization step.
+- Chat is Portuguese or adapted to the user's preferred language. Code,
+  comments, Git branches, commits, pull requests, and planning artifacts are
+  English. Maintain product documentation in both docs/ and docs/en/ and use
+  Conventional Commits.
+- Use uv for every dependency operation and uv run --locked --no-sync for every
+  Python tool or test. Do not mix dependency managers or regenerate a lockfile
+  unless the task explicitly includes that migration.
+- Treat src/createagents/ as the package root. Use repository-native entrypoints
+  and official scripts before ad hoc commands.
+- Preserve the documented Clean Architecture direction:
+  `src/createagents/domain/` imports nothing above it and
+  `src/createagents/application/` imports only domain code. When application
+  behavior needs infrastructure, declare a port in
+  `src/createagents/application/interfaces/` and inject it from
+  `src/createagents/main/composers/agent_composer.py`; a function-level import
+  does not repair a boundary violation.
+- Keep all concrete dependency wiring in `AgentComposer`. The facade and
+  presentation layer may request composed behavior, but must not instantiate
+  adapters or use cases directly.
+- Preserve the public API in `src/createagents/__init__.py` and
+  `src/createagents/main/facade/client.py`. Ask for an explicit decision before
+  changing exported API signatures, persisted formats, authentication or
+  authorization flows, runtime topology, or deployment behavior.
+- Add provider adapters under `src/createagents/infra/adapters/` and register
+  them in `ChatAdapterFactory`; never branch on provider names inside an
+  application use case.
+- New tools implement `BaseTool` from
+  `src/createagents/domain/value_objects/base_tools.py`. Built-in named tools
+  additionally belong under `src/createagents/infra/adapters/tools/` and are
+  registered in `available_tools.py`; consumer-supplied tools do not need that
+  registry.
+- New CLI command handlers belong under
   `src/createagents/presentation/cli/commands/` and are registered in
-  `ChatCLIApplication._setup_commands` at
-  `src/createagents/presentation/cli/application/chat_cli_app.py`. Never branch
-  on provider names inside an application use case.
-
-- The published API is exported by `src/createagents/__init__.py` and includes
-  the public signatures of `src/createagents/main/facade/client.py`. Do not
-  change either public boundary without an explicit decision.
-
-- OpenAI requires `OPENAI_API_KEY`. Ollama does not require an API key, but it
-  does require a reachable server. Keep these provider boundaries in
-  infrastructure adapters rather than application use cases.
-
-- Keep XML parsing on `defusedxml`. Credentials resolve from the environment;
-  never hardcode keys or endpoints, never read or commit `.env` values, and
-  extend `.env.example` with names only.
-
-- The package logger stays silent initially through `NullHandler`; consumers
-  configure logging explicitly through `LoggingConfig`.
-
-- `.agents/` is internal harness tooling, not product code. Its component
-  manifest is `.agents/harness.json`; do not move harness content into
-  `src/createagents/` or `docs/`, and do not edit generated mirrors directly.
-  Gitleaks intentionally scans every tracked `.agents/` file, while generic
-  mutating hooks exclude the five external harness roots.
-
-- Treat runtime code and accepted decisions as current state; treat proposals
-  and unimplemented specs as planned state.
-
-- Put detailed contracts in their canonical doc and link to them; do not
-  re-inline a table that an owner document already holds.
-
+  `ChatCLIApplication._setup_commands`; keep the fallback chat handler last.
+- Resolve credentials from the environment. Never hardcode keys, endpoints, or
+  secret values; extend .env.example with names and documented behavior only.
+- Keep XML parsing on `defusedxml`; do not replace the hardened parser with the
+  standard-library XML parsers for untrusted provider or tool content.
+- Keep package logging silent by default. Consumers opt in through
+  LoggingConfig; do not add unsolicited library logging configuration.
+- The .agents directory is internal harness tooling, not product code. Change
+  its source artifacts rather than generated projections, and follow its
+  dedicated documentation only when the task targets the harness.
+- Treat implemented runtime code and accepted decisions as current state.
+  Treat proposals and unimplemented specifications as planned state.
+- Put detailed contracts in their canonical owner document and link to them;
+  keep this file focused on durable policy, system boundaries, and navigation.
 - Update tests, contracts, and canonical documentation when behavior or a public
   boundary changes.
-
 - Do not leave dead code, unused compatibility paths, duplicated ownership, or
-  stale documentation after a completed clean cutover unless compatibility is an
-  explicit project requirement.
-
-- Do not silently change public contracts, persisted formats, authentication
-  flows, security boundaries, runtime topology, or deployment behavior.
-
-- "Done" means terminal output or a gate result reported back. Report
-  `passed`, `failed`, `skipped`, and `external_failure` as four distinct
+  stale documentation after a completed clean cutover unless compatibility is
+  an explicit project requirement.
+- Before concluding, run the repository-native validation relevant to the
+  change. Report passed, failed, skipped, and external_failure as distinct
   outcomes; never summarize a skipped or environment-failed gate as a pass.
 
 ## Execution Policy
 
 ### Precedence
 
-Rank: system constraints → repository/workspace policy and tooling → user request. Act on
-the highest-ranking unambiguous, safe instruction without asking again. Skills
-and subagent prompts may tighten this section; they never relax it.
-If same-rank instructions conflict, prefer the more specific and safer one.
+Rank: system constraints → repository/workspace policy and tooling → user
+request. Act on the highest-ranking unambiguous, safe instruction without asking
+again. Skills and subagent prompts may tighten this section; they never relax
+it. If same-rank instructions conflict, prefer the more specific and safer one.
 
 ### Hard Blocks
 
 Never execute without the user naming the exact action:
 
-- `git reset --hard`, `git reset --soft`, `git reset --mixed`, `git reset HEAD`,
-  `git clean -fd`, forced checkouts (including `git checkout -f`), or any
-  history rewrite.
-- `git push --force`, `git push --force-with-lease`, `git rebase --root`,
-  `git rebase -i --root`, `git filter-branch`, `git reflog expire`,
-  `git update-ref --delete`, or any destructive remote/history operation.
-- Remote piping: `curl | bash`, `wget | sh`, or any equivalent.
-- Writes to `/etc`, `~/.ssh`, system packages, or paths outside the authorized
+- git reset --hard, git reset --soft, git reset --mixed, git reset HEAD, git
+  clean -fd, forced checkouts (including git checkout -f), or any history
+  rewrite.
+- git push --force, git push --force-with-lease, git rebase --root, git rebase
+  -i --root, git filter-branch, git reflog expire, git update-ref --delete, or
+  any destructive remote/history operation.
+- Remote piping: curl | bash, wget | sh, or any equivalent.
+- Writes to /etc, ~/.ssh, system packages, or paths outside the authorized
   repository/workspace scope.
 - Anything that bypasses permissions, sandbox limits, authentication, or
   authorization controls.
@@ -300,14 +225,14 @@ Never execute without the user naming the exact action:
   outside the authorized scope.
 
 Specific to this repository: publishing to PyPI or triggering
-`.github/workflows/publish.yml`; `git commit --no-verify` or any pre-commit
-bypass; `git add -f` on an ignored path; running `@pytest.mark.integration`
-tests without explicit authorization (spends real provider quota); or changing
-any file under `.github/workflows/` without explicit authorization.
+.github/workflows/publish.yml; git commit --no-verify or any pre-commit bypass;
+git add -f on an ignored path; running integration tests without explicit
+authorization; or changing any file under .github/workflows/ without explicit
+authorization.
 
 ### Secrets
 
-Never seek, log, copy, or expand secrets. Treat `.env`, API keys, tokens,
+Never seek, log, copy, or expand secrets. Treat .env files, API keys, tokens,
 cookies, auth sessions, certificates, and private keys as sensitive. If one
 appears in output: stop, redact it, and report that sensitive data was found.
 
@@ -316,9 +241,10 @@ appears in output: stop, redact it, and report that sensitive data was found.
 Follow the repository's canonical contracts, documentation, current code,
 accepted decisions, and official scripts before inventing a new workflow. Prefer
 existing project patterns, entrypoints, and abstractions over ad hoc
-alternatives. Do not silently change public contracts, persisted formats, auth
-flows, runtime topology, or security boundaries. If code, docs, and tooling
-disagree: stop, report the ambiguity, and identify the conflicting sources.
+alternatives. If code, docs, and tooling disagree: stop, report the ambiguity,
+and identify the conflicting sources. Do not silently change public contracts,
+persisted formats, authentication flows, security boundaries, runtime topology,
+or deployment behavior.
 
 ### Autonomy
 
@@ -329,26 +255,24 @@ all hold:
 - Change is contained inside the authorized repository/workspace scope.
 - Change is fully recoverable via version control.
 
-Stop and ask when: ambiguous scope, destructive side effects, external systems,
-production impact, secrets involved, or conflict between same-rank
-instructions. Also stop and ask before changing the published API, a `version`
-bump, or any `.github/workflows/` file. Do not autonomously alter
-authentication or authorization boundaries; stop and ask for an explicit
-decision.
+Stop and ask when scope is ambiguous; side effects are destructive or external;
+production, secrets, authentication, authorization, or a same-rank source
+conflict is involved. Also stop and ask before changing a public API, a version,
+or a GitHub Actions workflow.
 
 ### Validation
 
-Before concluding code or tooling changes, use the repository's official
-validation entrypoint when applicable. Prefer repository-native commands and
-scripts over custom one-off equivalents. The required local entrypoints are
-`uv run --locked --no-sync pre-commit run --all-files` and
-`uv run --locked --no-sync pytest -m 'not integration and not slow' -ra --cov`
-for behavior changes. The aggregated agent-facing harness accepts
-`uv run --locked --no-sync python .agents/scripts/harness_verify.py --evidence-path openspec/changes/<name>/evidence/gate-report.json`
-(state which `effectiveProfile` ran). Report `passed`, `failed`, `skipped`, and
-`external_failure` separately. If validation is skipped, unsupported, or
-failing, report that explicitly with the reason and impact; never treat a skip
-or environment failure as a pass.
+Before concluding code or tooling changes, use the official validation command
+that covers the affected scope. For behavior changes, run both pre-commit
+validation and the safe local test command listed above. Run targeted static,
+security, documentation, package, or harness validation when the touched
+surface requires it. If validation is skipped, unsupported, or failing, report
+the reason and impact.
+
+If an OpenSpec change exists, follow its owned evidence workflow rather than
+inventing report paths or formats. Report passed, failed, skipped, and
+external_failure separately, including the reason and impact of every
+non-passing outcome.
 
 ### Execution Safety
 
@@ -356,35 +280,30 @@ Before any destructive, publish, migration, deployment-like, or external-state
 operation: state exactly what will be affected, inspect and validate the target,
 run a dry run when supported, and keep the steps readable. Inspect the command
 path before running local scripts; stop if a script is obfuscated, downloads
-executables, or touches secrets.
+executables, touches secrets, or has unclear side effects.
 
 ### Failure Handling
 
-A security lock, permission denial, or authorization boundary stops the task. Do
-not work around it — report the block, the evidence, and the safest next step.
-When verification returns `securityRequired=true`, the verdict belongs to
-`security-engineer` and closes only as `cleared`, `requires_remediation`, or
-`blocked`; an audit that could not be completed is `blocked`, not `cleared`. All
-such decisions fail closed until the relevant security or authorization
-boundary is explicitly cleared.
+A security lock, permission denial, authentication boundary, or authorization
+boundary stops the task. Do not work around it. Report the block, evidence, and
+the safest next step. When repository verification requires a security verdict,
+the designated security owner must close it as cleared, requires_remediation, or
+blocked; an incomplete audit is blocked, not cleared.
 
 ## Related Documentation
 
-Open only what the task needs. Read these sources in progressive-disclosure
-order:
+Read only what the task needs, in this progressive-disclosure order:
 
-| Doc                                                                                                                                                                              | Knowledge class          | Purpose                                                                      |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------- |
-| [README.md](README.md)                                                                                                                                                           | Unclassified             | Product identity and onboarding; open first for the public entrypoint.       |
-| [docs/index.md](docs/index.md)                                                                                                                                                   | Unclassified             | Published documentation index and public navigation.                         |
-| [docs/dev-guide/architecture-developer.md](docs/dev-guide/architecture-developer.md)                                                                                             | Unclassified             | Clean Architecture layer ownership and runtime design.                       |
-| [docs/dev-guide/cli-architecture.md](docs/dev-guide/cli-architecture.md)                                                                                                         | Unclassified             | CLI boundary, registry, handlers, and terminal flow.                         |
-| [docs/dev-guide/contribute.md](docs/dev-guide/contribute.md)                                                                                                                     | Unclassified             | Contribution workflow, quality gates, and English Conventional Commits.      |
-| [docs/dev-guide/logging_guide.md](docs/dev-guide/logging_guide.md)                                                                                                               | Unclassified             | Consumer logging configuration and the library's silent-by-default behavior. |
-| [docs/reference/api.md](docs/reference/api.md)                                                                                                                                   | Unclassified             | Public API signatures and released contract examples.                        |
-| [docs/user-guide/installation-user.md](docs/user-guide/installation-user.md)                                                                                                     | Unclassified             | User installation and provider/environment setup.                            |
-| [tests/](tests/)                                                                                                                                                                 | Unclassified             | Behavioral proof organized by the layer under test.                          |
-| [pyproject.toml](pyproject.toml), [pytest.ini](pytest.ini), [.pre-commit-config.yaml](.pre-commit-config.yaml), [.github/workflows/pipeline.yml](.github/workflows/pipeline.yml) | Unclassified             | Tooling, tests, hooks, and the complete CI gate source.                      |
-| [.agents/harness.json](.agents/harness.json)                                                                                                                                     | Agent harness manifest   | Harness component declarations and ownership of internal tooling.            |
-| [.agents/agents/developer-engineer.agent.md](.agents/agents/developer-engineer.agent.md)                                                                                         | Agent prompt (canonical) | Developer implementation scope and delivery responsibilities.                |
-| Not documented                                                                                                                                                                   | Not documented           | No architecture decision record directory is confirmed in this repository.   |
+| Doc                                                                                                                                                                                  | Knowledge class        | Purpose                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- | ------------------------------------------------------------------------------- |
+| [README.md](README.md)                                                                                                                                                               | Unclassified           | Product identity, installation, and public onboarding; open first               |
+| [docs/index.md](docs/index.md) and [docs/en/index.md](docs/en/index.md)                                                                                                              | Unclassified           | Portuguese and English documentation entrypoints                                |
+| [docs/dev-guide/architecture-developer.md](docs/dev-guide/architecture-developer.md)                                                                                                 | Unclassified           | Layer ownership, runtime flow, providers, tools, and composition details        |
+| [docs/dev-guide/cli-architecture.md](docs/dev-guide/cli-architecture.md)                                                                                                             | Unclassified           | CLI registry, handlers, and terminal behavior                                   |
+| [docs/dev-guide/contribute.md](docs/dev-guide/contribute.md)                                                                                                                         | Unclassified           | Contribution workflow, quality gates, extensions, and documentation practices   |
+| [docs/reference/api.md](docs/reference/api.md)                                                                                                                                       | Unclassified           | Public API contracts and examples                                               |
+| [docs/user-guide/installation-user.md](docs/user-guide/installation-user.md)                                                                                                         | Unclassified           | User installation, provider prerequisites, and public environment configuration |
+| [tests/](tests/)                                                                                                                                                                     | Unclassified           | Behavioral proof organized by layer                                             |
+| [pyproject.toml](pyproject.toml), [pytest.ini](pytest.ini), [.pre-commit-config.yaml](.pre-commit-config.yaml), and [.github/workflows/pipeline.yml](.github/workflows/pipeline.yml) | Unclassified           | Sources of truth for tooling, local gates, and CI                               |
+| [.agents/harness.json](.agents/harness.json)                                                                                                                                         | Agent harness manifest | Internal harness ownership; open only for harness work                          |
+| Not documented                                                                                                                                                                       | Not documented         | No architecture decision record directory is confirmed                          |

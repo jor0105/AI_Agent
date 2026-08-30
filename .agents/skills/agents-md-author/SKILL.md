@@ -46,6 +46,11 @@ Não procure um repositório externo para imitar e não use o projeto onde a ski
 está instalada como fonte de fatos. A portabilidade vem de separar o baseline
 bundled dos dados coletados no alvo, não de enfraquecer as regras.
 
+Não otimize o artefato por contagem de linhas ou tokens. Otimize pelo contexto
+operacional mínimo suficiente: cada detalhe materializado deve economizar
+descoberta ou impedir uma escolha errada, e cada detalhe removido deve continuar
+alcançável por uma rota owner clara.
+
 ## Procedimento
 
 01. Resolva o escopo e a hierarquia de instruções.
@@ -123,12 +128,26 @@ bundled dos dados coletados no alvo, não de enfraquecer as regras.
     Nenhum comando, path, versão, métrica, componente, fase, owner, idioma,
     gerenciador ou framework entra no documento sem classe e fonte.
 
+    Antes de materializar uma claim confirmada, aplique um filtro de inclusão.
+    Ela entra quando muda uma decisão recorrente, protege uma boundary durável,
+    indica o owner correto ou funciona como âncora estável de alto roteamento.
+    Exemplos de âncoras são entrypoint ou facade pública, composition root,
+    factory ou registry, owner de extensão e gate ou configuração canônica de
+    qualidade. A existência de documentação detalhada não é, sozinha, motivo
+    para remover uma âncora que diz ao agente onde ler, editar, registrar ou
+    validar. Se a claim apenas descreve anatomia interna, default, schema ou uma
+    lista sem efeito decisório, mantenha-a no ledger e navegue para a fonte
+    canônica em vez de copiá-la para o `AGENTS.md`.
+
 05. Produza um mapa de navegação, não apenas uma descrição.
 
     Confirme e registre:
 
     - o entrypoint humano: README, portal ou onboarding;
-    - o entrypoint de runtime e o caminho macro até os componentes principais;
+    - o entrypoint de runtime e o caminho executável, com os paths estáveis que
+      levam à facade, composição, dispatch ou persistência relevantes;
+    - os pontos de extensão recorrentes e onde implementar, registrar, exportar,
+      testar e validar, quando o repositório possui essa rota estável;
     - o documento de arquitetura e o owner de detalhes por domínio;
     - onde ficam configuração, testes, operações, runbooks, contratos e decisões;
     - quais fontes são canônicas, planejadas, geradas, exploratórias ou
@@ -164,10 +183,17 @@ bundled dos dados coletados no alvo, não de enfraquecer as regras.
     - remova todo comentário `AGENTS_AUTHOR` após resolver a instrução;
     - escreva missão, boundaries, entradas, saídas, consumidores e invariantes;
     - inclua somente métricas adotadas; sem metas, use `Not documented` e Draft;
-    - descreva runtime, componentes, fluxo, gates, ownership e rota de navegação;
-    - liste superfícies de configuração, variáveis públicas e comandos oficiais;
-    - identifique linguagem, runtime, gerenciador, frameworks e tooling com
-      versões quando confirmadas;
+    - descreva o fluxo executável, gates, ownership e rota de navegação; nomeie
+      os paths concretos de alto roteamento, mas não enumere classes, módulos
+      privados ou passos internos que não mudam onde o agente atua;
+    - materialize a rota de extensão quando ela for estável: owner da
+      implementação, composition root, factory ou registry, export público,
+      testes e documentação aplicáveis;
+    - liste superfícies de configuração e comandos oficiais que mudam decisões
+      recorrentes; deixe defaults, schemas e listas exaustivas em suas fontes;
+    - identifique linguagem, runtime, gerenciador, frameworks e tooling
+      estruturais com versões quando confirmadas; preserve configurações
+      pequenas e decisórias de formatter ou linter, sem reproduzir o manifest;
     - ordene a documentação por progressive disclosure e por autoridade.
 
 08. Componha `Mandatory Rules` como política de desenvolvimento forte.
@@ -221,6 +247,11 @@ bundled dos dados coletados no alvo, não de enfraquecer as regras.
     Confirme também que links locais existem, comandos têm fonte, o perfil
     operacional foi materializado, a navegação chega a arquivos reais e nenhum
     segredo foi copiado. O validador estrutural não prova fidelidade factual.
+    Faça ainda uma revisão de escopo: remova inventários de dependências, hooks,
+    variáveis, classes, formatos e etapas internas que não alterem uma decisão
+    recorrente do agente. Não remova, apenas para reduzir tamanho, o caminho
+    concreto do runtime, a rota de extensão ou o gate/configuração canônica que
+    evita descoberta ou implementação no owner errado.
 
 12. Entregue relatório auditável.
 
@@ -250,6 +281,12 @@ bundled dos dados coletados no alvo, não de enfraquecer as regras.
 - Reduzir `Execution Policy` a frases genéricas e apagar a lista concreta de
   operações bloqueadas.
 - Copiar stack, paths, métricas ou nomes de componentes de outro projeto.
+- Confundir evidência com conteúdo obrigatório e transformar o `AGENTS.md` em
+  espelho do manifest, da árvore de módulos, do CI ou de uma referência de
+  feature.
+- Confundir compactação com qualidade e remover facade, composition root,
+  factory/registry, ponto de extensão ou política de lint que orienta uma ação
+  recorrente.
 - Escolher silenciosamente entre README, manifest e CI conflitantes.
 - Declarar `Canonical` apenas porque o texto foi concluído.
 
@@ -329,3 +366,21 @@ Assertions:
 - [ ] cada serviço tem entrypoint e rota de documentação comprovados;
 - [ ] a política geral não é duplicada em cada subárvore;
 - [ ] todos os arquivos produzidos passam no validador normal.
+
+### Eval D — documento factual demais
+
+Entrada: “Enxugue este AGENTS.md: ele repete classes, dependências, variáveis,
+hooks e formatos que já possuem documentação owner.”
+
+Assertions:
+
+- [ ] preserva boundaries, invariantes, comandos recorrentes e política de
+  execução;
+- [ ] substitui detalhes de implementação por navegação para owners existentes;
+- [ ] mantém os paths concretos de alto roteamento necessários para alcançar o
+  entrypoint, a composição e o dispatch sem varrer o repositório;
+- [ ] mantém regras de extensão e a configuração/gate de lint quando elas mudam
+  onde implementar, registrar ou validar;
+- [ ] mantém comandos exatos sem reproduzir o roster de hooks ou etapas da CI;
+- [ ] não remove regras específicas que ainda mudam decisões recorrentes;
+- [ ] o documento resultante passa no validador normal.
