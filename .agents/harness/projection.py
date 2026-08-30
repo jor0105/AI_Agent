@@ -15,11 +15,13 @@ path of a component being materialized by this run.
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from harness import selection
 from harness.paths import HARNESS_ROOT
@@ -28,6 +30,9 @@ from harness.projection_modes import AGENTS_DIR_NAME, BASE_DIRS
 
 class ProjectionError(Exception):
     """The projection cannot be published; the previous one stays in place."""
+
+
+RESERVED_VALIDATION_PATH = '.agents/validation'
 
 
 @dataclass(frozen=True)
@@ -60,7 +65,16 @@ def _previous_managed_paths(
     lock_path = _agents_root(repo_root) / selection.LOCK_NAME
     if not lock_path.is_file():
         return ()
-    payload = selection.read_lock(lock_path, catalog)
+    try:
+        payload = selection.read_lock(lock_path, catalog)
+    except selection.SelectionError as exc:
+        overlap = _overlapping_reserved_entries(lock_path)
+        if overlap:
+            raise ProjectionError(
+                'reserved consumer-owned validation path in previous lock: '
+                + ', '.join(overlap)
+            ) from exc
+        raise
     managed = payload.get('managedPaths')
     if not isinstance(managed, list) or not all(
         isinstance(item, str) for item in managed
@@ -69,6 +83,35 @@ def _previous_managed_paths(
             f'{lock_path}: managedPaths must be a list of strings'
         )
     return tuple(managed)
+
+
+def _overlaps_reserved_validation(path: str) -> bool:
+    """Return whether a normalized path overlaps the reserved subtree."""
+    return (
+        path == RESERVED_VALIDATION_PATH
+        or path.startswith(f'{RESERVED_VALIDATION_PATH}/')
+        or RESERVED_VALIDATION_PATH.startswith(f'{path}/')
+    )
+
+
+def _overlapping_reserved_entries(lock_path: Path) -> tuple[str, ...]:
+    """Inspect an invalid lock only to report reserved-path overlap."""
+    try:
+        payload: Any = json.loads(lock_path.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return ()
+    entries = (
+        payload.get('managedPaths') if isinstance(payload, dict) else None
+    )
+    if not isinstance(entries, list):
+        return ()
+    return tuple(
+        sorted(
+            entry
+            for entry in entries
+            if isinstance(entry, str) and _overlaps_reserved_validation(entry)
+        )
+    )
 
 
 def _git_guard(relative_path: str, repo_root: Path) -> None:
@@ -119,6 +162,17 @@ def plan(
         catalog = selection.load_catalog()
     previous = set(_previous_managed_paths(repo_root, catalog))
     targets = _targets(resolution)
+
+    overlaps = sorted(
+        path
+        for path in previous | set(targets)
+        if _overlaps_reserved_validation(path)
+    )
+    if overlaps:
+        raise ProjectionError(
+            'reserved consumer-owned validation path cannot be managed: '
+            + ', '.join(overlaps)
+        )
 
     replacements: list[Replacement] = []
     for target in targets:

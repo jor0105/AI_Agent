@@ -358,7 +358,7 @@ ______________________________________________________________________
 
 ## ⚡ Dependencies Impact
 
-- **Basic Installation (`pip install createagents`):** Installs only essential framework dependencies (`openai`, `ollama`, `python-dotenv`, `defusedxml`, `rich`).
+- **Basic Installation (`pip install createagents`):** Installs only essential framework dependencies (`openai`, `ollama`, `python-dotenv`, `rich`).
 - **File Tools Installation (`pip install 'createagents[file-tools]'`):** Includes additional libraries (`tiktoken`, `unstructured`, `pandas`, `openpyxl`, `pyarrow`, `chardet`), imported dynamically only when file tools are used.
 
 ______________________________________________________________________

@@ -41,7 +41,7 @@ pip install 'createagents[file-tools]'
 
 > **Note:** The `[file-tools]` extra adds support for reading PDF, Excel, CSV, and Parquet files.
 
-The base installation includes `openai`, `ollama`, `python-dotenv`, `defusedxml`, and `rich` — the latter used by the interactive CLI (`start_cli()`).
+The base installation includes `openai`, `ollama`, `python-dotenv`, and `rich` — the latter used by the interactive CLI (`start_cli()`).
 
 ______________________________________________________________________
 

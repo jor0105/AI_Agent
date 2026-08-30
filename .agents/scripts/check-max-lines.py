@@ -760,17 +760,11 @@ def first_parent(root: Path, rev: str) -> str | None:
 
 
 def history_commits(root: Path, rev: str | None) -> list[str]:
-    args = (
-        ['log', '--format=%H']
-        + ([] if rev is None else [rev])
-        + ['--', BASELINE_NAME]
-    )
+    args = ['log', '--format=%H', *([rev] if rev else []), '--', BASELINE_NAME]
     proc = git(root, args)
     if proc.returncode:
         raise ConfigError('cannot read Git history for the baseline')
-    return [
-        line for line in proc.stdout.decode('utf-8', 'replace').split() if line
-    ]
+    return proc.stdout.decode('utf-8', 'replace').split()
 
 
 def validate_baseline(
@@ -781,13 +775,13 @@ def validate_baseline(
 ) -> list[str]:
     worktree = parse_baseline(current_bytes) if current_bytes else []
     current = current_bytes or b''
-    head_bytes = blob_at(root, 'HEAD', BASELINE_NAME)
-    if current != head_bytes:
-        predecessor = head_bytes
-    else:
-        parent = first_parent(root, 'HEAD')
+    parent = first_parent(root, 'HEAD')
+    predecessor = blob_at(root, 'HEAD', BASELINE_NAME)
+    predecessor_rev = 'HEAD'
+    if current == predecessor:
+        predecessor_rev = parent or 'HEAD'
         predecessor = (
-            blob_at(root, parent, BASELINE_NAME, required=True)
+            blob_at(root, predecessor_rev, BASELINE_NAME, required=True)
             if parent is not None
             else None
         )
@@ -801,9 +795,13 @@ def validate_baseline(
         ]
     if predecessor:
         return _transition_check(
-            root, worktree, parse_baseline(predecessor), policy, evaluated
+            root,
+            worktree,
+            parse_baseline(predecessor),
+            policy,
+            evaluated,
+            predecessor_rev,
         )
-    parent = first_parent(root, 'HEAD')
     if parent is None:
         earlier = []
     else:
@@ -820,12 +818,13 @@ def _transition_check(
     predecessor: list[BaselineEntry],
     policy: Policy,
     evaluated: dict[str, tuple[str, int]],
+    predecessor_rev: str,
 ) -> list[str]:
     violations: list[str] = []
     older = {entry.path: entry for entry in predecessor}
     added = [entry for entry in worktree if entry.path not in older]
     scanner_conversion = _is_self_hosting_conversion(
-        root, added, policy, evaluated
+        root, added, policy, evaluated, predecessor_rev
     )
     for entry in worktree:
         previous = older.get(entry.path)
@@ -860,6 +859,7 @@ def _is_self_hosting_conversion(
     added: list[BaselineEntry],
     policy: Policy,
     evaluated: dict[str, tuple[str, int]],
+    predecessor_rev: str,
 ) -> bool:
     if len(added) != 1 or added[0].path != SCANNER_PATH:
         return False
@@ -878,7 +878,7 @@ def _is_self_hosting_conversion(
         != ('production', LIMITS['production'], count, ACTIONS['production'])
     ):
         return False
-    historical = blob_at(root, 'HEAD', POLICY_NAME)
+    historical = blob_at(root, predecessor_rev, POLICY_NAME)
     if historical is None:
         return False
     try:

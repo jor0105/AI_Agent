@@ -343,7 +343,7 @@ ______________________________________________________________________
 
 ## ⚡ Impacto de Dependências
 
-- **Instalação básica (`pip install createagents`):** Apenas dependências essenciais do framework (`openai`, `ollama`, `python-dotenv`, `defusedxml`, `rich`).
+- **Instalação básica (`pip install createagents`):** Apenas dependências essenciais do framework (`openai`, `ollama`, `python-dotenv`, `rich`).
 - **Instalação com ferramentas de arquivo (`pip install 'createagents[file-tools]'`):** Inclui bibliotecas adicionais (`tiktoken`, `unstructured`, `pandas`, `openpyxl`, `pyarrow`, `chardet`), importadas sob demanda apenas quando ferramentas de arquivo são utilizadas.
 
 ______________________________________________________________________

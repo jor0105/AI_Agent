@@ -33,7 +33,7 @@
     },
     {
       "hasScripts": true,
-      "hash": "sha256:91b6b9a2f84f580aa894b54191f9a8674330271983c8ae3b2523a6bfeb696426",
+      "hash": "sha256:f9a23c3115cfef6ba0878ad71bfc111c8f83ee2dc05ca90ad5180784f7590c9c",
       "id": "skills/lint-and-validate",
       "selectedBy": "manifest"
     },
@@ -117,7 +117,7 @@
     },
     {
       "hasScripts": true,
-      "hash": "sha256:c7fa7f8b9bfe94721c2a3824de3189578b688a452b71488e4050c4f1513a420b",
+      "hash": "sha256:7125591197e7b9a634f88c3b39169b468bc0c10f6d7191cff54c0909b46a4a08",
       "id": "tools/check-max-lines",
       "selectedBy": "manifest"
     },

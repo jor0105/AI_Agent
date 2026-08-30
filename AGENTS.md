@@ -177,8 +177,6 @@ per-file ignore as general precedent.
   `ChatCLIApplication._setup_commands`; keep the fallback chat handler last.
 - Resolve credentials from the environment. Never hardcode keys, endpoints, or
   secret values; extend .env.example with names and documented behavior only.
-- Keep XML parsing on `defusedxml`; do not replace the hardened parser with the
-  standard-library XML parsers for untrusted provider or tool content.
 - Keep package logging silent by default. Consumers opt in through
   LoggingConfig; do not add unsolicited library logging configuration.
 - The .agents directory is internal harness tooling, not product code. Change
