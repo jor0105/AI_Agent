@@ -12,6 +12,20 @@ from createagents.domain import (
     InvalidProviderException,
 )
 from createagents.main import CreateAgent
+from tests.test_constants import (
+    OLLAMA_MODEL_PHI,
+    OPENAI_MODEL_MINI,
+    OPENAI_MODEL_NANO,
+)
+
+
+def _create_openai_agent(model: str) -> CreateAgent:
+    return CreateAgent(
+        provider='openai',
+        model=model,
+        name='Test',
+        instructions='Test',
+    )
 
 
 @pytest.mark.unit
@@ -19,33 +33,33 @@ class TestCreateAgentInitialization:
     def test_initialization_creates_agent(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test Agent',
             instructions='Be helpful',
         )
 
         configs = controller.get_configs()
         assert configs['provider'] == 'openai'
-        assert configs['model'] == 'gpt-5'
+        assert configs['model'] == OPENAI_MODEL_MINI
         assert configs['name'] == 'Test Agent'
         assert configs['instructions'] == 'Be helpful'
 
     def test_initialization_with_ollama_provider(self):
         controller = CreateAgent(
             provider='ollama',
-            model='gemma3:4b',
+            model=OLLAMA_MODEL_PHI,
             name='Test',
             instructions='Test',
         )
 
         configs = controller.get_configs()
         assert configs['provider'] == 'ollama'
-        assert configs['model'] == 'gemma3:4b'
+        assert configs['model'] == OLLAMA_MODEL_PHI
 
     def test_initialization_creates_chat_use_case(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5-mini',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
         )
@@ -53,16 +67,11 @@ class TestCreateAgentInitialization:
         assert callable(controller.chat)
 
     def test_initialization_creates_get_config_use_case(self):
-        controller = CreateAgent(
-            provider='openai',
-            model='gpt-5-nano',
-            name='Test',
-            instructions='Test',
-        )
+        controller = _create_openai_agent(OPENAI_MODEL_NANO)
 
         configs = controller.get_configs()
         assert isinstance(configs, dict)
-        assert configs['model'] == 'gpt-5-nano'
+        assert configs['model'] == OPENAI_MODEL_NANO
 
     def test_initialization_with_invalid_data_raises_error(self):
         with pytest.raises(InvalidAgentConfigException):
@@ -74,7 +83,7 @@ class TestCreateAgentInitialization:
         config = {'temperature': 0.7, 'max_tokens': 1000}
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
             config=config,
@@ -86,7 +95,7 @@ class TestCreateAgentInitialization:
     def test_initialization_with_custom_history_max_size(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
             history_max_size=20,
@@ -98,7 +107,7 @@ class TestCreateAgentInitialization:
     def test_initialization_with_default_history_max_size(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
         )
@@ -110,7 +119,7 @@ class TestCreateAgentInitialization:
         with pytest.raises(InvalidProviderException):
             CreateAgent(
                 provider='invalid_provider',
-                model='gpt-5',
+                model=OPENAI_MODEL_MINI,
                 name='Test',
                 instructions='Test',
             )
@@ -118,7 +127,7 @@ class TestCreateAgentInitialization:
     def test_initialization_with_none_name(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name=None,
             instructions='Test',
         )
@@ -129,7 +138,7 @@ class TestCreateAgentInitialization:
     def test_initialization_with_none_instructions(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions=None,
         )
@@ -140,7 +149,7 @@ class TestCreateAgentInitialization:
     def test_initialization_with_both_none(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name=None,
             instructions=None,
         )
@@ -152,12 +161,12 @@ class TestCreateAgentInitialization:
     def test_initialization_with_only_required_fields(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
         )
 
         configs = controller.get_configs()
         assert configs['provider'] == 'openai'
-        assert configs['model'] == 'gpt-5'
+        assert configs['model'] == OPENAI_MODEL_MINI
         assert configs['name'] is None
         assert configs['instructions'] is None
 
@@ -178,7 +187,10 @@ class TestCreateAgentChat:
         mock_create_chat.return_value = mock_use_case
 
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
         )
 
         response = await controller.chat('Hello')
@@ -202,7 +214,7 @@ class TestCreateAgentChat:
 
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5-mini',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
         )
@@ -227,7 +239,10 @@ class TestCreateAgentChat:
         mock_create_chat.return_value = mock_use_case
 
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
         )
 
         response = await controller.chat('')
@@ -248,7 +263,10 @@ class TestCreateAgentChat:
         mock_create_chat.return_value = mock_use_case
 
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
         )
 
         with pytest.raises(Exception, match='API Error'):
@@ -267,12 +285,7 @@ class TestCreateAgentChat:
         mock_use_case.execute = AsyncMock(return_value=mock_output)
         mock_create_chat.return_value = mock_use_case
 
-        controller = CreateAgent(
-            provider='openai',
-            model='gpt-5-nano',
-            name='Test',
-            instructions='Test',
-        )
+        controller = _create_openai_agent(OPENAI_MODEL_NANO)
 
         await controller.chat('Message 1')
         await controller.chat('Message 2')
@@ -299,7 +312,10 @@ class TestCreateAgentChat:
         mock_create_chat.return_value = mock_use_case
 
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
         )
 
         await controller.chat('Hello')
@@ -318,7 +334,7 @@ class TestCreateAgentGetConfigs:
         mock_output = Mock()
         mock_output.to_dict.return_value = {
             'name': 'Test',
-            'model': 'gpt-5-nano',
+            'model': OPENAI_MODEL_NANO,
             'instructions': 'Test',
             'history': [],
             'provider': 'openai',
@@ -326,12 +342,7 @@ class TestCreateAgentGetConfigs:
         mock_use_case.execute.return_value = mock_output
         mock_create_config.return_value = mock_use_case
 
-        controller = CreateAgent(
-            provider='openai',
-            model='gpt-5-nano',
-            name='Test',
-            instructions='Test',
-        )
+        controller = _create_openai_agent(OPENAI_MODEL_NANO)
 
         config = controller.get_configs()
 
@@ -349,12 +360,7 @@ class TestCreateAgentGetConfigs:
         mock_use_case.execute.return_value = mock_output
         mock_create_config.return_value = mock_use_case
 
-        controller = CreateAgent(
-            provider='openai',
-            model='gpt-5-nano',
-            name='Test',
-            instructions='Test',
-        )
+        controller = _create_openai_agent(OPENAI_MODEL_NANO)
 
         controller.get_configs()
 
@@ -368,7 +374,7 @@ class TestCreateAgentGetConfigs:
         mock_output = Mock()
         expected_config = {
             'name': 'Test Agent',
-            'model': 'gpt-5',
+            'model': OPENAI_MODEL_MINI,
             'instructions': 'Be helpful',
             'history': [],
             'provider': 'openai',
@@ -381,7 +387,7 @@ class TestCreateAgentGetConfigs:
 
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test Agent',
             instructions='Be helpful',
         )
@@ -401,7 +407,10 @@ class TestCreateAgentGetConfigs:
         mock_create_config.return_value = mock_use_case
 
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
         )
 
         with pytest.raises(Exception, match='Config Error'):
@@ -413,7 +422,7 @@ class TestCreateAgentClearHistory:
     def test_clear_history_method_exists(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5-mini',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
         )
@@ -442,7 +451,7 @@ class TestCreateAgentClearHistory:
 
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5-mini',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
         )
@@ -460,7 +469,7 @@ class TestCreateAgentClearHistory:
     def test_clear_history_preserves_agent_config(self):
         controller = CreateAgent(
             provider='ollama',
-            model='gpt-5-nano',
+            model=OLLAMA_MODEL_PHI,
             name='Test Agent',
             instructions='Be helpful',
         )
@@ -475,7 +484,7 @@ class TestCreateAgentClearHistory:
     def test_clear_history_on_empty_history_is_idempotent(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5-mini',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
         )
@@ -494,16 +503,11 @@ class TestCreateAgentMetrics:
     def test_get_metrics_returns_list(self, mock_create_chat):
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
-            ChatMetrics(model='gpt-5-nano', latency_ms=100.0)
+            ChatMetrics(model=OPENAI_MODEL_NANO, latency_ms=100.0)
         ]
         mock_create_chat.return_value = mock_use_case
 
-        controller = CreateAgent(
-            provider='openai',
-            model='gpt-5-nano',
-            name='Test',
-            instructions='Test',
-        )
+        controller = _create_openai_agent(OPENAI_MODEL_NANO)
 
         metrics = controller.get_metrics()
 
@@ -519,12 +523,7 @@ class TestCreateAgentMetrics:
         mock_use_case.get_metrics.return_value = []
         mock_create_chat.return_value = mock_use_case
 
-        controller = CreateAgent(
-            provider='openai',
-            model='gpt-5-nano',
-            name='Test',
-            instructions='Test',
-        )
+        controller = _create_openai_agent(OPENAI_MODEL_NANO)
 
         controller.get_metrics()
 
@@ -538,12 +537,7 @@ class TestCreateAgentMetrics:
         mock_use_case.get_metrics.return_value = []
         mock_create_chat.return_value = mock_use_case
 
-        controller = CreateAgent(
-            provider='openai',
-            model='gpt-5-nano',
-            name='Test',
-            instructions='Test',
-        )
+        controller = _create_openai_agent(OPENAI_MODEL_NANO)
 
         metrics = controller.get_metrics()
 
@@ -555,18 +549,19 @@ class TestCreateAgentMetrics:
     def test_get_metrics_with_multiple_metrics(self, mock_create_chat):
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
-            ChatMetrics(model='gpt-5-nano', latency_ms=100.0, tokens_used=50),
-            ChatMetrics(model='gpt-5-nano', latency_ms=150.0, tokens_used=75),
-            ChatMetrics(model='gpt-5-nano', latency_ms=120.0, tokens_used=60),
+            ChatMetrics(
+                model=OPENAI_MODEL_NANO, latency_ms=100.0, tokens_used=50
+            ),
+            ChatMetrics(
+                model=OPENAI_MODEL_NANO, latency_ms=150.0, tokens_used=75
+            ),
+            ChatMetrics(
+                model=OPENAI_MODEL_NANO, latency_ms=120.0, tokens_used=60
+            ),
         ]
         mock_create_chat.return_value = mock_use_case
 
-        controller = CreateAgent(
-            provider='openai',
-            model='gpt-5-nano',
-            name='Test',
-            instructions='Test',
-        )
+        controller = _create_openai_agent(OPENAI_MODEL_NANO)
 
         metrics = controller.get_metrics()
 
@@ -579,21 +574,18 @@ class TestCreateAgentMetrics:
     def test_export_metrics_json(self, mock_create_chat):
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
-            ChatMetrics(model='gpt-5-nano', latency_ms=100.0, tokens_used=50)
+            ChatMetrics(
+                model=OPENAI_MODEL_NANO, latency_ms=100.0, tokens_used=50
+            )
         ]
         mock_create_chat.return_value = mock_use_case
 
-        controller = CreateAgent(
-            provider='openai',
-            model='gpt-5-nano',
-            name='Test',
-            instructions='Test',
-        )
+        controller = _create_openai_agent(OPENAI_MODEL_NANO)
 
         json_str = controller.export_metrics_json()
 
         assert isinstance(json_str, str)
-        assert 'gpt-5-nano' in json_str
+        assert OPENAI_MODEL_NANO in json_str
         assert 'summary' in json_str
 
     @patch(
@@ -604,16 +596,13 @@ class TestCreateAgentMetrics:
 
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
-            ChatMetrics(model='gpt-5-nano', latency_ms=100.0, tokens_used=50)
+            ChatMetrics(
+                model=OPENAI_MODEL_NANO, latency_ms=100.0, tokens_used=50
+            )
         ]
         mock_create_chat.return_value = mock_use_case
 
-        controller = CreateAgent(
-            provider='openai',
-            model='gpt-5-nano',
-            name='Test',
-            instructions='Test',
-        )
+        controller = _create_openai_agent(OPENAI_MODEL_NANO)
 
         filepath = tmp_path / 'metrics.json'
         controller.export_metrics_json(str(filepath))
@@ -632,13 +621,13 @@ class TestCreateAgentMetrics:
     def test_export_metrics_prometheus(self, mock_create_chat):
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
-            ChatMetrics(model='gpt-5-nano', latency_ms=100.0)
+            ChatMetrics(model=OPENAI_MODEL_NANO, latency_ms=100.0)
         ]
         mock_create_chat.return_value = mock_use_case
 
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -656,13 +645,13 @@ class TestCreateAgentMetrics:
     ):
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
-            ChatMetrics(model='gpt-5-nano', latency_ms=100.0)
+            ChatMetrics(model=OPENAI_MODEL_NANO, latency_ms=100.0)
         ]
         mock_create_chat.return_value = mock_use_case
 
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -687,7 +676,7 @@ class TestCreateAgentMetrics:
 
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -709,7 +698,7 @@ class TestCreateAgentMetrics:
 
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -734,9 +723,7 @@ class TestCreateAgentIntegration:
         mock_use_case.execute = AsyncMock(return_value=mock_output)
         mock_create_chat.return_value = mock_use_case
 
-        controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
-        )
+        controller = _create_openai_agent(OPENAI_MODEL_MINI)
 
         response = await controller.chat('Hello')
         assert response == 'Response'
@@ -763,9 +750,7 @@ class TestCreateAgentIntegration:
         mock_use_case.execute = AsyncMock(side_effect=execute_side_effect)
         mock_create_chat.return_value = mock_use_case
 
-        controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
-        )
+        controller = _create_openai_agent(OPENAI_MODEL_MINI)
 
         await controller.chat('Message 1')
         assert len(controller.get_configs()['history']) == 2
@@ -783,7 +768,7 @@ class TestCreateAgentEdgeCases:
         long_instructions = 'A' * 10000
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions=long_instructions,
         )
@@ -795,7 +780,7 @@ class TestCreateAgentEdgeCases:
         special_name = 'Test-Agent_123!@#$%'
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name=special_name,
             instructions='Test',
         )
@@ -809,7 +794,7 @@ class TestCreateAgentEdgeCases:
 
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name=unicode_name,
             instructions=unicode_instructions,
         )
@@ -831,9 +816,7 @@ class TestCreateAgentEdgeCases:
         mock_use_case.execute = AsyncMock(return_value=mock_output)
         mock_create_chat.return_value = mock_use_case
 
-        controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
-        )
+        controller = _create_openai_agent(OPENAI_MODEL_MINI)
 
         long_message = 'A' * 50000
         response = await controller.chat(long_message)
@@ -855,9 +838,7 @@ class TestCreateAgentEdgeCases:
         mock_use_case.execute = AsyncMock(return_value=mock_output)
         mock_create_chat.return_value = mock_use_case
 
-        controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
-        )
+        controller = _create_openai_agent(OPENAI_MODEL_MINI)
 
         unicode_message = '你好\uff0c世界\uff01 🌍'
         response = await controller.chat(unicode_message)
@@ -870,7 +851,7 @@ class TestCreateAgentEdgeCases:
         ):
             CreateAgent(
                 provider='openai',
-                model='gpt-5',
+                model=OPENAI_MODEL_MINI,
                 name='Test',
                 instructions='Test',
                 history_max_size=0,
@@ -882,7 +863,7 @@ class TestCreateAgentEdgeCases:
         ):
             CreateAgent(
                 provider='openai',
-                model='gpt-5',
+                model=OPENAI_MODEL_MINI,
                 name='Test',
                 instructions='Test',
                 history_max_size=-1,
@@ -891,7 +872,7 @@ class TestCreateAgentEdgeCases:
     def test_initialization_with_empty_config_dict(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
             config={},
@@ -908,12 +889,15 @@ class TestCreateAgentEdgeCases:
     ):
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
-            ChatMetrics(model='gpt-5', latency_ms=100.0)
+            ChatMetrics(model=OPENAI_MODEL_MINI, latency_ms=100.0)
         ]
         mock_create_chat.return_value = mock_use_case
 
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
         )
 
         nonexistent_path = tmp_path / 'nonexistent' / 'metrics.json'
@@ -941,7 +925,10 @@ class TestCreateAgentEdgeCases:
         mock_create_chat.return_value = mock_use_case
 
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
         )
 
         await controller.chat('First message')
@@ -964,13 +951,16 @@ class TestCreateAgentEdgeCases:
         mock_use_case = Mock()
 
         def get_metrics_side_effect():
-            return [ChatMetrics(model='gpt-5', latency_ms=100.0)]
+            return [ChatMetrics(model=OPENAI_MODEL_MINI, latency_ms=100.0)]
 
         mock_use_case.get_metrics.side_effect = get_metrics_side_effect
         mock_create_chat.return_value = mock_use_case
 
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
         )
 
         metrics1 = controller.get_metrics()
@@ -981,7 +971,7 @@ class TestCreateAgentEdgeCases:
     def test_controller_has_all_required_methods(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5-mini',
+            model=OPENAI_MODEL_MINI,
             name='Test Agent',
             instructions='Test instructions',
         )
@@ -999,12 +989,15 @@ class TestCreateAgentEdgeCases:
     def test_export_metrics_json_without_filepath(self, mock_create_chat):
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
-            ChatMetrics(model='gpt-5', latency_ms=100.0)
+            ChatMetrics(model=OPENAI_MODEL_MINI, latency_ms=100.0)
         ]
         mock_create_chat.return_value = mock_use_case
 
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
         )
 
         json_str = controller.export_metrics_json()
@@ -1021,12 +1014,15 @@ class TestCreateAgentEdgeCases:
     ):
         mock_use_case = Mock()
         mock_use_case.get_metrics.return_value = [
-            ChatMetrics(model='gpt-5', latency_ms=100.0)
+            ChatMetrics(model=OPENAI_MODEL_MINI, latency_ms=100.0)
         ]
         mock_create_chat.return_value = mock_use_case
 
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
         )
 
         prom_text = controller.export_metrics_prometheus()
@@ -1056,7 +1052,10 @@ class TestCreateAgentEdgeCases:
         mock_create_chat.return_value = mock_chat_use_case
 
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
         )
 
         await controller.chat('Hello')
@@ -1072,7 +1071,7 @@ class TestCreateAgentEdgeCases:
     def test_initialization_with_all_optional_params_none(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name=None,
             instructions=None,
             config=None,
@@ -1105,7 +1104,10 @@ class TestCreateAgentEdgeCases:
         mock_create_chat.return_value = mock_use_case
 
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
         )
 
         await controller.chat('Message')
@@ -1126,7 +1128,7 @@ class TestCreateAgentEdgeCases:
         for provider in providers:
             controller = CreateAgent(
                 provider=provider,
-                model='gpt-5',
+                model=OPENAI_MODEL_MINI,
                 name='Test',
                 instructions='Test',
             )
@@ -1137,7 +1139,7 @@ class TestCreateAgentEdgeCases:
     def test_initialization_with_tools_none(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
             tools=None,
@@ -1149,7 +1151,7 @@ class TestCreateAgentEdgeCases:
     def test_initialization_with_tools_empty_list(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
             tools=[],
@@ -1171,7 +1173,7 @@ class TestCreateAgentEdgeCases:
         tool = TestTool()
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
             tools=[tool],
@@ -1200,7 +1202,7 @@ class TestCreateAgentEdgeCases:
         tools = [Tool1(), Tool2()]
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
             tools=tools,
@@ -1217,7 +1219,7 @@ class TestCreateAgentEdgeCases:
             tool_name = next(iter(available))
             controller = CreateAgent(
                 provider='openai',
-                model='gpt-5',
+                model=OPENAI_MODEL_MINI,
                 name='Test',
                 instructions='Test',
                 tools=[tool_name],
@@ -1245,7 +1247,7 @@ class TestCreateAgentEdgeCases:
             tool_name = next(iter(available))
             controller = CreateAgent(
                 provider='openai',
-                model='gpt-5',
+                model=OPENAI_MODEL_MINI,
                 name='Test',
                 instructions='Test',
                 tools=[tool, tool_name],
@@ -1256,7 +1258,7 @@ class TestCreateAgentEdgeCases:
         else:
             controller = CreateAgent(
                 provider='openai',
-                model='gpt-5',
+                model=OPENAI_MODEL_MINI,
                 name='Test',
                 instructions='Test',
                 tools=[tool],
@@ -1277,7 +1279,7 @@ class TestCreateAgentEdgeCases:
         tool = TestTool()
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
             tools=[tool],
@@ -1313,7 +1315,7 @@ class TestCreateAgentEdgeCases:
 
             controller = CreateAgent(
                 provider='openai',
-                model='gpt-5',
+                model=OPENAI_MODEL_MINI,
                 name='Test',
                 instructions='Test',
                 tools=[tool],
@@ -1328,7 +1330,7 @@ class TestCreateAgentEdgeCases:
         with pytest.raises(InvalidBaseToolException):
             CreateAgent(
                 provider='openai',
-                model='gpt-5',
+                model=OPENAI_MODEL_MINI,
                 name='Test',
                 instructions='Test',
                 tools=cast(Sequence[str | BaseTool], [123]),
@@ -1341,7 +1343,7 @@ class TestCreateAgentEdgeCases:
         with pytest.raises(InvalidBaseToolException):
             CreateAgent(
                 provider='openai',
-                model='gpt-5',
+                model=OPENAI_MODEL_MINI,
                 name='Test',
                 instructions='Test',
                 tools=cast(Sequence[str | BaseTool], [InvalidTool()]),
@@ -1363,7 +1365,10 @@ class TestCreateAgentGetSystemAvailableTools:
         mock_create_use_case.return_value = mock_use_case
 
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
         )
 
         tools = controller.get_system_available_tools()
@@ -1382,7 +1387,10 @@ class TestCreateAgentGetSystemAvailableTools:
         mock_create_use_case.return_value = mock_use_case
 
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
         )
 
         controller.get_system_available_tools()
@@ -1403,7 +1411,10 @@ class TestCreateAgentGetSystemAvailableTools:
         mock_create_use_case.return_value = mock_use_case
 
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
         )
 
         tools = controller.get_system_available_tools()
@@ -1421,7 +1432,10 @@ class TestCreateAgentGetSystemAvailableTools:
         mock_create_use_case.return_value = mock_use_case
 
         controller = CreateAgent(
-            provider='openai', model='gpt-5', name='Test', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
         )
 
         tools = controller.get_system_available_tools()
@@ -1434,7 +1448,7 @@ class TestCreateAgentGetAllAvailableTools:
     def test_get_all_available_tools_includes_system_tools(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
         )
@@ -1457,7 +1471,7 @@ class TestCreateAgentGetAllAvailableTools:
         tool = CustomTool()
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
             tools=[tool],
@@ -1490,7 +1504,7 @@ class TestCreateAgentGetAllAvailableTools:
         tools_list = [Tool1(), Tool2()]
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
             tools=tools_list,
@@ -1508,7 +1522,7 @@ class TestCreateAgentGetAllAvailableTools:
     def test_get_all_available_tools_without_agent_tools(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
             tools=None,
@@ -1522,7 +1536,7 @@ class TestCreateAgentGetAllAvailableTools:
     def test_get_all_available_tools_with_empty_tools_list(self):
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
             tools=[],
@@ -1546,7 +1560,7 @@ class TestCreateAgentGetAllAvailableTools:
         tool = CustomTool()
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
             tools=[tool],
@@ -1569,7 +1583,7 @@ class TestCreateAgentGetAllAvailableTools:
         tool = TestTool()
         controller = CreateAgent(
             provider='openai',
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
             tools=[tool],

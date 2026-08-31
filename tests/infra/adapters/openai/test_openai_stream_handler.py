@@ -9,8 +9,7 @@ from createagents.domain import BaseTool, ChatException
 from createagents.infra.adapters.openai.openai_stream_handler import (
     OpenAIStreamHandler,
 )
-
-IA_OPENAI_TEST_1: str = 'gpt-5-nano'
+from tests.test_constants import OPENAI_MODEL_NANO
 
 
 class FakeStream:
@@ -63,7 +62,7 @@ class TestOpenAIStreamHandler:
         )
 
         generator = self.handler.handle_stream(
-            model=IA_OPENAI_TEST_1,
+            model=OPENAI_MODEL_NANO,
             instructions='Instr',
             messages=[{'role': 'user', 'content': 'Hi'}],
             config={'stream': True},
@@ -135,7 +134,7 @@ class TestOpenAIStreamHandler:
 
         tools = [SimpleNamespace(name='dummy_tool')]
         generator = self.handler.handle_stream(
-            model=IA_OPENAI_TEST_1,
+            model=OPENAI_MODEL_NANO,
             instructions='Instr',
             messages=[{'role': 'user', 'content': 'Hi'}],
             config={'stream': True},
@@ -157,7 +156,7 @@ class TestOpenAIStreamHandler:
         self.mock_client.call_api.side_effect = RuntimeError('Stream Error')
 
         generator = self.handler.handle_stream(
-            model=IA_OPENAI_TEST_1,
+            model=OPENAI_MODEL_NANO,
             instructions='Instr',
             messages=[{'role': 'user', 'content': 'Hi'}],
             config={'stream': True},
@@ -198,7 +197,7 @@ class TestCompletedResponseFallback:
         return [
             token
             async for token in handler.handle_stream(
-                model=IA_OPENAI_TEST_1,
+                model=OPENAI_MODEL_NANO,
                 instructions=None,
                 messages=[],
                 config={'stream': True},

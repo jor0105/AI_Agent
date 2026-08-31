@@ -5,9 +5,7 @@ import pytest
 from createagents.application import ChatRepository
 from createagents.domain import ChatException
 from createagents.infra import OllamaChatAdapter
-
-IA_OLLAMA_TEST_1: str = 'phi4-mini:latest'
-IA_OLLAMA_TEST_2: str = 'gemma3:4b'
+from tests.test_constants import OLLAMA_MODEL_PHI
 
 # allow-assertion-reduction: Removed Ollama stop-process lifecycle cases target retired adapter behavior.
 
@@ -54,7 +52,7 @@ class TestOllamaChatAdapter:
         adapter = OllamaChatAdapter()
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions='Be helpful',
             config={},
             tools=None,
@@ -78,7 +76,7 @@ class TestOllamaChatAdapter:
         adapter = OllamaChatAdapter()
 
         await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='System instruction',
             config={},
             tools=None,
@@ -110,7 +108,7 @@ class TestOllamaChatAdapter:
         adapter = OllamaChatAdapter()
 
         await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions='Instructions',
             config={},
             tools=None,
@@ -143,7 +141,7 @@ class TestOllamaChatAdapter:
         ]
 
         await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Instructions',
             config={},
             tools=None,
@@ -169,7 +167,7 @@ class TestOllamaChatAdapter:
         adapter = OllamaChatAdapter()
 
         await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Test',
             config={},
             tools=None,
@@ -178,7 +176,7 @@ class TestOllamaChatAdapter:
         )
 
         call_args = mock_chat.call_args
-        assert call_args.args[0] == IA_OLLAMA_TEST_1
+        assert call_args.args[0] == OLLAMA_MODEL_PHI
 
     @patch(
         'createagents.infra.adapters.ollama.ollama_client.OllamaClient.call_api',
@@ -196,7 +194,7 @@ class TestOllamaChatAdapter:
             ChatException, match='Ollama returned multiple empty responses'
         ):
             await adapter.chat(
-                model=IA_OLLAMA_TEST_2,
+                model=OLLAMA_MODEL_PHI,
                 instructions='Test',
                 config={},
                 tools=None,
@@ -220,7 +218,7 @@ class TestOllamaChatAdapter:
             ChatException, match='Ollama returned multiple empty responses'
         ):
             await adapter.chat(
-                model=IA_OLLAMA_TEST_1,
+                model=OLLAMA_MODEL_PHI,
                 instructions='Test',
                 config={},
                 tools=None,
@@ -254,7 +252,7 @@ class TestOllamaChatAdapter:
             match='An error occurred while communicating with Ollama',
         ):
             await adapter.chat(
-                model=IA_OLLAMA_TEST_2,
+                model=OLLAMA_MODEL_PHI,
                 instructions='Test',
                 config={},
                 tools=None,
@@ -286,7 +284,7 @@ class TestOllamaChatAdapter:
             match='An error occurred while communicating with Ollama',
         ):
             await adapter.chat(
-                model=IA_OLLAMA_TEST_1,
+                model=OLLAMA_MODEL_PHI,
                 instructions='Test',
                 config={},
                 tools=None,
@@ -309,7 +307,7 @@ class TestOllamaChatAdapter:
             match='An error occurred while communicating with Ollama',
         ):
             await adapter.chat(
-                model=IA_OLLAMA_TEST_2,
+                model=OLLAMA_MODEL_PHI,
                 instructions='Test',
                 config={},
                 tools=None,
@@ -334,7 +332,7 @@ class TestOllamaChatAdapter:
             match='An error occurred while communicating with Ollama',
         ):
             await adapter.chat(
-                model=IA_OLLAMA_TEST_1,
+                model=OLLAMA_MODEL_PHI,
                 instructions='Test',
                 config={},
                 tools=None,
@@ -355,7 +353,7 @@ class TestOllamaChatAdapter:
 
         try:
             await adapter.chat(
-                model=IA_OLLAMA_TEST_2,
+                model=OLLAMA_MODEL_PHI,
                 instructions='Test',
                 config={},
                 tools=None,
@@ -378,7 +376,7 @@ class TestOllamaChatAdapter:
 
         with pytest.raises(ChatException) as exc_info:
             await adapter.chat(
-                model=IA_OLLAMA_TEST_1,
+                model=OLLAMA_MODEL_PHI,
                 instructions='Test',
                 config={},
                 tools=None,
@@ -403,7 +401,7 @@ class TestOllamaChatAdapter:
         adapter = OllamaChatAdapter()
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Test 你好',
             config={},
             tools=None,
@@ -428,7 +426,7 @@ class TestOllamaChatAdapter:
         adapter = OllamaChatAdapter()
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions='Multi\nline\ninstructions',
             config={},
             tools=None,
@@ -463,7 +461,7 @@ class TestOllamaChatAdapter:
         adapter = OllamaChatAdapter()
 
         await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Test',
             config={},
             tools=None,
@@ -473,7 +471,7 @@ class TestOllamaChatAdapter:
 
         metrics = adapter.get_metrics()
         assert len(metrics) == 1
-        assert metrics[0].model == IA_OLLAMA_TEST_1
+        assert metrics[0].model == OLLAMA_MODEL_PHI
         assert metrics[0].success is True
         assert metrics[0].tokens_used == 200
         assert metrics[0].latency_ms > 0
@@ -490,7 +488,7 @@ class TestOllamaChatAdapter:
 
         with pytest.raises(ChatException):
             await adapter.chat(
-                model=IA_OLLAMA_TEST_2,
+                model=OLLAMA_MODEL_PHI,
                 instructions='Test',
                 config={},
                 tools=None,
@@ -500,7 +498,7 @@ class TestOllamaChatAdapter:
 
         metrics = adapter.get_metrics()
         assert len(metrics) == 1
-        assert metrics[0].model == IA_OLLAMA_TEST_2
+        assert metrics[0].model == OLLAMA_MODEL_PHI
         assert metrics[0].success is False
         assert metrics[0].error_message is not None
         assert metrics[0].latency_ms > 0
@@ -518,7 +516,7 @@ class TestOllamaChatAdapter:
         adapter = OllamaChatAdapter()
 
         await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Test',
             config={},
             tools=None,
@@ -527,7 +525,7 @@ class TestOllamaChatAdapter:
         )
 
         await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions='Test',
             config={},
             tools=None,
@@ -537,8 +535,8 @@ class TestOllamaChatAdapter:
 
         metrics = adapter.get_metrics()
         assert len(metrics) == 2
-        assert metrics[0].model == IA_OLLAMA_TEST_1
-        assert metrics[1].model == IA_OLLAMA_TEST_2
+        assert metrics[0].model == OLLAMA_MODEL_PHI
+        assert metrics[1].model == OLLAMA_MODEL_PHI
 
     def test_get_metrics_returns_copy(self):
         adapter = OllamaChatAdapter()
@@ -566,7 +564,7 @@ class TestOllamaChatAdapter:
         ]
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Test',
             config={},
             tools=None,
@@ -597,7 +595,7 @@ class TestOllamaChatAdapter:
             history.append({'role': 'assistant', 'content': f'Reply {i}'})
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions='Test',
             config={},
             tools=None,
@@ -625,7 +623,7 @@ class TestOllamaChatAdapter:
         config = {'temperature': 0.7, 'max_tokens': 1000, 'top_p': 0.9}
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Test',
             config=config,
             tools=None,
@@ -655,7 +653,7 @@ class TestOllamaChatAdapter:
             match='An error occurred while communicating with Ollama',
         ):
             await adapter.chat(
-                model=IA_OLLAMA_TEST_2,
+                model=OLLAMA_MODEL_PHI,
                 instructions='Test',
                 config={},
                 tools=None,
@@ -679,7 +677,7 @@ class TestOllamaChatAdapter:
 
         with pytest.raises(ChatException):
             await adapter.chat(
-                model=IA_OLLAMA_TEST_1,
+                model=OLLAMA_MODEL_PHI,
                 instructions='Test',
                 config={},
                 tools=None,
@@ -705,7 +703,7 @@ class TestOllamaChatAdapter:
         adapter = OllamaChatAdapter()
 
         await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Test',
             config={'temperature': 0.7},
             tools=None,
@@ -729,7 +727,7 @@ class TestOllamaChatAdapter:
         adapter = OllamaChatAdapter()
 
         await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions='Test',
             config={'max_tokens': 500},
             tools=None,
@@ -753,7 +751,7 @@ class TestOllamaChatAdapter:
         adapter = OllamaChatAdapter()
 
         await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions='Test',
             config={'top_p': 0.9},
             tools=None,
@@ -783,7 +781,7 @@ class TestOllamaChatAdapter:
         }
 
         await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Test',
             config=config,
             tools=None,
@@ -814,7 +812,7 @@ class TestOllamaChatAdapter:
         adapter = OllamaChatAdapter()
 
         await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions='Test',
             config={},
             tools=None,
@@ -824,7 +822,7 @@ class TestOllamaChatAdapter:
 
         call_args = mock_chat.call_args
         assert call_args.args[2] == {}
-        assert call_args.args[0] == IA_OLLAMA_TEST_2
+        assert call_args.args[0] == OLLAMA_MODEL_PHI
         assert isinstance(call_args.args[1], list)
 
     @patch(
@@ -842,7 +840,7 @@ class TestOllamaChatAdapter:
         adapter = OllamaChatAdapter()
 
         await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions=None,
             config={},
             tools=None,
@@ -869,7 +867,7 @@ class TestOllamaChatAdapter:
         adapter = OllamaChatAdapter()
 
         await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='   \n\t  ',
             config={},
             tools=None,

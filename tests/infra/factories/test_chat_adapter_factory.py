@@ -13,6 +13,7 @@ from createagents.infra.adapters.openai.openai_chat_adapter import (
 from createagents.infra.factories.chat_adapter_factory import (
     ChatAdapterFactory,
 )
+from tests.test_constants import OLLAMA_MODEL_PHI
 
 OPENAI_CLIENT = (
     'createagents.infra.adapters.openai.openai_client.ClientOpenAI.get_client'
@@ -70,7 +71,9 @@ class TestChatAdapterFactory:
 
         assert isinstance(adapter, OpenAIChatAdapter)
 
-    @pytest.mark.parametrize('provider', ['invalid', '', 'gpt-5', 'anthropic'])
+    @pytest.mark.parametrize(
+        'provider', ['invalid', '', 'invalid-provider-model', 'anthropic']
+    )
     def test_unknown_provider_raises_value_error(self, provider):
         with pytest.raises(ValueError, match='Invalid provider'):
             ChatAdapterFactory.create(provider=provider)
@@ -114,7 +117,7 @@ class TestAdapterIsolation:
             return_value=mock_response,
         ):
             response = await first.chat(
-                model='phi4-mini:latest',
+                model=OLLAMA_MODEL_PHI,
                 instructions='Test',
                 config={},
                 tools=None,
@@ -127,7 +130,7 @@ class TestAdapterIsolation:
         second_metrics = second.get_metrics()
 
         assert len(first_metrics) == 1
-        assert first_metrics[0].model == 'phi4-mini:latest'
+        assert first_metrics[0].model == OLLAMA_MODEL_PHI
         assert first_metrics[0].prompt_tokens == 10
         assert first_metrics[0].completion_tokens == 20
         assert first_metrics[0].success is True

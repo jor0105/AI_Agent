@@ -5,8 +5,7 @@ import pytest
 
 from createagents.domain import BaseTool, ChatException
 from createagents.infra.adapters.openai.openai_handler import OpenAIHandler
-
-IA_OPENAI_TEST_1: str = 'gpt-5-nano'
+from tests.test_constants import OPENAI_MODEL_NANO
 
 
 @pytest.mark.unit
@@ -49,7 +48,7 @@ class TestOpenAIHandler:
         self.mock_client.call_api.return_value = mock_response
 
         response = await self.handler.execute_tool_loop(
-            model=IA_OPENAI_TEST_1,
+            model=OPENAI_MODEL_NANO,
             instructions='Instr',
             messages=[],
             config={},
@@ -76,7 +75,7 @@ class TestOpenAIHandler:
             ChatException, match='OpenAI returned an empty response'
         ):
             await self.handler.execute_tool_loop(
-                model=IA_OPENAI_TEST_1,
+                model=OPENAI_MODEL_NANO,
                 instructions='Instr',
                 messages=[],
                 config={},
@@ -92,7 +91,7 @@ class TestOpenAIHandler:
             ChatException, match='Error communicating with OpenAI'
         ):
             await self.handler.execute_tool_loop(
-                model=IA_OPENAI_TEST_1,
+                model=OPENAI_MODEL_NANO,
                 instructions='Instr',
                 messages=[],
                 config={},
@@ -154,7 +153,7 @@ class TestOpenAIHandler:
         # Execute
         tools: list[BaseTool] = [cast(BaseTool, Mock(name='test_tool'))]
         response = await self.handler.execute_tool_loop(
-            model=IA_OPENAI_TEST_1,
+            model=OPENAI_MODEL_NANO,
             instructions='Instr',
             messages=[],
             config={},

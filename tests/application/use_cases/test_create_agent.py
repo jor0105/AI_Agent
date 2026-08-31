@@ -14,6 +14,11 @@ from createagents.domain import (
     InvalidProviderException,
     UnsupportedConfigException,
 )
+from tests.test_constants import (
+    OLLAMA_MODEL_PHI,
+    OPENAI_MODEL_MINI,
+    OPENAI_MODEL_NANO,
+)
 
 
 class StubToolRegistry(ToolRegistry):
@@ -39,7 +44,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test Agent',
             instructions='Be helpful',
         )
@@ -48,7 +53,7 @@ class TestCreateAgentUseCase:
 
         assert isinstance(agent, Agent)
         assert agent.provider == 'openai'
-        assert agent.model == 'gpt-5-nano'
+        assert agent.model == OPENAI_MODEL_NANO
         assert agent.name == 'Test Agent'
         assert agent.instructions == 'Be helpful'
 
@@ -56,7 +61,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='ollama',
-            model='phi4-mini:latest',
+            model=OLLAMA_MODEL_PHI,
             name='Local Agent',
             instructions='Test',
         )
@@ -69,7 +74,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-4',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
         )
@@ -81,7 +86,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -94,7 +99,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -107,7 +112,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             history_max_size=20,
@@ -120,7 +125,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -138,7 +143,7 @@ class TestCreateAgentUseCase:
         }
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config=config,
@@ -152,7 +157,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='ollama',
-            model='phi4-mini:latest',
+            model=OLLAMA_MODEL_PHI,
             name='Complex Agent',
             instructions='Detailed instructions here',
         )
@@ -168,7 +173,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -181,7 +186,7 @@ class TestCreateAgentUseCase:
 
     def test_execute_with_different_models(self):
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
-        models = ['gpt-5-nano', 'gpt-4', 'phi4-mini:latest']
+        models = [OPENAI_MODEL_NANO, OPENAI_MODEL_MINI, OLLAMA_MODEL_PHI]
         providers = ['openai', 'openai', 'ollama']
 
         for model, provider in zip(models, providers, strict=True):
@@ -223,7 +228,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='',
             instructions='Test',
         )
@@ -235,7 +240,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='   ',
             instructions='Test',
         )
@@ -247,7 +252,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='',
         )
@@ -259,7 +264,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='   ',
         )
@@ -271,7 +276,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name=None,
             instructions='Test',
         )
@@ -283,7 +288,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions=None,
         )
@@ -295,7 +300,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name=None,
             instructions=None,
         )
@@ -308,12 +313,12 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
         )
 
         agent = use_case.execute(input_dto)
         assert agent.provider == 'openai'
-        assert agent.model == 'gpt-5-nano'
+        assert agent.model == OPENAI_MODEL_NANO
         assert agent.name is None
         assert agent.instructions is None
 
@@ -321,7 +326,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -333,7 +338,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='   ',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -359,7 +364,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             history_max_size=0,
@@ -372,7 +377,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             history_max_size=-5,
@@ -385,7 +390,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -398,7 +403,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -411,7 +416,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -426,7 +431,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='unsupported_provider',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -438,7 +443,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'temperature': 2.5},
@@ -451,7 +456,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'temperature': -0.5},
@@ -464,7 +469,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'temperature': 0.0},
@@ -475,7 +480,7 @@ class TestCreateAgentUseCase:
 
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'temperature': 2.0},
@@ -488,7 +493,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'max_tokens': 0},
@@ -501,7 +506,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'max_tokens': -100},
@@ -514,7 +519,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'max_tokens': 100.5},
@@ -527,7 +532,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'max_tokens': 500},
@@ -541,7 +546,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'top_p': 1.5},
@@ -554,7 +559,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'top_p': -0.5},
@@ -568,7 +573,7 @@ class TestCreateAgentUseCase:
 
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'top_p': 0.0},
@@ -579,7 +584,7 @@ class TestCreateAgentUseCase:
 
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'top_p': 1.0},
@@ -592,7 +597,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'unsupported_key': 'value'},
@@ -605,7 +610,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -618,7 +623,7 @@ class TestCreateAgentUseCase:
         use_case = CreateAgentUseCase(tool_registry=StubToolRegistry())
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-4',
+            model=OPENAI_MODEL_MINI,
             name='Advanced Agent',
             instructions='You are an advanced AI assistant',
             config={
@@ -632,7 +637,7 @@ class TestCreateAgentUseCase:
         agent = use_case.execute(input_dto)
 
         assert agent.provider == 'openai'
-        assert agent.model == 'gpt-4'
+        assert agent.model == OPENAI_MODEL_MINI
         assert agent.name == 'Advanced Agent'
         assert agent.instructions == 'You are an advanced AI assistant'
         assert agent.config is not None
@@ -671,7 +676,7 @@ class TestCreateAgentUseCaseToolResolution:
     ) -> CreateAgentInputDTO:
         return CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=tools,

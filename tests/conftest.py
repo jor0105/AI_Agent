@@ -6,9 +6,9 @@ import pytest
 from createagents.application.interfaces import ChatRepository
 from createagents.domain.entities import History
 from createagents.domain.entities.agent_domain import Agent
+from tests.test_constants import OPENAI_MODEL_NANO
 
 DEFAULT_PROVIDER = 'openai'
-DEFAULT_MODEL = 'gpt-5-nano'
 DEFAULT_TEST_AGENT_NAME = 'Test Agent'
 DEFAULT_TEST_INSTRUCTIONS = 'You are a test agent'
 MOCKED_AI_RESPONSE = 'Mocked AI response'
@@ -42,7 +42,7 @@ def mock_chat_repository():
 def sample_agent():
     return Agent(
         provider=DEFAULT_PROVIDER,
-        model=DEFAULT_MODEL,
+        model=OPENAI_MODEL_NANO,
         name=DEFAULT_TEST_AGENT_NAME,
         instructions=DEFAULT_TEST_INSTRUCTIONS,
     )

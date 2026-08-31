@@ -15,6 +15,7 @@ from createagents.domain import (
     InvalidProviderException,
 )
 from createagents.main import AgentComposer
+from tests.test_constants import OLLAMA_MODEL_PHI, OPENAI_MODEL_NANO
 
 
 @pytest.mark.unit
@@ -22,7 +23,7 @@ class TestAgentComposer:
     def test_create_agent_with_valid_data(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test Agent',
             instructions='Be helpful',
             config={},
@@ -30,14 +31,14 @@ class TestAgentComposer:
 
         assert isinstance(agent, Agent)
         assert agent.provider == 'openai'
-        assert agent.model == 'gpt-5-nano'
+        assert agent.model == OPENAI_MODEL_NANO
         assert agent.name == 'Test Agent'
         assert agent.instructions == 'Be helpful'
 
     def test_create_agent_with_ollama_provider(self):
         agent = AgentComposer.create_agent(
             provider='ollama',
-            model='phi4-mini:latest',
+            model=OLLAMA_MODEL_PHI,
             name='Local Agent',
             instructions='Test',
             config={},
@@ -55,7 +56,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidAgentConfigException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='',
                 instructions='Test',
             )
@@ -64,7 +65,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidAgentConfigException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='',
             )
@@ -72,7 +73,7 @@ class TestAgentComposer:
     def test_create_agent_with_none_name(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name=None,
             instructions='Test',
             config={},
@@ -83,7 +84,7 @@ class TestAgentComposer:
     def test_create_agent_with_none_instructions(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions=None,
             config={},
@@ -94,7 +95,7 @@ class TestAgentComposer:
     def test_create_agent_with_both_none(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name=None,
             instructions=None,
             config={},
@@ -106,11 +107,11 @@ class TestAgentComposer:
     def test_create_agent_with_only_required_fields(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
         )
 
         assert agent.provider == 'openai'
-        assert agent.model == 'gpt-5-nano'
+        assert agent.model == OPENAI_MODEL_NANO
         assert agent.name is None
         assert agent.instructions is None
 
@@ -156,14 +157,14 @@ class TestAgentComposer:
     def test_create_multiple_agents_are_independent(self):
         agent1 = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Agent1',
             instructions='Test1',
             config={},
         )
         agent2 = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Agent2',
             instructions='Test2',
             config={},
@@ -191,7 +192,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidAgentConfigException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='   ',
                 instructions='Test',
             )
@@ -209,7 +210,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidAgentConfigException):
             AgentComposer.create_agent(
                 provider='',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
             )
@@ -218,7 +219,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidProviderException):
             AgentComposer.create_agent(
                 provider='invalid_provider',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
             )
@@ -226,7 +227,7 @@ class TestAgentComposer:
     def test_create_agent_with_provider_case_insensitive(self):
         agent = AgentComposer.create_agent(
             provider='OPENAI',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test Agent',
             instructions='Be helpful',
             config={},
@@ -238,7 +239,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidAgentConfigException):
             AgentComposer.create_agent(
                 provider='   ',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
             )
@@ -256,7 +257,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidAgentConfigException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='   ',
                 instructions='Test',
             )
@@ -265,7 +266,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidAgentConfigException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='   ',
             )
@@ -274,7 +275,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidAgentConfigException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 history_max_size=0,
@@ -284,7 +285,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidAgentConfigException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 history_max_size=-5,
@@ -294,7 +295,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidAgentConfigException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 history_max_size=cast(int, '10'),
@@ -304,7 +305,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidAgentConfigException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 history_max_size=cast(int, 10.5),
@@ -313,7 +314,7 @@ class TestAgentComposer:
     def test_create_agent_with_valid_history_max_size(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={},
@@ -326,7 +327,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidAgentConfigException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 config=cast(dict[str, Any] | None, 'not_a_dict'),
@@ -336,7 +337,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidAgentConfigException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 config=cast(dict[str, Any] | None, ['invalid']),
@@ -345,7 +346,7 @@ class TestAgentComposer:
     def test_create_agent_with_empty_config(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={},
@@ -386,7 +387,7 @@ class TestAgentComposer:
         config = {'temperature': 0.5}
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test Agent',
             instructions='Be helpful',
             config=config,
@@ -394,7 +395,7 @@ class TestAgentComposer:
         )
 
         assert agent.provider == 'openai'
-        assert agent.model == 'gpt-5-nano'
+        assert agent.model == OPENAI_MODEL_NANO
         assert agent.name == 'Test Agent'
         assert agent.instructions == 'Be helpful'
         assert agent.config == config
@@ -411,7 +412,7 @@ class TestAgentComposer:
     def test_create_agent_with_special_characters_in_name(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test-Agent_123!',
             instructions='Be helpful',
             config={},
@@ -422,7 +423,7 @@ class TestAgentComposer:
     def test_create_agent_with_special_characters_in_instructions(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Be helpful! @#$%^&*()',
             config={},
@@ -435,7 +436,7 @@ class TestAgentComposer:
         long_instructions = 'B' * 5000
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name=long_name,
             instructions=long_instructions,
             config={},
@@ -447,7 +448,7 @@ class TestAgentComposer:
     def test_create_agent_history_is_initialized(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={},
@@ -459,7 +460,7 @@ class TestAgentComposer:
     def test_create_agent_with_max_int_history_size(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={},
@@ -471,7 +472,7 @@ class TestAgentComposer:
     def test_create_agent_default_history_max_size(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={},
@@ -482,7 +483,7 @@ class TestAgentComposer:
     def test_create_agent_with_config_none_uses_empty_dict(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config=None,
@@ -494,7 +495,7 @@ class TestAgentComposer:
         original_config = {'temperature': 0.7}
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config=original_config,
@@ -540,7 +541,7 @@ class TestAgentComposer:
 
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config=config,
@@ -554,7 +555,7 @@ class TestAgentComposer:
     def test_create_agent_with_unicode_in_fields(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='测试代理 🤖',
             instructions='Seja útil 日本語 Привет',
             config={},
@@ -571,7 +572,7 @@ class TestAgentComposer:
 
         agent1 = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Agent1',
             instructions='Test',
             config=config,
@@ -579,7 +580,7 @@ class TestAgentComposer:
 
         agent2 = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Agent2',
             instructions='Test',
             config=config,
@@ -590,7 +591,7 @@ class TestAgentComposer:
     def test_create_agent_with_boundary_history_max_size(self):
         agent_min = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={},
@@ -600,7 +601,7 @@ class TestAgentComposer:
 
         agent_high = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={},
@@ -623,7 +624,7 @@ class TestAgentComposer:
 
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config=config,
@@ -652,7 +653,7 @@ class TestAgentComposer:
     def test_create_agent_with_none_config_internally_converted(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -662,7 +663,7 @@ class TestAgentComposer:
     def test_create_agent_with_tools_none(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=None,
@@ -673,7 +674,7 @@ class TestAgentComposer:
     def test_create_agent_with_tools_empty_list(self):
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[],
@@ -694,7 +695,7 @@ class TestAgentComposer:
         tool = TestTool()
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[tool],
@@ -724,7 +725,7 @@ class TestAgentComposer:
         tools = [Tool1(), Tool2()]
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=tools,
@@ -742,7 +743,7 @@ class TestAgentComposer:
             tool_name = next(iter(available))
             agent = AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 tools=[tool_name],
@@ -769,7 +770,7 @@ class TestAgentComposer:
             tool_name = next(iter(available))
             agent = AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 tools=[tool, tool_name],
@@ -779,7 +780,7 @@ class TestAgentComposer:
         else:
             agent = AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 tools=[tool],
@@ -793,7 +794,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidBaseToolException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 tools=cast(Sequence[str | BaseTool], [123]),
@@ -811,7 +812,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidBaseToolException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 tools=cast(Sequence[str | BaseTool], [InvalidTool()]),
@@ -829,7 +830,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidBaseToolException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 tools=cast(Sequence[str | BaseTool], [InvalidTool()]),
@@ -845,7 +846,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidBaseToolException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 tools=cast(Sequence[str | BaseTool], [InvalidTool()]),
@@ -864,7 +865,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidBaseToolException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 tools=cast(Sequence[str | BaseTool], [InvalidTool()]),
@@ -883,7 +884,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidBaseToolException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 tools=cast(Sequence[str | BaseTool], [InvalidTool()]),
@@ -900,7 +901,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidBaseToolException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 tools=cast(Sequence[str | BaseTool], [InvalidTool()]),
@@ -920,7 +921,7 @@ class TestAgentComposer:
         config = {'temperature': 0.7}
         agent = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test Agent',
             instructions='Be helpful',
             tools=[tool],
@@ -939,7 +940,7 @@ class TestAgentComposer:
         with pytest.raises(InvalidBaseToolException):
             AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 tools=['invalid_tool_name_that_doesnt_exist'],
@@ -953,7 +954,7 @@ class TestAgentComposer:
             tool_name = next(iter(available))
             agent = AgentComposer.create_agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 tools=[tool_name],
@@ -977,7 +978,7 @@ class TestAgentComposer:
         tool = TestTool()
         agent1 = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Agent1',
             instructions='Test',
             tools=[tool],
@@ -985,7 +986,7 @@ class TestAgentComposer:
 
         agent2 = AgentComposer.create_agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Agent2',
             instructions='Test',
             tools=[tool],

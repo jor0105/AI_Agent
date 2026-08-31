@@ -1,12 +1,29 @@
+from collections.abc import Iterator
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
 from createagents.infra.adapters.openai.openai_client import OpenAIClient
 from createagents.infra.config import DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT
+from tests.test_constants import OPENAI_MODEL_MINI, OPENAI_MODEL_NANO
 
-IA_OPENAI_TEST_1: str = 'gpt-5-nano'
-IA_OPENAI_TEST_2: str = 'gpt-5-mini'
+
+@pytest.fixture
+def mocked_openai_client() -> Iterator[tuple[OpenAIClient, Mock]]:
+    with (
+        patch(
+            'createagents.infra.adapters.openai.openai_client.EnvironmentConfig.get_api_key',
+            return_value='test-api-key',
+        ),
+        patch(
+            'createagents.infra.adapters.openai.openai_client.ClientOpenAI.get_client'
+        ) as mock_get_client,
+    ):
+        mock_client = Mock()
+        mock_client.responses = Mock()
+        mock_client.responses.create = AsyncMock()
+        mock_get_client.return_value = mock_client
+        yield OpenAIClient(), mock_client
 
 
 @pytest.mark.unit
@@ -32,23 +49,11 @@ class TestOpenAIClient:
             max_retries=DEFAULT_MAX_RETRIES,
         )
 
-    @patch(
-        'createagents.infra.adapters.openai.openai_client.EnvironmentConfig.get_api_key'
-    )
-    @patch(
-        'createagents.infra.adapters.openai.openai_client.ClientOpenAI.get_client'
-    )
     @pytest.mark.asyncio
     async def test_call_api_constructs_messages_correctly(
-        self, mock_get_client, mock_get_api_key
+        self, mocked_openai_client
     ):
-        mock_get_api_key.return_value = 'test-api-key'
-        mock_client = Mock()
-        mock_client.responses = Mock()
-        mock_client.responses.create = AsyncMock()
-        mock_get_client.return_value = mock_client
-
-        client = OpenAIClient()
+        client, mock_client = mocked_openai_client
 
         messages = [
             {'role': 'system', 'content': 'System instruction'},
@@ -57,7 +62,7 @@ class TestOpenAIClient:
         ]
 
         await client.call_api(
-            model=IA_OPENAI_TEST_2,
+            model=OPENAI_MODEL_MINI,
             instructions='System instruction',
             messages=messages,
             config={},
@@ -65,73 +70,131 @@ class TestOpenAIClient:
 
         call_args = mock_client.responses.create.call_args
         assert call_args.kwargs['input'] == messages
-        assert call_args.kwargs['model'] == IA_OPENAI_TEST_2
+        assert call_args.kwargs['model'] == OPENAI_MODEL_MINI
 
-    @patch(
-        'createagents.infra.adapters.openai.openai_client.EnvironmentConfig.get_api_key'
-    )
-    @patch(
-        'createagents.infra.adapters.openai.openai_client.ClientOpenAI.get_client'
-    )
     @pytest.mark.asyncio
-    async def test_call_api_handles_config_mapping(
-        self, mock_get_client, mock_get_api_key
+    async def test_call_api_maps_reasoning_tokens_and_stream(
+        self, mocked_openai_client
     ):
-        mock_get_api_key.return_value = 'test-api-key'
-        mock_client = Mock()
-        mock_client.responses = Mock()
-        mock_client.responses.create = AsyncMock()
-        mock_get_client.return_value = mock_client
-
-        client = OpenAIClient()
-
+        client, mock_client = mocked_openai_client
         config = {
             'think': 'high',
             'max_tokens': 1000,
-            'temperature': 0.7,
             'stream': True,
         }
 
         await client.call_api(
-            model=IA_OPENAI_TEST_1,
+            model=OPENAI_MODEL_NANO,
             instructions='Instr',
             messages=[],
             config=config,
         )
 
-        call_args = mock_client.responses.create.call_args
-        kwargs = call_args.kwargs
-
-        assert kwargs['reasoning'] == {'effort': 'high'}
-        assert kwargs['max_output_tokens'] == 1000
-        assert kwargs['temperature'] == 0.7
-        assert kwargs['stream'] is True
-        # Ensure original config keys are removed/mapped
+        kwargs = mock_client.responses.create.call_args.kwargs
+        assert kwargs == {
+            'model': OPENAI_MODEL_NANO,
+            'instructions': 'Instr',
+            'input': [],
+            'reasoning': {'effort': 'high'},
+            'max_output_tokens': 1000,
+            'stream': True,
+        }
         assert 'max_tokens' not in kwargs
         assert 'think' not in kwargs
 
-    @patch(
-        'createagents.infra.adapters.openai.openai_client.EnvironmentConfig.get_api_key'
-    )
-    @patch(
-        'createagents.infra.adapters.openai.openai_client.ClientOpenAI.get_client'
-    )
     @pytest.mark.asyncio
-    async def test_call_api_passes_tools(
-        self, mock_get_client, mock_get_api_key
-    ):
-        mock_get_api_key.return_value = 'test-api-key'
-        mock_client = Mock()
-        mock_client.responses = Mock()
-        mock_client.responses.create = AsyncMock()
-        mock_get_client.return_value = mock_client
+    async def test_call_api_passes_temperature(self, mocked_openai_client):
+        client, mock_client = mocked_openai_client
 
-        client = OpenAIClient()
+        await client.call_api(
+            model=OPENAI_MODEL_NANO,
+            instructions='Instr',
+            messages=[],
+            config={'temperature': 0.7},
+        )
+
+        kwargs = mock_client.responses.create.call_args.kwargs
+        assert kwargs == {
+            'model': OPENAI_MODEL_NANO,
+            'instructions': 'Instr',
+            'input': [],
+            'temperature': 0.7,
+        }
+
+    @pytest.mark.asyncio
+    async def test_call_api_passes_top_p(self, mocked_openai_client):
+        client, mock_client = mocked_openai_client
+
+        await client.call_api(
+            model=OPENAI_MODEL_NANO,
+            instructions='Instr',
+            messages=[],
+            config={'top_p': 0.9},
+        )
+
+        kwargs = mock_client.responses.create.call_args.kwargs
+        assert kwargs == {
+            'model': OPENAI_MODEL_NANO,
+            'instructions': 'Instr',
+            'input': [],
+            'top_p': 0.9,
+        }
+
+    @pytest.mark.asyncio
+    async def test_call_api_passes_top_k(self, mocked_openai_client):
+        client, mock_client = mocked_openai_client
+
+        await client.call_api(
+            model=OPENAI_MODEL_NANO,
+            instructions='Instr',
+            messages=[],
+            config={'top_k': 50},
+        )
+
+        kwargs = mock_client.responses.create.call_args.kwargs
+        assert kwargs == {
+            'model': OPENAI_MODEL_NANO,
+            'instructions': 'Instr',
+            'input': [],
+            'top_k': 50,
+        }
+
+    @pytest.mark.asyncio
+    async def test_call_api_passes_sampling_configuration_combination(
+        self, mocked_openai_client
+    ):
+        client, mock_client = mocked_openai_client
+        config = {
+            'temperature': 0.7,
+            'top_p': 0.9,
+            'top_k': 50,
+        }
+
+        await client.call_api(
+            model=OPENAI_MODEL_NANO,
+            instructions='Instr',
+            messages=[],
+            config=config,
+        )
+
+        kwargs = mock_client.responses.create.call_args.kwargs
+        assert kwargs == {
+            'model': OPENAI_MODEL_NANO,
+            'instructions': 'Instr',
+            'input': [],
+            'temperature': 0.7,
+            'top_p': 0.9,
+            'top_k': 50,
+        }
+
+    @pytest.mark.asyncio
+    async def test_call_api_passes_tools(self, mocked_openai_client):
+        client, mock_client = mocked_openai_client
 
         tools = [{'type': 'function', 'function': {'name': 'test_tool'}}]
 
         await client.call_api(
-            model=IA_OPENAI_TEST_1,
+            model=OPENAI_MODEL_NANO,
             instructions='Instr',
             messages=[],
             config={},

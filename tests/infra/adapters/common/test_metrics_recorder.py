@@ -9,6 +9,7 @@ from createagents.infra.adapters.common.metrics_recorder import (
     OpenAIMetricsRecorder,
     ProviderUsage,
 )
+from tests.test_constants import OPENAI_MODEL_MINI
 
 # allow-assertion-reduction: Generic provider cases were replaced by provider-specific recorder coverage below.
 
@@ -88,10 +89,12 @@ class TestOpenAIMetricsRecorder:
         )
         recorder = OpenAIMetricsRecorder()
 
-        recorder.record_success_metrics('gpt-4', time.time(), response)
+        recorder.record_success_metrics(
+            OPENAI_MODEL_MINI, time.time(), response
+        )
 
         metrics = recorder.get_metrics()[0]
-        assert metrics.model == 'gpt-4'
+        assert metrics.model == OPENAI_MODEL_MINI
         assert metrics.tokens_used == 100
         assert metrics.prompt_tokens == 50
         assert metrics.completion_tokens == 50
@@ -107,10 +110,12 @@ class TestOpenAIMetricsRecorder:
         )
         recorder = OpenAIMetricsRecorder()
 
-        recorder.record_success_metrics('gpt-4', time.time(), response)
+        recorder.record_success_metrics(
+            OPENAI_MODEL_MINI, time.time(), response
+        )
 
         metrics = recorder.get_metrics()[0]
-        assert metrics.model == 'gpt-4'
+        assert metrics.model == OPENAI_MODEL_MINI
         assert metrics.tokens_used == 75
         assert metrics.prompt_tokens == 40
         assert metrics.completion_tokens == 35
@@ -145,7 +150,9 @@ class TestOpenAIMetricsRecorder:
         )
         recorder = OpenAIMetricsRecorder()
 
-        recorder.record_success_metrics('gpt-4', time.time(), response)
+        recorder.record_success_metrics(
+            OPENAI_MODEL_MINI, time.time(), response
+        )
 
         metrics = recorder.get_metrics()[0]
         assert metrics.load_duration_ms is None

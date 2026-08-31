@@ -8,8 +8,7 @@ from createagents.domain import ChatMetrics
 from createagents.infra.adapters.openai.openai_chat_adapter import (
     OpenAIChatAdapter,
 )
-
-IA_OPENAI_TEST_1: str = 'gpt-5-nano'
+from tests.test_constants import OPENAI_MODEL_MINI, OPENAI_MODEL_NANO
 
 
 @pytest.mark.unit
@@ -53,7 +52,7 @@ class TestOpenAIChatAdapter:
         adapter = OpenAIChatAdapter()
 
         response = await adapter.chat(
-            model=IA_OPENAI_TEST_1,
+            model=OPENAI_MODEL_NANO,
             instructions='Instr',
             config={},
             tools=None,
@@ -85,7 +84,7 @@ class TestOpenAIChatAdapter:
         adapter = OpenAIChatAdapter()
 
         response = await adapter.chat(
-            model=IA_OPENAI_TEST_1,
+            model=OPENAI_MODEL_NANO,
             instructions='Instr',
             config={'stream': True},
             tools=None,
@@ -116,7 +115,9 @@ class TestOpenAIChatAdapter:
         async def fake_execute(*args, **kwargs):
             metrics_list = mock_handler_cls.call_args[0][1]
             metrics_list.append(
-                ChatMetrics(model='gpt-5', latency_ms=10.0, success=True)
+                ChatMetrics(
+                    model=OPENAI_MODEL_MINI, latency_ms=10.0, success=True
+                )
             )
             return 'Response'
 
@@ -125,7 +126,7 @@ class TestOpenAIChatAdapter:
         mock_handler_cls.return_value = mock_handler
 
         await adapter.chat(
-            model='gpt-5',
+            model=OPENAI_MODEL_MINI,
             instructions='test',
             config=None,
             tools=None,
@@ -135,4 +136,4 @@ class TestOpenAIChatAdapter:
 
         metrics = adapter.get_metrics()
         assert len(metrics) == 1
-        assert metrics[0].model == 'gpt-5'
+        assert metrics[0].model == OPENAI_MODEL_MINI

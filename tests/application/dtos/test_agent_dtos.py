@@ -10,6 +10,11 @@ from createagents.application import (
     CreateAgentInputDTO,
 )
 from createagents.domain import BaseTool
+from tests.test_constants import (
+    OLLAMA_MODEL_PHI,
+    OPENAI_MODEL_MINI,
+    OPENAI_MODEL_NANO,
+)
 
 
 @pytest.mark.unit
@@ -17,20 +22,20 @@ class TestCreateAgentInputDTO:
     def test_create_with_valid_data(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test Agent',
             instructions='Be helpful',
         )
 
         assert dto.provider == 'openai'
-        assert dto.model == 'gpt-5-nano'
+        assert dto.model == OPENAI_MODEL_NANO
         assert dto.name == 'Test Agent'
         assert dto.instructions == 'Be helpful'
 
     def test_create_with_ollama_provider(self):
         dto = CreateAgentInputDTO(
             provider='ollama',
-            model='phi4-mini:latest',
+            model=OLLAMA_MODEL_PHI,
             name='Local Agent',
             instructions='Test',
         )
@@ -40,7 +45,7 @@ class TestCreateAgentInputDTO:
     def test_validate_success(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test instructions',
         )
@@ -66,7 +71,10 @@ class TestCreateAgentInputDTO:
 
     def test_validate_empty_name(self):
         dto = CreateAgentInputDTO(
-            provider='openai', model='gpt-5-nano', name='', instructions='Test'
+            provider='openai',
+            model=OPENAI_MODEL_NANO,
+            name='',
+            instructions='Test',
         )
 
         with pytest.raises(ValueError, match=r"'name'.*valid"):
@@ -75,7 +83,7 @@ class TestCreateAgentInputDTO:
     def test_validate_whitespace_name(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='   ',
             instructions='Test',
         )
@@ -85,7 +93,10 @@ class TestCreateAgentInputDTO:
 
     def test_validate_empty_instructions(self):
         dto = CreateAgentInputDTO(
-            provider='openai', model='gpt-5-nano', name='Test', instructions=''
+            provider='openai',
+            model=OPENAI_MODEL_NANO,
+            name='Test',
+            instructions='',
         )
 
         with pytest.raises(ValueError, match=r"'instructions'.*valid"):
@@ -94,7 +105,7 @@ class TestCreateAgentInputDTO:
     def test_validate_whitespace_instructions(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='   ',
         )
@@ -105,7 +116,7 @@ class TestCreateAgentInputDTO:
     def test_validate_none_name(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name=None,
             instructions='Test',
         )
@@ -116,7 +127,7 @@ class TestCreateAgentInputDTO:
     def test_validate_none_instructions(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions=None,
         )
@@ -126,7 +137,10 @@ class TestCreateAgentInputDTO:
 
     def test_validate_both_none(self):
         dto = CreateAgentInputDTO(
-            provider='openai', model='gpt-5-nano', name=None, instructions=None
+            provider='openai',
+            model=OPENAI_MODEL_NANO,
+            name=None,
+            instructions=None,
         )
 
         dto.validate()
@@ -136,11 +150,11 @@ class TestCreateAgentInputDTO:
     def test_create_with_only_required_fields(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
         )
 
         assert dto.provider == 'openai'
-        assert dto.model == 'gpt-5-nano'
+        assert dto.model == OPENAI_MODEL_NANO
         assert dto.name is None
         assert dto.instructions is None
         assert dto.config is None or dto.config == {}
@@ -149,7 +163,7 @@ class TestCreateAgentInputDTO:
     def test_validate_all_fields_valid(self):
         dto = CreateAgentInputDTO(
             provider='ollama',
-            model='phi4-mini:latest',
+            model=OLLAMA_MODEL_PHI,
             name='Production Agent',
             instructions='Detailed instructions here',
         )
@@ -160,7 +174,7 @@ class TestCreateAgentInputDTO:
     def test_validate_with_config(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'temperature': 0.7, 'top_p': 0.9},
@@ -172,7 +186,7 @@ class TestCreateAgentInputDTO:
     def test_validate_empty_config(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -183,7 +197,7 @@ class TestCreateAgentInputDTO:
     def test_create_with_history_max_size(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             history_max_size=20,
@@ -194,7 +208,7 @@ class TestCreateAgentInputDTO:
     def test_default_history_max_size(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -204,7 +218,7 @@ class TestCreateAgentInputDTO:
     def test_validate_invalid_history_max_size(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             history_max_size=0,
@@ -218,7 +232,7 @@ class TestCreateAgentInputDTO:
     def test_validate_negative_history_max_size(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             history_max_size=-5,
@@ -232,7 +246,7 @@ class TestCreateAgentInputDTO:
     def test_validate_invalid_config_type(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config=cast(dict[str, Any] | None, 'invalid'),
@@ -244,7 +258,7 @@ class TestCreateAgentInputDTO:
     def test_validate_non_int_history_max_size(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             history_max_size=cast(int, 'invalid'),
@@ -256,7 +270,7 @@ class TestCreateAgentInputDTO:
     def test_validate_non_string_provider(self):
         dto = CreateAgentInputDTO(
             provider=cast(str, 123),
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -267,7 +281,7 @@ class TestCreateAgentInputDTO:
     def test_validate_empty_provider(self):
         dto = CreateAgentInputDTO(
             provider='',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -278,7 +292,7 @@ class TestCreateAgentInputDTO:
     def test_validate_whitespace_provider(self):
         dto = CreateAgentInputDTO(
             provider='   ',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -293,7 +307,7 @@ class TestCreateAgentInputDTOWithTools:
         """The DTO checks shape only; CreateAgentUseCase resolves names."""
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=['web_search'],
@@ -308,7 +322,7 @@ class TestCreateAgentInputDTOWithTools:
 
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=['   '],
@@ -330,7 +344,7 @@ class TestCreateAgentInputDTOWithTools:
         tool = CustomTool()
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[tool],
@@ -362,7 +376,7 @@ class TestCreateAgentInputDTOWithTools:
         tools = [Tool1(), Tool2()]
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=tools,
@@ -382,7 +396,7 @@ class TestCreateAgentInputDTOWithTools:
 
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=cast(Sequence[str | BaseTool], [InvalidTool()]),
@@ -404,7 +418,7 @@ class TestCreateAgentInputDTOWithTools:
 
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[NoNameTool()],
@@ -426,7 +440,7 @@ class TestCreateAgentInputDTOWithTools:
 
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[NoDescTool()],
@@ -439,7 +453,7 @@ class TestCreateAgentInputDTOWithTools:
         """An unregistered name is a use-case concern, not a shape error."""
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=['nonexistent_tool_12345'],
@@ -461,7 +475,7 @@ class TestCreateAgentInputDTOWithTools:
 
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[CustomTool()],
@@ -475,7 +489,7 @@ class TestCreateAgentInputDTOWithTools:
     def test_validate_with_none_tools(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=None,
@@ -488,7 +502,7 @@ class TestCreateAgentInputDTOWithTools:
     def test_validate_with_empty_tools_list(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[],
@@ -501,7 +515,7 @@ class TestCreateAgentInputDTOWithTools:
     def test_validate_converts_string_tools_to_basetool(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[],
@@ -522,7 +536,7 @@ class TestCreateAgentInputDTOWithTools:
 
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=cast(Sequence[str | BaseTool], [NotCallableExecute()]),
@@ -536,7 +550,7 @@ class TestCreateAgentInputDTOWithTools:
 
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=cast(Sequence[str | BaseTool], [123]),
@@ -558,7 +572,7 @@ class TestCreateAgentInputDTOWithTools:
         tool = TestTool()
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[tool],
@@ -579,7 +593,7 @@ class TestAgentConfigOutputDTO:
             tools=None,
             provider='openai',
             name='Test Agent',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             instructions='Be helpful',
             config={'temperature': 0.7},
             history=[{'role': 'user', 'content': 'Hello'}],
@@ -587,7 +601,7 @@ class TestAgentConfigOutputDTO:
 
         assert dto.provider == 'openai'
         assert dto.name == 'Test Agent'
-        assert dto.model == 'gpt-5-nano'
+        assert dto.model == OPENAI_MODEL_NANO
         assert dto.instructions == 'Be helpful'
         assert dto.config == {'temperature': 0.7}
         assert len(dto.history) == 1
@@ -597,7 +611,7 @@ class TestAgentConfigOutputDTO:
             tools=None,
             provider='ollama',
             name='Test',
-            model='phi4-mini:latest',
+            model=OLLAMA_MODEL_PHI,
             instructions='Test',
             config={},
             history=[],
@@ -610,7 +624,7 @@ class TestAgentConfigOutputDTO:
             tools=None,
             provider='ollama',
             name='Test',
-            model='phi4-mini:latest',
+            model=OLLAMA_MODEL_PHI,
             instructions='Instructions',
             config={'temperature': 0.8},
             history=[{'role': 'user', 'content': 'Hi'}],
@@ -620,7 +634,7 @@ class TestAgentConfigOutputDTO:
 
         assert isinstance(result, dict)
         assert result['name'] == 'Test'
-        assert result['model'] == 'phi4-mini:latest'
+        assert result['model'] == OLLAMA_MODEL_PHI
         assert result['instructions'] == 'Instructions'
         assert result['history'] == [{'role': 'user', 'content': 'Hi'}]
         assert result['provider'] == 'ollama'
@@ -631,7 +645,7 @@ class TestAgentConfigOutputDTO:
             tools=None,
             provider='openai',
             name='Test',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             instructions='Test',
             config={},
             history=[],
@@ -651,7 +665,7 @@ class TestAgentConfigOutputDTO:
             tools=None,
             provider='openai',
             name='Test',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             instructions='Test',
             config={'top_p': 0.9},
             history=history,
@@ -667,7 +681,7 @@ class TestAgentConfigOutputDTO:
             tools=None,
             provider='openai',
             name='Test',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             instructions='Test instructions',
             config={'key': 'value'},
             history=[],
@@ -697,7 +711,7 @@ class TestAgentConfigOutputDTO:
             tools=None,
             provider='ollama',
             name='Test',
-            model='phi:latest',
+            model='test-model',
             instructions='Test',
             config=complex_config,
             history=[],
@@ -712,7 +726,7 @@ class TestAgentConfigOutputDTO:
             tools=None,
             provider='openai',
             name=None,
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             instructions='Test',
             config={},
             history=[],
@@ -727,7 +741,7 @@ class TestAgentConfigOutputDTO:
             tools=None,
             provider='openai',
             name='Test',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             instructions=None,
             config={},
             history=[],
@@ -742,7 +756,7 @@ class TestAgentConfigOutputDTO:
             tools=None,
             provider='openai',
             name=None,
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             instructions=None,
             config={},
             history=[],
@@ -869,7 +883,7 @@ class TestDTOsIntegration:
     def test_create_agent_to_config_flow(self):
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test instructions',
             config={'temperature': 0.8},
@@ -903,7 +917,7 @@ class TestDTOsIntegration:
     def test_dto_immutability_after_validation(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -916,7 +930,7 @@ class TestDTOsIntegration:
     def test_multiple_validations_same_dto(self):
         dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -925,7 +939,7 @@ class TestDTOsIntegration:
         dto.validate()
         dto.validate()
         assert dto.provider == 'openai'
-        assert dto.model == 'gpt-5-nano'
+        assert dto.model == OPENAI_MODEL_NANO
         assert dto.name == 'Test'
 
     def test_config_preservation_through_dtos(self):
@@ -938,7 +952,7 @@ class TestDTOsIntegration:
 
         input_dto = CreateAgentInputDTO(
             provider='openai',
-            model='gpt-4',
+            model=OPENAI_MODEL_MINI,
             name='Advanced Agent',
             instructions='Detailed instructions',
             config=original_config,

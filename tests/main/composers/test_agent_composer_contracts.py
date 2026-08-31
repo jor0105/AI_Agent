@@ -9,6 +9,7 @@ from createagents.application import (
 )
 from createagents.domain import Agent
 from createagents.main import AgentComposer
+from tests.test_constants import OPENAI_MODEL_MINI
 
 
 @pytest.mark.unit
@@ -28,7 +29,7 @@ class TestAgentComposerContracts:
 
             agent = Agent(
                 provider='openai',
-                model='gpt-5-mini',
+                model=OPENAI_MODEL_MINI,
                 name='InjectedAgent',
                 instructions='Test instructions',
                 config={'temperature': 0.7},
@@ -40,7 +41,7 @@ class TestAgentComposerContracts:
             assert isinstance(output_dto, ChatOutputDTO)
             assert output_dto.response == 'Injected response'
             fake_repo.chat.assert_awaited_once_with(
-                model='gpt-5-mini',
+                model=OPENAI_MODEL_MINI,
                 instructions='Test instructions',
                 config={'temperature': 0.7},
                 tools=None,

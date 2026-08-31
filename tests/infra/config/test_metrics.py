@@ -6,21 +6,22 @@ import pytest
 
 from createagents.domain import ChatMetrics
 from createagents.infra import MetricsCollector
+from tests.test_constants import OLLAMA_MODEL_PHI, OPENAI_MODEL_NANO
 
 
 @pytest.mark.unit
 class TestChatMetrics:
     def test_create_metrics_with_required_fields(self):
-        metrics = ChatMetrics(model='gpt-5-nano', latency_ms=150.5)
+        metrics = ChatMetrics(model=OPENAI_MODEL_NANO, latency_ms=150.5)
 
-        assert metrics.model == 'gpt-5-nano'
+        assert metrics.model == OPENAI_MODEL_NANO
         assert metrics.latency_ms == 150.5
         assert metrics.success is True
         assert metrics.tokens_used is None
 
     def test_create_metrics_with_all_fields(self):
         metrics = ChatMetrics(
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             latency_ms=200.0,
             tokens_used=500,
             prompt_tokens=100,
@@ -35,7 +36,7 @@ class TestChatMetrics:
 
     def test_metrics_with_error(self):
         metrics = ChatMetrics(
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             latency_ms=50.0,
             success=False,
             error_message='Connection timeout',
@@ -46,38 +47,38 @@ class TestChatMetrics:
 
     def test_to_dict_conversion(self):
         metrics = ChatMetrics(
-            model='gpt-5-nano', latency_ms=150.5, tokens_used=100
+            model=OPENAI_MODEL_NANO, latency_ms=150.5, tokens_used=100
         )
 
         result = metrics.to_dict()
 
         assert isinstance(result, dict)
-        assert result['model'] == 'gpt-5-nano'
+        assert result['model'] == OPENAI_MODEL_NANO
         assert result['latency_ms'] == 150.5
         assert result['tokens_used'] == 100
         assert result['success'] is True
 
     def test_str_reapplication_success(self):
         metrics = ChatMetrics(
-            model='gpt-5-nano', latency_ms=150.5, tokens_used=100
+            model=OPENAI_MODEL_NANO, latency_ms=150.5, tokens_used=100
         )
 
         string = str(metrics)
         assert '✓' in string
-        assert 'gpt-5-nano' in string
+        assert OPENAI_MODEL_NANO in string
         assert '150.50ms' in string
         assert 'tokens=100' in string
 
     def test_str_reapplication_failure(self):
         metrics = ChatMetrics(
-            model='gpt-5-nano', latency_ms=50.0, success=False
+            model=OPENAI_MODEL_NANO, latency_ms=50.0, success=False
         )
 
         string = str(metrics)
         assert '✗' in string
 
     def test_timestamp_is_auto_generated(self):
-        metrics = ChatMetrics(model='gpt-5-nano', latency_ms=100.0)
+        metrics = ChatMetrics(model=OPENAI_MODEL_NANO, latency_ms=100.0)
         assert isinstance(metrics.timestamp, datetime)
 
 
@@ -89,7 +90,7 @@ class TestMetricsCollector:
 
     def test_add_metrics(self):
         collector = MetricsCollector()
-        metrics = ChatMetrics(model='gpt-5-nano', latency_ms=100.0)
+        metrics = ChatMetrics(model=OPENAI_MODEL_NANO, latency_ms=100.0)
 
         collector.add(metrics)
 
@@ -107,7 +108,7 @@ class TestMetricsCollector:
 
     def test_get_all_returns_copy(self):
         collector = MetricsCollector()
-        metrics = ChatMetrics(model='gpt-5-nano', latency_ms=100.0)
+        metrics = ChatMetrics(model=OPENAI_MODEL_NANO, latency_ms=100.0)
         collector.add(metrics)
 
         list1 = collector.get_all()
@@ -126,13 +127,19 @@ class TestMetricsCollector:
         collector = MetricsCollector()
 
         collector.add(
-            ChatMetrics(model='gpt-5-nano', latency_ms=100.0, tokens_used=50)
+            ChatMetrics(
+                model=OPENAI_MODEL_NANO, latency_ms=100.0, tokens_used=50
+            )
         )
         collector.add(
-            ChatMetrics(model='gpt-5-nano', latency_ms=200.0, tokens_used=100)
+            ChatMetrics(
+                model=OPENAI_MODEL_NANO, latency_ms=200.0, tokens_used=100
+            )
         )
         collector.add(
-            ChatMetrics(model='gpt-5-nano', latency_ms=150.0, tokens_used=75)
+            ChatMetrics(
+                model=OPENAI_MODEL_NANO, latency_ms=150.0, tokens_used=75
+            )
         )
 
         summary = collector.get_summary()
@@ -150,10 +157,14 @@ class TestMetricsCollector:
         collector = MetricsCollector()
 
         collector.add(
-            ChatMetrics(model='gpt-5-nano', latency_ms=100.0, success=True)
+            ChatMetrics(
+                model=OPENAI_MODEL_NANO, latency_ms=100.0, success=True
+            )
         )
         collector.add(
-            ChatMetrics(model='gpt-5-nano', latency_ms=50.0, success=False)
+            ChatMetrics(
+                model=OPENAI_MODEL_NANO, latency_ms=50.0, success=False
+            )
         )
 
         summary = collector.get_summary()
@@ -165,8 +176,8 @@ class TestMetricsCollector:
 
     def test_clear_collector(self):
         collector = MetricsCollector()
-        collector.add(ChatMetrics(model='gpt-5-nano', latency_ms=100.0))
-        collector.add(ChatMetrics(model='gpt-5-nano', latency_ms=200.0))
+        collector.add(ChatMetrics(model=OPENAI_MODEL_NANO, latency_ms=100.0))
+        collector.add(ChatMetrics(model=OPENAI_MODEL_NANO, latency_ms=200.0))
 
         assert len(collector.get_all()) == 2
 
@@ -176,21 +187,23 @@ class TestMetricsCollector:
 
     def test_export_json_returns_string(self):
         collector = MetricsCollector()
-        collector.add(ChatMetrics(model='gpt-5-nano', latency_ms=100.0))
+        collector.add(ChatMetrics(model=OPENAI_MODEL_NANO, latency_ms=100.0))
 
         json_str = collector.export_json()
 
         assert isinstance(json_str, str)
         assert 'summary' in json_str
         assert 'metrics' in json_str
-        assert 'gpt-5-nano' in json_str
+        assert OPENAI_MODEL_NANO in json_str
 
     def test_export_json_to_file(self, tmp_path):
         import json
 
         collector = MetricsCollector()
         collector.add(
-            ChatMetrics(model='gpt-5-nano', latency_ms=100.0, tokens_used=50)
+            ChatMetrics(
+                model=OPENAI_MODEL_NANO, latency_ms=100.0, tokens_used=50
+            )
         )
 
         filepath = tmp_path / 'metrics.json'
@@ -208,9 +221,11 @@ class TestMetricsCollector:
     def test_export_prometheus_format(self):
         collector = MetricsCollector()
         collector.add(
-            ChatMetrics(model='gpt-5-nano', latency_ms=100.0, tokens_used=50)
+            ChatMetrics(
+                model=OPENAI_MODEL_NANO, latency_ms=100.0, tokens_used=50
+            )
         )
-        collector.add(ChatMetrics(model='phi4-mini:latest', latency_ms=200.0))
+        collector.add(ChatMetrics(model=OLLAMA_MODEL_PHI, latency_ms=200.0))
 
         prom_text = collector.export_prometheus()
 
@@ -219,11 +234,11 @@ class TestMetricsCollector:
         assert '# TYPE' in prom_text
         assert 'chat_requests_total' in prom_text
         assert 'chat_latency_ms_avg' in prom_text
-        assert 'model="gpt-5-nano"' in prom_text
+        assert f'model="{OPENAI_MODEL_NANO}"' in prom_text
 
     def test_export_prometheus_to_file(self, tmp_path):
         collector = MetricsCollector()
-        collector.add(ChatMetrics(model='gpt-5-nano', latency_ms=100.0))
+        collector.add(ChatMetrics(model=OPENAI_MODEL_NANO, latency_ms=100.0))
 
         filepath = tmp_path / 'metrics.prom'
         collector.export_prometheus_to_file(str(filepath))

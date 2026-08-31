@@ -2,6 +2,7 @@ import pytest
 
 from createagents.application import GetAgentConfigUseCase
 from createagents.domain import Agent
+from tests.test_constants import OLLAMA_MODEL_PHI, OPENAI_MODEL_NANO
 
 
 @pytest.mark.unit
@@ -10,7 +11,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='ollama',
-            model='phi4-mini:latest',
+            model=OLLAMA_MODEL_PHI,
             name='Test Agent',
             instructions='Be helpful',
         )
@@ -18,7 +19,7 @@ class TestGetAgentConfigUseCase:
         output = use_case.execute(agent)
 
         assert output.name == 'Test Agent'
-        assert output.model == 'phi4-mini:latest'
+        assert output.model == OLLAMA_MODEL_PHI
         assert output.instructions == 'Be helpful'
         assert output.provider == 'ollama'
 
@@ -26,7 +27,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -39,7 +40,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -56,7 +57,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -69,7 +70,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='ollama',
-            model='phi4-mini:latest',
+            model=OLLAMA_MODEL_PHI,
             name='My Agent',
             instructions='Complex instructions',
         )
@@ -88,7 +89,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -107,7 +108,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -124,7 +125,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -144,7 +145,7 @@ class TestGetAgentConfigUseCase:
         }
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config=custom_config,
@@ -161,7 +162,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='ollama',
-            model='phi4-mini:latest',
+            model=OLLAMA_MODEL_PHI,
             name='Test',
             instructions='Test',
             config={},
@@ -176,7 +177,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -203,7 +204,7 @@ class TestGetAgentConfigUseCase:
         custom_config = {'temperature': 0.5}
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config=custom_config,
@@ -223,7 +224,7 @@ class TestGetAgentConfigUseCase:
         }
         agent = Agent(
             provider='ollama',
-            model='phi4-mini:latest',
+            model=OLLAMA_MODEL_PHI,
             name='Test',
             instructions='Test',
             config=complex_config,
@@ -239,7 +240,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -258,7 +259,7 @@ class TestGetAgentConfigUseCase:
         long_instructions = 'A' * 1000
         agent = Agent(
             provider='ollama',
-            model='phi4-mini:latest',
+            model=OLLAMA_MODEL_PHI,
             name='Test',
             instructions=long_instructions,
         )
@@ -272,7 +273,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test Agent 🤖',
             instructions='Be helpful! @#$%^&*()',
         )
@@ -286,7 +287,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -316,7 +317,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             history=History(max_size=20),
@@ -330,7 +331,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -345,7 +346,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             history=History(max_size=15),
@@ -365,7 +366,7 @@ class TestGetAgentConfigUseCase:
 
             agent = Agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 history=History(max_size=max_size),
@@ -381,7 +382,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             history=History(max_size=25),
@@ -399,7 +400,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=None,
@@ -413,7 +414,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[],
@@ -438,7 +439,7 @@ class TestGetAgentConfigUseCase:
         tool = TestTool()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[tool],
@@ -471,7 +472,7 @@ class TestGetAgentConfigUseCase:
         tools = [Tool1(), Tool2()]
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=tools,
@@ -497,7 +498,7 @@ class TestGetAgentConfigUseCase:
         tool = TestTool()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[tool],
@@ -522,7 +523,7 @@ class TestGetAgentConfigUseCase:
         tool = TestTool()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[tool],
@@ -547,7 +548,7 @@ class TestGetAgentConfigUseCase:
         tool = TestTool()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[tool],
@@ -576,7 +577,7 @@ class TestGetAgentConfigUseCase:
         config = {'temperature': 0.7}
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[tool],
@@ -604,7 +605,7 @@ class TestGetAgentConfigUseCase:
         config = {'temperature': 0.5}
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test Agent',
             instructions='Be helpful',
             tools=[tool],
@@ -629,7 +630,7 @@ class TestGetAgentConfigUseCase:
         use_case = GetAgentConfigUseCase()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             history=History(max_size=25),

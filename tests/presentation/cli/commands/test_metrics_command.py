@@ -6,6 +6,7 @@ from createagents.domain import ChatMetrics
 from createagents.presentation.cli.commands.metrics_command import (
     MetricsCommandHandler,
 )
+from tests.test_constants import OPENAI_MODEL_MINI
 
 
 @pytest.mark.unit
@@ -36,7 +37,7 @@ class TestMetricsCommandHandler:
         agent = Mock()
         agent.get_metrics.return_value = [
             ChatMetrics(
-                model='gpt-5',
+                model=OPENAI_MODEL_MINI,
                 latency_ms=150.0,
                 tokens_used=80,
                 prompt_tokens=30,
@@ -54,7 +55,7 @@ class TestMetricsCommandHandler:
         agent.get_metrics.assert_called_once_with()
         args, _ = mock_formatter.call_args
         assert 'Performance Metrics' in args[0]
-        assert 'gpt-5' in args[0]
+        assert OPENAI_MODEL_MINI in args[0]
         renderer.render_system_message.assert_called_once_with(
             'formatted-metrics'
         )

@@ -71,8 +71,8 @@ class TestInvalidModelException:
         )
 
     def test_exception_message_format(self):
-        exception = InvalidModelException('gpt-5')
-        expected = "Unsupported AI model: 'gpt-5'"
+        exception = InvalidModelException('gpt-999')
+        expected = "Unsupported AI model: 'gpt-999'"
 
         assert str(exception) == expected
 

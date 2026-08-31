@@ -7,10 +7,11 @@ import pytest
 from createagents.application import ChatRepository
 from createagents.domain import ChatException
 from createagents.infra import OllamaChatAdapter
-
-IA_OLLAMA_TEST_1: str = 'granite4:latest'  # aceita tools, configs e não think
-IA_OLLAMA_TEST_2: str = (
-    'gpt-oss:120b-cloud'  # não aceita tools, aceita configs e think true
+from tests.test_constants import (
+    OLLAMA_MODEL_GRANITE,
+    OLLAMA_MODEL_LFM,
+    OLLAMA_MODEL_PHI,
+    OLLAMA_TEST_MODELS,
 )
 
 
@@ -51,6 +52,12 @@ def _check_model_available(model: str) -> None:
         )
 
 
+def _check_ollama_models_available() -> None:
+    _check_ollama_available()
+    for model in OLLAMA_TEST_MODELS:
+        _check_model_available(model)
+
+
 @pytest.fixture(scope='session', autouse=True)
 def teardown_ollama_models() -> Generator[None, None, None]:
     yield
@@ -60,7 +67,7 @@ def teardown_ollama_models() -> Generator[None, None, None]:
     if os.getenv('CI'):
         return
 
-    models = [IA_OLLAMA_TEST_1, IA_OLLAMA_TEST_2]
+    models = OLLAMA_TEST_MODELS
 
     with contextlib.suppress(FileNotFoundError, subprocess.TimeoutExpired):
         subprocess.run(  # nosec B603, B607
@@ -78,7 +85,7 @@ def teardown_ollama_models() -> Generator[None, None, None]:
 class TestOllamaChatAdapterIntegration:
     # assertion-reduction-reason: interface conformance replaces presence checks.
     def test_adapter_initialization(self):
-        _check_ollama_available()
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
@@ -89,13 +96,12 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_real_ollama_simple_question(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='You are a helpful assistant. Answer briefly.',
             config={},
             tools=None,
@@ -110,13 +116,12 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_second_model(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_2)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_GRANITE,
             instructions='You are a helpful assistant. Answer with one word only.',
             config={},
             tools=None,
@@ -130,8 +135,7 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_history(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
@@ -141,7 +145,7 @@ class TestOllamaChatAdapterIntegration:
         ]
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='You are a helpful assistant.',
             config={},
             tools=None,
@@ -156,13 +160,12 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_complex_instructions(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_2)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions='You are a math teacher. Explain concepts simply and clearly.',
             config={},
             tools=None,
@@ -180,8 +183,7 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_multiple_history_items(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
@@ -193,7 +195,7 @@ class TestOllamaChatAdapterIntegration:
         ]
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='You are a friendly assistant.',
             config={},
             tools=None,
@@ -208,13 +210,12 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_special_characters(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='You are a helpful assistant. Respond briefly.',
             config={},
             tools=None,
@@ -228,8 +229,7 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_multiline_input(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_2)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
@@ -240,7 +240,7 @@ class TestOllamaChatAdapterIntegration:
         """
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions='You are a helpful assistant.',
             config={},
             tools=None,
@@ -254,13 +254,12 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_collects_metrics_on_success(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer briefly.',
             config={},
             tools=None,
@@ -272,14 +271,14 @@ class TestOllamaChatAdapterIntegration:
 
         metrics = adapter.get_metrics()
         assert len(metrics) == 1
-        assert metrics[0].model == IA_OLLAMA_TEST_1
+        assert metrics[0].model == OLLAMA_MODEL_PHI
         assert metrics[0].success is True
         assert metrics[0].latency_ms > 0
         assert metrics[0].error_message is None
 
     @pytest.mark.asyncio
     async def test_chat_with_invalid_model_raises_error(self):
-        _check_ollama_available()
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
@@ -295,7 +294,7 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_collects_metrics_on_failure(self):
-        _check_ollama_available()
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
@@ -318,13 +317,12 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_empty_user_ask(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='You are a helpful assistant.',
             config={},
             tools=None,
@@ -337,13 +335,12 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_empty_instructions(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_2)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions='',
             config={},
             tools=None,
@@ -357,13 +354,12 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_none_instructions(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_2)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions=None,
             config={},
             tools=None,
@@ -377,13 +373,12 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_multiple_sequential_chats(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         response1 = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer briefly.',
             config={},
             tools=None,
@@ -392,7 +387,7 @@ class TestOllamaChatAdapterIntegration:
         )
 
         response2 = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer briefly.',
             config={},
             tools=None,
@@ -410,14 +405,12 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_both_models(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
-        _check_model_available(IA_OLLAMA_TEST_2)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         response1 = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer briefly.',
             config={},
             tools=None,
@@ -426,7 +419,7 @@ class TestOllamaChatAdapterIntegration:
         )
 
         response2 = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_GRANITE,
             instructions='Answer briefly.',
             config={},
             tools=None,
@@ -441,12 +434,12 @@ class TestOllamaChatAdapterIntegration:
 
         metrics = adapter.get_metrics()
         assert len(metrics) == 2
-        assert metrics[0].model == IA_OLLAMA_TEST_1
-        assert metrics[1].model == IA_OLLAMA_TEST_2
+        assert metrics[0].model == OLLAMA_MODEL_PHI
+        assert metrics[1].model == OLLAMA_MODEL_GRANITE
         assert all(m.success for m in metrics)
 
     def test_adapter_implements_chat_repository_interface(self):
-        _check_ollama_available()
+        _check_ollama_models_available()
 
         from createagents.application.interfaces.chat_repository import (
             ChatRepository,
@@ -458,8 +451,7 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_long_conversation_history(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
@@ -476,7 +468,7 @@ class TestOllamaChatAdapterIntegration:
             )
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='You are a helpful assistant.',
             config={},
             tools=None,
@@ -490,13 +482,12 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_response_is_not_empty(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_2)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions='You are a helpful assistant.',
             config={},
             tools=None,
@@ -511,13 +502,12 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_get_metrics_returns_copy(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Test',
             config={},
             tools=None,
@@ -533,8 +523,7 @@ class TestOllamaChatAdapterIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_config_parameter(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
@@ -544,7 +533,7 @@ class TestOllamaChatAdapterIntegration:
         }
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer briefly.',
             config=config,
             tools=None,
@@ -561,8 +550,7 @@ class TestOllamaChatAdapterIntegration:
 class TestOllamaChatAdapterToolsIntegration:
     @pytest.mark.asyncio
     async def test_chat_with_currentdate_tool_get_date(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
         from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
@@ -571,7 +559,7 @@ class TestOllamaChatAdapterToolsIntegration:
         tools = list(AvailableTools.get_all_tool_instances().values())
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_GRANITE,
             instructions='You are a helpful assistant. Use tools when appropriate.',
             config={},
             tools=tools,
@@ -585,8 +573,7 @@ class TestOllamaChatAdapterToolsIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_currentdate_tool_get_time(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
         from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
@@ -595,7 +582,7 @@ class TestOllamaChatAdapterToolsIntegration:
         tools = list(AvailableTools.get_all_tool_instances().values())
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_GRANITE,
             instructions='You are a helpful assistant. Use tools when appropriate.',
             config={},
             tools=tools,
@@ -609,8 +596,7 @@ class TestOllamaChatAdapterToolsIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_currentdate_tool_multiple_actions(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
         from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
@@ -619,7 +605,7 @@ class TestOllamaChatAdapterToolsIntegration:
         tools = list(AvailableTools.get_all_tool_instances().values())
 
         response1 = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_GRANITE,
             instructions='You are a helpful assistant. Use tools when appropriate.',
             config={},
             tools=tools,
@@ -631,7 +617,7 @@ class TestOllamaChatAdapterToolsIntegration:
         assert len(response1) > 0
 
         response2 = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_GRANITE,
             instructions='You are a helpful assistant. Use tools when appropriate.',
             config={},
             tools=tools,
@@ -645,8 +631,7 @@ class TestOllamaChatAdapterToolsIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_currentdate_tool_different_timezones(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
         from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
@@ -658,7 +643,7 @@ class TestOllamaChatAdapterToolsIntegration:
 
         for tz in timezones:
             response = await adapter.chat(
-                model=IA_OLLAMA_TEST_1,
+                model=OLLAMA_MODEL_GRANITE,
                 instructions='You are a helpful assistant. Use tools when appropriate.',
                 config={},
                 tools=tools,
@@ -672,8 +657,7 @@ class TestOllamaChatAdapterToolsIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_readlocalfile_tool_text_file(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
         import os
 
         from createagents.infra.adapters.tools.available_tools import (
@@ -692,7 +676,7 @@ class TestOllamaChatAdapterToolsIntegration:
         file_path = os.path.abspath('.fixtures/sample_text.txt')
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_GRANITE,
             instructions='You are a helpful assistant. Use tools when appropriate.',
             config={},
             tools=tools,
@@ -706,8 +690,7 @@ class TestOllamaChatAdapterToolsIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_readlocalfile_tool_csv_file(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
         import os
 
         from createagents.infra.adapters.tools.available_tools import (
@@ -726,7 +709,7 @@ class TestOllamaChatAdapterToolsIntegration:
         file_path = os.path.abspath('.fixtures/sample_data.csv')
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_GRANITE,
             instructions='You are a helpful assistant. Use tools when appropriate.',
             config={},
             tools=tools,
@@ -740,8 +723,7 @@ class TestOllamaChatAdapterToolsIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_tools_and_configs_combined(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
         from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
@@ -756,7 +738,7 @@ class TestOllamaChatAdapterToolsIntegration:
         }
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_GRANITE,
             instructions='You are a helpful assistant. Use tools when appropriate.',
             config=config,
             tools=tools,
@@ -774,8 +756,7 @@ class TestOllamaChatAdapterToolsIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_multiple_tool_calls_in_conversation(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
         from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
@@ -784,7 +765,7 @@ class TestOllamaChatAdapterToolsIntegration:
         tools = list(AvailableTools.get_all_tool_instances().values())
 
         response1 = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_GRANITE,
             instructions='You are a helpful assistant. Use tools when appropriate.',
             config={},
             tools=tools,
@@ -800,7 +781,7 @@ class TestOllamaChatAdapterToolsIntegration:
         ]
 
         response2 = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_GRANITE,
             instructions='You are a helpful assistant. Use tools when appropriate.',
             config={},
             tools=tools,
@@ -814,8 +795,7 @@ class TestOllamaChatAdapterToolsIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_tools_and_think_config(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_2)
+        _check_ollama_models_available()
         from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
@@ -829,7 +809,7 @@ class TestOllamaChatAdapterToolsIntegration:
         }
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_LFM,
             instructions='Think step by step. Use tools when needed.',
             config=config,
             tools=tools,
@@ -843,8 +823,7 @@ class TestOllamaChatAdapterToolsIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_tools_and_top_k_config(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
         from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
@@ -858,7 +837,7 @@ class TestOllamaChatAdapterToolsIntegration:
         }
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_GRANITE,
             instructions='Use tools to get accurate information.',
             config=config,
             tools=tools,
@@ -872,8 +851,7 @@ class TestOllamaChatAdapterToolsIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_with_tools_and_all_configs_ollama(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
         from createagents.infra.adapters.tools.available_tools import (
             AvailableTools,
         )
@@ -890,7 +868,7 @@ class TestOllamaChatAdapterToolsIntegration:
         }
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_GRANITE,
             instructions='Answer using all available information and tools.',
             config=config,
             tools=tools,
@@ -911,14 +889,13 @@ class TestOllamaChatAdapterToolsIntegration:
 class TestOllamaChatAdapterConfigValidation:
     @pytest.mark.asyncio
     async def test_chat_with_boundary_max_tokens_values(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         config_min = {'max_tokens': 1}
         response_min = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Be extremely brief.',
             config=config_min,
             tools=None,
@@ -931,14 +908,13 @@ class TestOllamaChatAdapterConfigValidation:
 
     @pytest.mark.asyncio
     async def test_chat_with_boundary_top_p_values(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         config_min = {'top_p': 0.0}
         response_min = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer.',
             config=config_min,
             tools=None,
@@ -950,7 +926,7 @@ class TestOllamaChatAdapterConfigValidation:
 
         config_max = {'top_p': 1.0}
         response_max = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer.',
             config=config_max,
             tools=None,
@@ -962,8 +938,7 @@ class TestOllamaChatAdapterConfigValidation:
 
     @pytest.mark.asyncio
     async def test_chat_with_mixed_configs_at_boundaries(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_2)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
@@ -976,7 +951,7 @@ class TestOllamaChatAdapterConfigValidation:
         }
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_LFM,
             instructions='Answer.',
             config=config,
             tools=None,
@@ -992,8 +967,7 @@ class TestOllamaChatAdapterConfigValidation:
 class TestOllamaChatAdapterConfigEdgeCases:
     @pytest.mark.asyncio
     async def test_chat_with_all_configs_combined(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
@@ -1004,7 +978,7 @@ class TestOllamaChatAdapterConfigEdgeCases:
         }
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer briefly.',
             config=config,
             tools=None,
@@ -1018,15 +992,14 @@ class TestOllamaChatAdapterConfigEdgeCases:
 
     @pytest.mark.asyncio
     async def test_chat_with_only_temperature_config(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_2)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         config = {'temperature': 0.3}
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer briefly.',
             config=config,
             tools=None,
@@ -1040,15 +1013,14 @@ class TestOllamaChatAdapterConfigEdgeCases:
 
     @pytest.mark.asyncio
     async def test_chat_with_only_max_tokens_config(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_2)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         config = {'max_tokens': 200}
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer briefly.',
             config=config,
             tools=None,
@@ -1062,15 +1034,14 @@ class TestOllamaChatAdapterConfigEdgeCases:
 
     @pytest.mark.asyncio
     async def test_chat_with_only_top_p_config(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         config = {'top_p': 0.7}
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer briefly.',
             config=config,
             tools=None,
@@ -1084,8 +1055,7 @@ class TestOllamaChatAdapterConfigEdgeCases:
 
     @pytest.mark.asyncio
     async def test_chat_with_temperature_and_max_tokens(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
@@ -1095,7 +1065,7 @@ class TestOllamaChatAdapterConfigEdgeCases:
         }
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Be concise.',
             config=config,
             tools=None,
@@ -1109,6 +1079,8 @@ class TestOllamaChatAdapterConfigEdgeCases:
 
     @pytest.mark.asyncio
     async def test_chat_with_temperature_and_top_p(self):
+        _check_ollama_models_available()
+
         adapter = OllamaChatAdapter()
 
         config = {
@@ -1117,7 +1089,7 @@ class TestOllamaChatAdapterConfigEdgeCases:
         }
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions='Be helpful.',
             config=config,
             tools=None,
@@ -1131,8 +1103,7 @@ class TestOllamaChatAdapterConfigEdgeCases:
 
     @pytest.mark.asyncio
     async def test_chat_with_max_tokens_and_top_p(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
@@ -1142,7 +1113,7 @@ class TestOllamaChatAdapterConfigEdgeCases:
         }
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer concisely.',
             config=config,
             tools=None,
@@ -1156,14 +1127,13 @@ class TestOllamaChatAdapterConfigEdgeCases:
 
     @pytest.mark.asyncio
     async def test_chat_with_boundary_temperature_values(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         config_min = {'temperature': 0.0}
         response_min = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Be consistent.',
             config=config_min,
             tools=None,
@@ -1176,7 +1146,7 @@ class TestOllamaChatAdapterConfigEdgeCases:
 
         config_max = {'temperature': 2.0}
         response_max = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Be creative.',
             config=config_max,
             tools=None,
@@ -1189,15 +1159,14 @@ class TestOllamaChatAdapterConfigEdgeCases:
 
     @pytest.mark.asyncio
     async def test_chat_with_think_config_enabled(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_2)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         config = {'think': True}
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_LFM,
             instructions='Think step by step before answering.',
             config=config,
             tools=None,
@@ -1211,15 +1180,14 @@ class TestOllamaChatAdapterConfigEdgeCases:
 
     @pytest.mark.asyncio
     async def test_chat_with_think_config_disabled(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_2)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         config = {'think': False}
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer directly without thinking.',
             config=config,
             tools=None,
@@ -1233,15 +1201,14 @@ class TestOllamaChatAdapterConfigEdgeCases:
 
     @pytest.mark.asyncio
     async def test_chat_with_top_k_config(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         config = {'top_k': 40}
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer briefly.',
             config=config,
             tools=None,
@@ -1255,14 +1222,13 @@ class TestOllamaChatAdapterConfigEdgeCases:
 
     @pytest.mark.asyncio
     async def test_chat_with_top_k_boundary_values(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
         config_small = {'top_k': 1}
         response_small = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer briefly.',
             config=config_small,
             tools=None,
@@ -1275,7 +1241,7 @@ class TestOllamaChatAdapterConfigEdgeCases:
 
         config_large = {'top_k': 100}
         response_large = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer briefly.',
             config=config_large,
             tools=None,
@@ -1288,8 +1254,7 @@ class TestOllamaChatAdapterConfigEdgeCases:
 
     @pytest.mark.asyncio
     async def test_chat_with_temperature_top_k_think_combined(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_2)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
@@ -1300,7 +1265,7 @@ class TestOllamaChatAdapterConfigEdgeCases:
         }
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_2,
+            model=OLLAMA_MODEL_LFM,
             instructions='Think carefully and be thoughtful.',
             config=config,
             tools=None,
@@ -1314,8 +1279,7 @@ class TestOllamaChatAdapterConfigEdgeCases:
 
     @pytest.mark.asyncio
     async def test_chat_with_all_supported_configs_ollama(self):
-        _check_ollama_available()
-        _check_model_available(IA_OLLAMA_TEST_1)
+        _check_ollama_models_available()
 
         adapter = OllamaChatAdapter()
 
@@ -1328,7 +1292,7 @@ class TestOllamaChatAdapterConfigEdgeCases:
         }
 
         response = await adapter.chat(
-            model=IA_OLLAMA_TEST_1,
+            model=OLLAMA_MODEL_PHI,
             instructions='Answer helpfully.',
             config=config,
             tools=None,

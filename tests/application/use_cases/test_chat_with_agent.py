@@ -9,6 +9,11 @@ from createagents.application import (
     ChatWithAgentUseCase,
 )
 from createagents.domain import Agent, ChatException, ChatMetrics
+from tests.test_constants import (
+    OLLAMA_MODEL_PHI,
+    OPENAI_MODEL_MINI,
+    OPENAI_MODEL_NANO,
+)
 
 
 @pytest.fixture
@@ -30,7 +35,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Be helpful',
         )
@@ -51,7 +56,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -74,7 +79,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='ollama',
-            model='phi4-mini:latest',
+            model=OLLAMA_MODEL_PHI,
             name='Test',
             instructions='Instructions',
         )
@@ -83,7 +88,7 @@ class TestChatWithAgentUseCase:
         await use_case.execute(agent, input_dto)
 
         mock_async_chat_repository.chat.assert_called_once_with(
-            model='phi4-mini:latest',
+            model=OLLAMA_MODEL_PHI,
             instructions='Instructions',
             config=None,
             user_ask='Test message',
@@ -101,7 +106,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -123,7 +128,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -144,7 +149,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -163,7 +168,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -180,7 +185,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -197,7 +202,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -220,7 +225,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -239,7 +244,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -260,7 +265,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -281,7 +286,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -301,7 +306,7 @@ class TestChatWithAgentUseCase:
         config = {'temperature': 0.7, 'max_tokens': 100}
         agent = Agent(
             provider='openai',
-            model='gpt-4',
+            model=OPENAI_MODEL_MINI,
             name='Test',
             instructions='Test',
             config=config,
@@ -311,7 +316,7 @@ class TestChatWithAgentUseCase:
         await use_case.execute(agent, input_dto)
 
         mock_async_chat_repository.chat.assert_called_once_with(
-            model='gpt-4',
+            model=OPENAI_MODEL_MINI,
             instructions='Test',
             config=config,
             user_ask='Test message',
@@ -322,14 +327,14 @@ class TestChatWithAgentUseCase:
     def test_get_metrics_when_repository_supports_it(self):
         mock_repository = Mock()
         mock_repository.get_metrics.return_value = [
-            ChatMetrics(model='gpt-4', latency_ms=1.0)
+            ChatMetrics(model=OPENAI_MODEL_MINI, latency_ms=1.0)
         ]
         use_case = ChatWithAgentUseCase(chat_repository=mock_repository)
 
         metrics = use_case.get_metrics()
 
         assert len(metrics) == 1
-        assert metrics[0].model == 'gpt-4'
+        assert metrics[0].model == OPENAI_MODEL_MINI
         mock_repository.get_metrics.assert_called_once()
 
     def test_get_metrics_returns_empty_list_when_no_metrics(
@@ -352,7 +357,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -373,7 +378,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -396,7 +401,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -424,7 +429,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -450,7 +455,7 @@ class TestChatWithAgentUseCase:
         )
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             history=History(max_size=4),
@@ -468,7 +473,7 @@ class TestChatWithAgentUseCase:
 def _agent() -> Agent:
     return Agent(
         provider='openai',
-        model='gpt-5-nano',
+        model=OPENAI_MODEL_NANO,
         name='Test',
         instructions='Be helpful',
     )

@@ -9,6 +9,12 @@ from createagents.domain import (
     MessageRole,
     UnsupportedConfigException,
 )
+from tests.test_constants import (
+    OLLAMA_MODEL_GRANITE,
+    OLLAMA_MODEL_PHI,
+    OPENAI_MODEL_MINI,
+    OPENAI_MODEL_NANO,
+)
 
 
 @pytest.mark.unit
@@ -16,13 +22,13 @@ class TestAgent:
     def test_create_agent_with_required_fields(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test Agent',
             instructions='You are a helpful assistant',
         )
 
         assert agent.provider == 'openai'
-        assert agent.model == 'gpt-5-nano'
+        assert agent.model == OPENAI_MODEL_NANO
         assert agent.name == 'Test Agent'
         assert agent.instructions == 'You are a helpful assistant'
         assert isinstance(agent.history, History)
@@ -30,7 +36,7 @@ class TestAgent:
     def test_create_agent_with_ollama_provider(self):
         agent = Agent(
             provider='ollama',
-            model='phi4-mini:latest',
+            model=OLLAMA_MODEL_PHI,
             name='Local Agent',
             instructions='Test',
         )
@@ -40,7 +46,7 @@ class TestAgent:
     def test_agent_history_starts_empty(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -51,7 +57,7 @@ class TestAgent:
     def test_agent_history_is_history_object(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -61,7 +67,7 @@ class TestAgent:
     def test_add_user_message(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -76,7 +82,7 @@ class TestAgent:
     def test_add_assistant_message(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -91,7 +97,7 @@ class TestAgent:
     def test_add_multiple_messages(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -106,7 +112,7 @@ class TestAgent:
     def test_clear_history(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -121,7 +127,7 @@ class TestAgent:
     def test_agent_preserves_conversation_flow(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -144,10 +150,10 @@ class TestAgent:
 
     def test_agent_with_different_models(self):
         models = [
-            'gpt-5-nano',
-            'gpt-5-nano',
-            'phi4-mini:latest',
-            'phi4-mini:latest',
+            OPENAI_MODEL_NANO,
+            OPENAI_MODEL_MINI,
+            OLLAMA_MODEL_PHI,
+            OLLAMA_MODEL_GRANITE,
         ]
         providers = ['openai', 'openai', 'ollama', 'ollama']
 
@@ -164,36 +170,36 @@ class TestAgent:
     def test_agent_identity_fields_are_accessible(self):
         agent = Agent(
             provider='ollama',
-            model='phi4-mini:latest',
+            model=OLLAMA_MODEL_PHI,
             name='My Agent',
             instructions='Be helpful',
         )
 
         assert agent.provider == 'ollama'
-        assert agent.model == 'phi4-mini:latest'
+        assert agent.model == OLLAMA_MODEL_PHI
         assert agent.name == 'My Agent'
         assert agent.instructions == 'Be helpful'
 
     def test_agent_can_be_modified(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
 
         agent.name = 'Updated Name'
-        agent.model = 'gpt-4'
+        agent.model = OPENAI_MODEL_MINI
         agent.provider = 'ollama'
 
         assert agent.name == 'Updated Name'
-        assert agent.model == 'gpt-4'
+        assert agent.model == OPENAI_MODEL_MINI
         assert agent.provider == 'ollama'
 
     def test_agent_history_respects_max_size(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -209,13 +215,13 @@ class TestAgent:
     def test_multiple_agents_have_independent_histories(self):
         agent1 = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Agent1',
             instructions='Test',
         )
         agent2 = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Agent2',
             instructions='Test',
         )
@@ -232,7 +238,7 @@ class TestAgent:
         long_instructions = 'A' * 10000
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions=long_instructions,
         )
@@ -243,7 +249,7 @@ class TestAgent:
     def test_agent_with_special_characters_in_fields(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test Agent 🤖',
             instructions='You are helpful! 😊',
         )
@@ -263,7 +269,7 @@ class TestAgent:
         """
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions=multiline_instructions,
         )
@@ -290,7 +296,7 @@ class TestAgent:
         ):
             Agent(
                 provider='invalido',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
             )
@@ -298,7 +304,7 @@ class TestAgent:
     def test_agent_with_valid_config(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'temperature': 0.7, 'max_tokens': 100, 'top_p': 0.9},
@@ -312,7 +318,7 @@ class TestAgent:
     def test_agent_with_empty_config(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={},
@@ -323,7 +329,7 @@ class TestAgent:
     def test_agent_config_defaults_to_empty_dict(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -337,7 +343,7 @@ class TestAgent:
         ):
             Agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 config={'invalid_config': 123},
@@ -349,7 +355,7 @@ class TestAgent:
         ):
             Agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 config={'temperature': object()},
@@ -359,7 +365,7 @@ class TestAgent:
         with pytest.raises(InvalidAgentConfigException, match='temperature'):
             Agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 config={'temperature': 3.0},
@@ -369,7 +375,7 @@ class TestAgent:
         with pytest.raises(InvalidAgentConfigException, match='max_tokens'):
             Agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 config={'max_tokens': -10},
@@ -379,7 +385,7 @@ class TestAgent:
         with pytest.raises(InvalidAgentConfigException, match='max_tokens'):
             Agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 config={'max_tokens': '100'},
@@ -389,7 +395,7 @@ class TestAgent:
         with pytest.raises(InvalidAgentConfigException, match='top_p'):
             Agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 config={'top_p': 1.5},
@@ -398,7 +404,7 @@ class TestAgent:
     def test_agent_with_multiple_configs(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'temperature': 0.8, 'max_tokens': 500, 'top_p': 0.95},
@@ -413,7 +419,7 @@ class TestAgent:
     def test_agent_with_partial_config(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'temperature': 0.5},
@@ -426,7 +432,7 @@ class TestAgent:
     def test_agent_config_with_none_values(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'temperature': None, 'max_tokens': None},
@@ -439,7 +445,7 @@ class TestAgent:
     def test_agent_provider_case_insensitive(self):
         agent = Agent(
             provider='OpenAI',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -449,7 +455,7 @@ class TestAgent:
     def test_agent_with_boundary_temperature_values(self):
         agent_min = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'temperature': 0.0},
@@ -459,7 +465,7 @@ class TestAgent:
 
         agent_max = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'temperature': 2.0},
@@ -470,7 +476,7 @@ class TestAgent:
     def test_agent_with_boundary_top_p_values(self):
         agent_min = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'top_p': 0.0},
@@ -480,7 +486,7 @@ class TestAgent:
 
         agent_max = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'top_p': 1.0},
@@ -491,7 +497,7 @@ class TestAgent:
     def test_agent_with_minimum_valid_max_tokens(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'max_tokens': 1},
@@ -502,19 +508,19 @@ class TestAgent:
     def test_agent_with_none_optional_fields(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name=None,
             instructions=None,
         )
         assert agent.name is None
         assert agent.instructions is None
         assert agent.provider == 'openai'
-        assert agent.model == 'gpt-5-nano'
+        assert agent.model == OPENAI_MODEL_NANO
 
     def test_agent_config_with_list_values(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'temperature': 0.5},
@@ -525,7 +531,7 @@ class TestAgent:
     def test_agent_config_with_boolean_values(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'temperature': 0.5},
@@ -537,7 +543,7 @@ class TestAgent:
         with pytest.raises(InvalidAgentConfigException, match='top_p'):
             Agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 config={'top_p': -0.1},
@@ -547,7 +553,7 @@ class TestAgent:
         with pytest.raises(InvalidAgentConfigException, match='top_p'):
             Agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 config={'top_p': 1.1},
@@ -557,7 +563,7 @@ class TestAgent:
         with pytest.raises(InvalidAgentConfigException, match='max_tokens'):
             Agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 config={'max_tokens': '100'},
@@ -566,7 +572,7 @@ class TestAgent:
     def test_agent_config_with_mixed_valid_configs(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={
@@ -583,7 +589,7 @@ class TestAgent:
     def test_agent_config_scenarios_think_accepts_boolean_and_string(self):
         agent_bool = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'think': True},
@@ -593,7 +599,7 @@ class TestAgent:
 
         agent_str = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'think': 'medium'},
@@ -605,7 +611,7 @@ class TestAgent:
         with pytest.raises(InvalidAgentConfigException, match='think'):
             Agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 config={'think': 123},
@@ -614,7 +620,7 @@ class TestAgent:
     def test_agent_config_scenarios_top_k_accepts_positive_integer(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'top_k': 25},
@@ -626,7 +632,7 @@ class TestAgent:
         with pytest.raises(InvalidAgentConfigException, match='top_k'):
             Agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 config={'top_k': 0},
@@ -635,7 +641,7 @@ class TestAgent:
     def test_agent_config_scenarios_stream_accepts_boolean(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             config={'stream': True},
@@ -647,7 +653,7 @@ class TestAgent:
         with pytest.raises(InvalidAgentConfigException, match='stream'):
             Agent(
                 provider='openai',
-                model='gpt-5-nano',
+                model=OPENAI_MODEL_NANO,
                 name='Test',
                 instructions='Test',
                 config={'stream': 'yes'},
@@ -656,7 +662,7 @@ class TestAgent:
     def test_agent_history_initial_state(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -667,7 +673,7 @@ class TestAgent:
     def test_agent_add_messages_alternating(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -689,7 +695,7 @@ class TestAgentToolMessages:
     def test_add_tool_message(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -704,7 +710,7 @@ class TestAgentToolMessages:
     def test_add_multiple_tool_messages(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -721,7 +727,7 @@ class TestAgentToolMessages:
     def test_add_tool_message_with_json_content(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -736,7 +742,7 @@ class TestAgentToolMessages:
     def test_add_tool_message_with_error_content(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -751,7 +757,7 @@ class TestAgentToolMessages:
     def test_conversation_with_tool_messages(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -771,7 +777,7 @@ class TestAgentToolMessages:
     def test_tool_message_in_history_respects_max_size(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -789,7 +795,7 @@ class TestAgentToolMessages:
     def test_add_tool_message_with_special_characters(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -804,7 +810,7 @@ class TestAgentToolMessages:
     def test_add_tool_message_with_multiline_content(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -832,7 +838,7 @@ class TestAgentWithTools:
         tool = MockTool()
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[tool],
@@ -845,7 +851,7 @@ class TestAgentWithTools:
     def test_agent_without_tools(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
         )
@@ -855,7 +861,7 @@ class TestAgentWithTools:
     def test_agent_with_empty_tools_list(self):
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=[],
@@ -884,7 +890,7 @@ class TestAgentWithTools:
         tools: list[BaseTool] = [Tool1(), Tool2()]
         agent = Agent(
             provider='openai',
-            model='gpt-5-nano',
+            model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
             tools=tools,

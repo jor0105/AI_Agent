@@ -8,6 +8,7 @@ from createagents.application.interfaces.chat_repository import (
 )
 from createagents.domain import ChatMetrics
 from createagents.domain.value_objects.base_tools import BaseTool
+from tests.test_constants import OPENAI_MODEL_MINI
 
 
 class TestToolForRepo(BaseTool):
@@ -67,7 +68,7 @@ class TestChatRepository:
         assert isinstance(repo, ChatRepository)
 
         result = await repo.chat(
-            model='gpt-4',
+            model=OPENAI_MODEL_MINI,
             instructions='Test',
             config={},
             tools=None,
@@ -178,7 +179,7 @@ class TestChatRepository:
         tool = TestToolForRepo()
 
         await repo.chat(
-            model='gpt-4',
+            model=OPENAI_MODEL_MINI,
             instructions='You are helpful',
             config={'temperature': 0.7},
             tools=[tool],
@@ -187,7 +188,7 @@ class TestChatRepository:
         )
 
         assert repo.last_call is not None
-        assert repo.last_call['model'] == 'gpt-4'
+        assert repo.last_call['model'] == OPENAI_MODEL_MINI
         assert repo.last_call['instructions'] == 'You are helpful'
         assert repo.last_call['config'] == {'temperature': 0.7}
         assert len(repo.last_call['tools']) == 1
