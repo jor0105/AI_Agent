@@ -12,31 +12,29 @@
         <meta name="author" content="Jordan Estralioto">
       
       
-        <link rel="canonical" href="https://jordanestralioto.github.io/Create-Agents-AI/user-guide/cli-usage/">
+        <link rel="canonical" href="https://jordanestralioto.github.io/Create-Agents-AI/en/reference/commands/">
       
       
-        <link rel="prev" href="../basic-usage-user/">
+        <link rel="prev" href="../tools/">
       
-      
-        <link rel="next" href="../streaming-guide/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
-        <title>Uso da CLI - Create Agents AI</title>
+        <title>CLI Commands - Create Agents AI</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -57,9 +55,9 @@
     
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
     
-      <link rel="stylesheet" href="../../assets/stylesheets/custom.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/custom.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -84,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#guia-de-uso-da-cli-interativa" class="md-skip">
+        <a href="#cli-commands-reference" class="md-skip">
           Ir para o conteúdo
         </a>
       
@@ -98,7 +96,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
-    <a href="../.." title="Create Agents AI" class="md-header__button md-logo" aria-label="Create Agents AI" data-md-component="logo">
+    <a href="../../.." title="Create Agents AI" class="md-header__button md-logo" aria-label="Create Agents AI" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -118,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Uso da CLI
+              CLI Commands
             
           </span>
         </div>
@@ -234,13 +232,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../.." class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../.." class="md-tabs__link">
           
   
   
@@ -256,11 +252,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../en/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../" class="md-tabs__link">
           
   
   
@@ -296,7 +294,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navegação" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Create Agents AI" class="md-nav__button md-logo" aria-label="Create Agents AI" data-md-component="logo">
+    <a href="../../.." title="Create Agents AI" class="md-nav__button md-logo" aria-label="Create Agents AI" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -323,31 +321,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
         
           
-          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
             
   
   
@@ -365,7 +358,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -383,7 +376,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -408,31 +401,26 @@
                 
   
   
-    
   
   
-  
     
     
     
     
       
       
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_2" >
         
           
-          
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_2" checked>
-        
-          
-          <label class="md-nav__link" for="__nav_1_2" id="__nav_1_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_1_2" id="__nav_1_2_label" tabindex="0">
             
   
   
@@ -450,7 +438,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_1_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -468,7 +456,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../installation-user/" class="md-nav__link">
+      <a href="../../../user-guide/installation-user/" class="md-nav__link">
         
   
   
@@ -496,7 +484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../basic-usage-user/" class="md-nav__link">
+      <a href="../../../user-guide/basic-usage-user/" class="md-nav__link">
         
   
   
@@ -521,37 +509,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Uso da CLI
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../user-guide/cli-usage/" class="md-nav__link">
         
   
   
@@ -567,331 +528,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Índice">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Índice
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#inicio-rapido" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🚀 Início Rápido
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#recursos" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ✨ Recursos
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#comandos-disponiveis" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        📋 Comandos Disponíveis
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="📋 Comandos Disponíveis">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#help-ajuda" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        /help - Ajuda
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#metrics-metricas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        /metrics - Métricas
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#configs-configuracoes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        /configs - Configurações
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tools-ferramentas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        /tools - Ferramentas
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#clear-limpar-historico" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        /clear - Limpar Histórico
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#chat-normal" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Chat Normal
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#exit-quit-sair" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        exit / quit - Sair
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#interface-e-formatacao" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🎨 Interface e Formatação
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🎨 Interface e Formatação">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#cores-e-destaque" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cores e Destaque
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#formatacao-markdown-no-terminal" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Formatação Markdown no Terminal
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#indicadores-de-status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Indicadores de Status
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#exemplos-de-uso" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        💡 Exemplos de Uso
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="💡 Exemplos de Uso">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#exemplo-1-assistente-de-programacao" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Exemplo 1: Assistente de Programação
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#exemplo-2-agente-com-ferramentas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Exemplo 2: Agente com Ferramentas
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#exemplo-3-ollama-local" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Exemplo 3: Ollama Local
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#personalizacao" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🔧 Personalização
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🔧 Personalização">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#usando-a-cli-programaticamente" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Usando a CLI Programaticamente
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🐛 Troubleshooting
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🐛 Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#cli-nao-inicia" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CLI não inicia
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#caracteres-especiais-nao-aparecem" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Caracteres especiais não aparecem
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#streaming-muito-lento" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Streaming muito lento
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#proximos-passos" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        📚 Próximos Passos
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -904,7 +540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../streaming-guide/" class="md-nav__link">
+      <a href="../../../user-guide/streaming-guide/" class="md-nav__link">
         
   
   
@@ -932,7 +568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples-user/" class="md-nav__link">
+      <a href="../../../user-guide/examples-user/" class="md-nav__link">
         
   
   
@@ -960,7 +596,758 @@
   
   
     <li class="md-nav__item">
-      <a href="../faq-user/" class="md-nav__link">
+      <a href="../../../user-guide/faq-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_3" id="__nav_1_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guia do Desenvolvedor
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guia do Desenvolvedor
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../dev-guide/architecture-developer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../dev-guide/cli-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../dev-guide/async-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guia Async
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../dev-guide/logging_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../dev-guide/technical-examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exemplos Técnicos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../dev-guide/contribute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Como Contribuir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_4" id="__nav_1_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Referência
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Referência
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/streaming-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API de Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/metrics-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API de Métricas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ferramentas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comandos CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    🇺🇸 English
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    🇺🇸 English
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/installation-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/basic-usage-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Basic Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/cli-usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/streaming-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/examples-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/faq-user/" class="md-nav__link">
         
   
   
@@ -1012,17 +1399,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
         
           
-          <label class="md-nav__link" for="__nav_1_3" id="__nav_1_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="">
             
   
   
   <span class="md-ellipsis">
     
   
-    Guia do Desenvolvedor
+    Developer Guide
   
 
     
@@ -1033,12 +1420,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_1_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Guia do Desenvolvedor
+    Developer Guide
   
 
           </label>
@@ -1058,7 +1445,7 @@
   <span class="md-ellipsis">
     
   
-    Arquitetura
+    Architecture
   
 
     
@@ -1086,7 +1473,7 @@
   <span class="md-ellipsis">
     
   
-    Arquitetura CLI
+    CLI Architecture
   
 
     
@@ -1114,7 +1501,7 @@
   <span class="md-ellipsis">
     
   
-    Guia Async
+    Async Guide
   
 
     
@@ -1170,752 +1557,6 @@
   <span class="md-ellipsis">
     
   
-    Exemplos Técnicos
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../dev-guide/contribute/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Como Contribuir
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-          
-          
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_4" >
-        
-          
-          <label class="md-nav__link" for="__nav_1_4" id="__nav_1_4_label" tabindex="">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Referência
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_1_4">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Referência
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../reference/api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API Reference
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../reference/streaming-api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API de Streaming
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../reference/metrics-api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API de Métricas
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../reference/tools/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Ferramentas
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../reference/commands/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Comandos CLI
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    🇺🇸 English
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    🇺🇸 English
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../en/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Home
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    User Guide
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    User Guide
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../en/user-guide/installation-user/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Installation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../en/user-guide/basic-usage-user/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Basic Usage
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../en/user-guide/cli-usage/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    CLI Usage
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../en/user-guide/streaming-guide/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Streaming Guide
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../en/user-guide/examples-user/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Examples
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../en/user-guide/faq-user/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    FAQ
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Developer Guide
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2_3">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Developer Guide
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../en/dev-guide/architecture-developer/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Architecture
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../en/dev-guide/cli-architecture/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    CLI Architecture
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../en/dev-guide/async-guide/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Async Guide
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../en/dev-guide/logging_guide/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Logging
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../en/dev-guide/technical-examples/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
     Technical Examples
   
 
@@ -1937,7 +1578,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../en/dev-guide/contribute/" class="md-nav__link">
+      <a href="../../dev-guide/contribute/" class="md-nav__link">
         
   
   
@@ -1970,26 +1611,31 @@
                 
   
   
+    
   
   
+  
     
     
     
     
       
       
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
         
           
-          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="">
             
   
   
@@ -2007,7 +1653,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2025,7 +1671,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../en/reference/api/" class="md-nav__link">
+      <a href="../api/" class="md-nav__link">
         
   
   
@@ -2053,7 +1699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../en/reference/streaming-api/" class="md-nav__link">
+      <a href="../streaming-api/" class="md-nav__link">
         
   
   
@@ -2081,7 +1727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../en/reference/metrics-api/" class="md-nav__link">
+      <a href="../metrics-api/" class="md-nav__link">
         
   
   
@@ -2109,7 +1755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../en/reference/tools/" class="md-nav__link">
+      <a href="../tools/" class="md-nav__link">
         
   
   
@@ -2134,10 +1780,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../en/reference/commands/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Commands
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2153,6 +1826,264 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📋 Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#detailed-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔧 Detailed Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🔧 Detailed Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#help-help" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /help - Help
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metrics-performance-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /metrics - Performance Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configs-agent-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /configs - Agent Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tools-available-tools-catalog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /tools - Available Tools Catalog
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clear-clear-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /clear - Clear History
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chat-default-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chat (Default Command)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exit-quit-exit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        exit / quit - Exit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#colors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Colors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status-indicators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status Indicators
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#command-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔄 Command Flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        💡 Usage Scenarios
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="💡 Usage Scenarios">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#typical-session-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typical Session Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debugging-session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debugging Session
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🐛 Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🐛 Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#command-not-recognized" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Not Recognized
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#empty-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Empty Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clear-not-working" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clear Not Working
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📚 See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2193,40 +2124,66 @@
   
 
 
-<h1 id="guia-de-uso-da-cli-interativa">Guia de Uso da CLI Interativa<a class="headerlink" href="#guia-de-uso-da-cli-interativa" title="Link para esta seção">&para;</a></h1>
-<p>A CLI (Command-Line Interface) do CreateAgents AI oferece uma interface interativa profissional para conversar com seus agentes de IA.</p>
+<h1 id="cli-commands-reference">CLI Commands Reference<a class="headerlink" href="#cli-commands-reference" title="Link para esta seção">&para;</a></h1>
+<p>Complete reference for all commands supported in the CreateAgents AI interactive terminal interface.</p>
 <hr />
-<h2 id="inicio-rapido">🚀 Início Rápido<a class="headerlink" href="#inicio-rapido" title="Link para esta seção">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">createagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CreateAgent</span>
-
-<span class="c1"># Criar agente</span>
-<span class="n">agent</span> <span class="o">=</span> <span class="n">CreateAgent</span><span class="p">(</span>
-    <span class="n">provider</span><span class="o">=</span><span class="s1">'openai'</span><span class="p">,</span>
-    <span class="n">model</span><span class="o">=</span><span class="s1">'YOUR_MODEL'</span><span class="p">,</span>
-    <span class="n">name</span><span class="o">=</span><span class="s1">'Assistente'</span><span class="p">,</span>
-    <span class="n">instructions</span><span class="o">=</span><span class="s1">'Você é um assistente prestativo'</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="c1"># Iniciar CLI interativa</span>
-<span class="n">agent</span><span class="o">.</span><span class="n">start_cli</span><span class="p">()</span>
-</code></pre></div>
+<h2 id="overview">📋 Overview<a class="headerlink" href="#overview" title="Link para esta seção">&para;</a></h2>
+<p>The interactive CLI provides <strong>7 built-in commands</strong> for controlling agent state, inspecting performance, and configuring sessions:</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Aliases</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/help</code></td>
+<td><code>/help</code>, <code>help</code></td>
+<td>Displays available commands and help</td>
+</tr>
+<tr>
+<td><code>/metrics</code></td>
+<td><code>/metrics</code>, <code>get_metrics</code></td>
+<td>Shows performance metrics table</td>
+</tr>
+<tr>
+<td><code>/configs</code></td>
+<td><code>/configs</code>, <code>get_configs</code></td>
+<td>Displays current agent settings</td>
+</tr>
+<tr>
+<td><code>/tools</code></td>
+<td><code>/tools</code>, <code>get_tools</code></td>
+<td>Lists available tools catalog</td>
+</tr>
+<tr>
+<td><code>/clear</code></td>
+<td><code>/clear</code>, <code>clear_history</code></td>
+<td>Clears conversation history</td>
+</tr>
+<tr>
+<td><strong>Chat</strong></td>
+<td><em>(any text)</em></td>
+<td>Dispatches message to agent (default fallback)</td>
+</tr>
+<tr>
+<td><code>exit/quit</code></td>
+<td><code>exit</code>, <code>quit</code></td>
+<td>Terminates the CLI session</td>
+</tr>
+</tbody>
+</table>
 <hr />
-<h2 id="recursos">✨ Recursos<a class="headerlink" href="#recursos" title="Link para esta seção">&para;</a></h2>
-<ul>
-<li><strong>🎨 Interface Formatada</strong>: Renderização ANSI de elementos Markdown (cabeçalhos, negrito, itálico, listas e tabelas)</li>
-<li><strong>⚡ Suporte a Streaming</strong>: Respostas exibidas token a token quando <code>config={'stream': True}</code> está ativo</li>
-<li><strong>🎯 Comandos Integrados</strong>: 5 comandos úteis (<code>/help</code>, <code>/metrics</code>, <code>/configs</code>, <code>/tools</code>, <code>/clear</code>) e comandos de saída (<code>exit</code>/<code>quit</code>)</li>
-<li><strong>🔧 Indicadores de Status</strong>: Exibe <code>🤖 AI is thinking...</code> durante chamadas e processamento</li>
-<li><strong>📊 Métricas da Sessão</strong>: Visualize a tabela de métricas acumuladas via <code>/metrics</code></li>
-</ul>
-<hr />
-<h2 id="comandos-disponiveis">📋 Comandos Disponíveis<a class="headerlink" href="#comandos-disponiveis" title="Link para esta seção">&para;</a></h2>
-<h3 id="help-ajuda"><code>/help</code> - Ajuda<a class="headerlink" href="#help-ajuda" title="Link para esta seção">&para;</a></h3>
-<p>Exibe a lista de comandos disponíveis e instruções de uso.</p>
-<div class="highlight"><pre><span></span><code>Você: /help
-</code></pre></div>
+<h2 id="detailed-commands">🔧 Detailed Commands<a class="headerlink" href="#detailed-commands" title="Link para esta seção">&para;</a></h2>
+<h3 id="help-help"><code>/help</code> - Help<a class="headerlink" href="#help-help" title="Link para esta seção">&para;</a></h3>
+<p><strong>Description</strong>: Displays list of available commands and usage instructions.</p>
 <p><strong>Aliases</strong>: <code>/help</code>, <code>help</code></p>
-<p><strong>Exemplo de saída</strong>:</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight"><pre><span></span><code>You: /help
+</code></pre></div>
+<p><strong>Output</strong>:</p>
 <div class="highlight"><pre><span></span><code>Available Commands:
 
 • /metrics  → Show agent performance metrics and statistics
@@ -2237,221 +2194,239 @@
 
 Type 'exit' or 'quit' to close the application.
 </code></pre></div>
-<h3 id="metrics-metricas"><code>/metrics</code> - Métricas<a class="headerlink" href="#metrics-metricas" title="Link para esta seção">&para;</a></h3>
-<p>Mostra estatísticas de performance das interações com o agente em formato tabular:</p>
-<ul>
-<li>Modelo utilizado</li>
-<li>Duração / Latência em segundos</li>
-<li>Tokens de entrada (Prompt), saída (Completion) e total</li>
-</ul>
-<div class="highlight"><pre><span></span><code>Você: /metrics
-</code></pre></div>
+<hr />
+<h3 id="metrics-performance-metrics"><code>/metrics</code> - Performance Metrics<a class="headerlink" href="#metrics-performance-metrics" title="Link para esta seção">&para;</a></h3>
+<p><strong>Description</strong>: Shows detailed statistics of all calls accumulated up to the query time formatted as a Markdown table.</p>
 <p><strong>Aliases</strong>: <code>/metrics</code>, <code>get_metrics</code></p>
-<p><strong>Exemplo de saída (ilustrativo)</strong>:</p>
-<div class="highlight"><pre><span></span><code>## Performance Metrics
+<p><strong>Usage</strong>:</p>
+<div class="highlight"><pre><span></span><code>You: /metrics
+</code></pre></div>
+<p><strong>Output (Illustrative)</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="gu">## Performance Metrics</span>
 
 | Model | Duration | Tokens (In/Out/Total) |
-|-------|----------|-----------------------|
-| YOUR_MODEL | 1.25s    | 45 / 105 / 150        |
-| YOUR_MODEL | 0.98s    | 110 / 120 / 230       |
+|---|---|---|
+| YOUR_MODEL | 1.23s | 100 / 150 / 250 |
+| YOUR_MODEL | 0.98s | 80 / 100 / 180 |
 </code></pre></div>
-<h3 id="configs-configuracoes"><code>/configs</code> - Configurações<a class="headerlink" href="#configs-configuracoes" title="Link para esta seção">&para;</a></h3>
-<p>Mostra as configurações atuais do agente:</p>
+<p><strong>Displayed Fields</strong>:</p>
 <ul>
-<li>Nome</li>
-<li>Provider e modelo</li>
-<li>Instruções</li>
-<li>Parâmetros extras de configuração</li>
-<li>Ferramentas configuradas na instância</li>
-<li>Histórico com prévia de mensagens e contagem</li>
+<li>Model identifier</li>
+<li>Call duration/latency (in seconds)</li>
+<li>Token breakdown: Prompt (In) / Completion (Out) / Total</li>
 </ul>
-<div class="highlight"><pre><span></span><code>Você: /configs
-</code></pre></div>
+<hr />
+<h3 id="configs-agent-configuration"><code>/configs</code> - Agent Configuration<a class="headerlink" href="#configs-agent-configuration" title="Link para esta seção">&para;</a></h3>
+<p><strong>Description</strong>: Displays all current configuration parameters of the agent formatted in Markdown.</p>
 <p><strong>Aliases</strong>: <code>/configs</code>, <code>get_configs</code></p>
-<p><strong>Exemplo de saída (ilustrativo)</strong>:</p>
-<div class="highlight"><pre><span></span><code>## Agent Configuration
+<p><strong>Usage</strong>:</p>
+<div class="highlight"><pre><span></span><code>You: /configs
+</code></pre></div>
+<p><strong>Output (Illustrative)</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="gu">## Agent Configuration</span>
 
-**provider:** openai
-**model:** YOUR_MODEL
-**name:** None
-**instructions:** None
-**config:** {}
-**tools:** None
-**history:** 2 messages in history
-
-  - **user:** Olá!
-  - **assistant:** Olá! Como posso ajudar você hoje?
-
-**history_max_size:** 10
+<span class="gs">**provider:**</span> openai
+<span class="gs">**model:**</span> YOUR_MODEL
+<span class="gs">**name:**</span> Code Assistant
+<span class="gs">**instructions:**</span> You are a Python expert.
+<span class="gs">**config:**</span> {'temperature': 0.7, 'max_tokens': 2000}
+<span class="gs">**tools:**</span> None
+<span class="gs">**history:**</span> 2 messages in history
+<span class="w">  </span><span class="k">-</span><span class="w"> </span><span class="gs">**user**</span>: Hello
+<span class="w">  </span><span class="k">-</span><span class="w"> </span><span class="gs">**assistant**</span>: Hello! How can I help you today?
+<span class="gs">**history_max_size:**</span> 10
 </code></pre></div>
 <blockquote>
-<p>💡 <strong>Nota</strong>: <code>/configs</code> exibe as ferramentas <strong>configuradas na instância atual</strong> (<code>tools: None</code> por padrão). Se você instanciar o agente com <code>tools=['currentdate']</code>, elas serão listadas ali. Para consultar o <strong>catálogo de ferramentas disponíveis no ambiente</strong>, utilize o comando <code>/tools</code>.</p>
+<p><strong>Note:</strong> If tools were passed during agent instantiation (<code>tools=['currentdate']</code>), the <code>tools</code> key lists their names. Optional file tools (such as <code>readlocalfile</code>) require the <code>[file-tools]</code> extra.</p>
 </blockquote>
-<h3 id="tools-ferramentas"><code>/tools</code> - Ferramentas<a class="headerlink" href="#tools-ferramentas" title="Link para esta seção">&para;</a></h3>
-<p>Lista todas as ferramentas disponíveis no ambiente (sistema e customizadas) com suas descrições.</p>
-<div class="highlight"><pre><span></span><code>Você: /tools
-</code></pre></div>
+<p><strong>Displayed Fields</strong>:</p>
+<ul>
+<li>Agent name</li>
+<li>Provider and model</li>
+<li>System instructions</li>
+<li>Hyperparameters (<code>temperature</code>, <code>max_tokens</code>, etc.)</li>
+<li>Active configured tools on this agent instance (<code>tools</code>)</li>
+<li>Conversation history preview and count</li>
+<li>Maximum history size</li>
+</ul>
+<hr />
+<h3 id="tools-available-tools-catalog"><code>/tools</code> - Available Tools Catalog<a class="headerlink" href="#tools-available-tools-catalog" title="Link para esta seção">&para;</a></h3>
+<p><strong>Description</strong>: Executes <code>agent.get_all_available_tools()</code> and lists the complete catalog of tools available to this agent in the environment (system built-in tools plus custom tools attached to this instance). Note that <code>ReadLocalFileTool</code> requires the <code>[file-tools]</code> extra. To inspect the active tools enabled on the current instance, use <code>/configs</code>.</p>
 <p><strong>Aliases</strong>: <code>/tools</code>, <code>get_tools</code></p>
-<p><strong>Exemplo de saída (Instalação básica):</strong></p>
-<div class="highlight"><pre><span></span><code>## Available Tools
+<p><strong>Usage</strong>:</p>
+<div class="highlight"><pre><span></span><code>You: /tools
+</code></pre></div>
+<p><strong>Output (Basic installation):</strong></p>
+<div class="highlight"><pre><span></span><code><span class="gu">## Available Tools</span>
 
-**currentdate**
+<span class="gs">**currentdate**</span>
 Get the current date and/or time in a specific timezone. Essential for answering 'What time is it?' or 'What day is it?' questions.
 </code></pre></div>
-<p><strong>Exemplo de saída (Com o extra <code>[file-tools]</code> instalado):</strong></p>
-<div class="highlight"><pre><span></span><code>## Available Tools
+<p><strong>Output (With <code>[file-tools]</code> extra installed):</strong></p>
+<div class="highlight"><pre><span></span><code><span class="gu">## Available Tools</span>
 
-**currentdate**
+<span class="gs">**currentdate**</span>
 Get the current date and/or time in a specific timezone. Essential for answering 'What time is it?' or 'What day is it?' questions.
 
-**readlocalfile**
+<span class="gs">**readlocalfile**</span>
 Use this tool to read local files from the system. Supports text files (txt, md, py, etc.), CSV, Excel, PDF and Parquet formats. The tool validates file size in tokens to prevent overload. Input must include the absolute or relative file path and optionally the maximum number of tokens allowed (default: 30000).
 </code></pre></div>
-<h3 id="clear-limpar-historico"><code>/clear</code> - Limpar Histórico<a class="headerlink" href="#clear-limpar-historico" title="Link para esta seção">&para;</a></h3>
-<p>Limpa todo o histórico de conversação do agente.</p>
-<div class="highlight"><pre><span></span><code>Você: /clear
-</code></pre></div>
+<p><strong>Displayed Fields</strong>:</p>
+<ul>
+<li>Tool name in bold</li>
+<li>Full description registered in the tools catalog</li>
+</ul>
+<hr />
+<h3 id="clear-clear-history"><code>/clear</code> - Clear History<a class="headerlink" href="#clear-clear-history" title="Link para esta seção">&para;</a></h3>
+<p><strong>Description</strong>: Wipes the entire conversation history buffer, starting a fresh contextual session.</p>
 <p><strong>Aliases</strong>: <code>/clear</code>, <code>clear_history</code></p>
-<p><strong>Exemplo de saída</strong>:</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight"><pre><span></span><code>You: /clear
+</code></pre></div>
+<p><strong>Output</strong>:</p>
 <div class="highlight"><pre><span></span><code>Chat history cleared successfully!
 </code></pre></div>
-<h3 id="chat-normal">Chat Normal<a class="headerlink" href="#chat-normal" title="Link para esta seção">&para;</a></h3>
-<p>Qualquer texto que não seja um comando é enviado como mensagem ao agente.</p>
-<div class="highlight"><pre><span></span><code>Você: Explique Clean Architecture
-</code></pre></div>
-<p>Se o agente for configurado com <code>config={'stream': True}</code>, a resposta é transmitida em tempo real (token a token). Sem a opção de streaming, a resposta completa é renderizada após o término do processamento.</p>
-<h3 id="exit-quit-sair"><code>exit</code> / <code>quit</code> - Sair<a class="headerlink" href="#exit-quit-sair" title="Link para esta seção">&para;</a></h3>
-<p>Encerra a aplicação CLI.</p>
-<div class="highlight"><pre><span></span><code>Você: exit
-</code></pre></div>
-<p>ou</p>
-<div class="highlight"><pre><span></span><code>Você: quit
-</code></pre></div>
+<p><strong>Effects</strong>:</p>
+<ul>
+<li>Clears message history buffer</li>
+<li>Preserves agent configuration and tools</li>
+<li>Next message starts from a clean context</li>
+</ul>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li>Changing topics completely</li>
+<li>Resetting conversation after an erroneous turn</li>
+<li>Freeing memory in long sessions</li>
+</ul>
 <hr />
-<h2 id="interface-e-formatacao">🎨 Interface e Formatação<a class="headerlink" href="#interface-e-formatacao" title="Link para esta seção">&para;</a></h2>
-<h3 id="cores-e-destaque">Cores e Destaque<a class="headerlink" href="#cores-e-destaque" title="Link para esta seção">&para;</a></h3>
-<p>A CLI usa o seguinte esquema de cores ANSI no terminal:</p>
+<h3 id="chat-default-command">Chat (Default Command)<a class="headerlink" href="#chat-default-command" title="Link para esta seção">&para;</a></h3>
+<p><strong>Description</strong>: Dispatches input to the agent. Any text that is not a special command is routed as a user message.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight"><pre><span></span><code>You: Explain Clean Architecture
+</code></pre></div>
+<p><strong>Output</strong>:</p>
+<div class="highlight"><pre><span></span><code>Clean Architecture is a software architectural pattern that separates...
+</code></pre></div>
+<p><em>(When initialized with <code>config={'stream': True}</code>, responses stream progressively in real time; otherwise, the full message renders upon completion).</em></p>
+<p><strong>Behavior</strong>:</p>
 <ul>
-<li><strong>Mensagens do Usuário</strong>: Caixa alinhada à direita em Azul (<code>ColorScheme.BLUE</code>)</li>
-<li><strong>Respostas e Indicador de Processamento da IA</strong>: Caixa alinhada à esquerda e texto de thinking em Roxo (<code>ColorScheme.PURPLE</code>)</li>
-<li><strong>Mensagens de Sistema, Menus e Comandos</strong>: Cyan (<code>ColorScheme.CYAN</code>)</li>
-<li><strong>Marcadores de Sucesso</strong>: Verde (<code>ColorScheme.GREEN</code>)</li>
-<li><strong>Avisos e Interrupções de Sessão</strong>: Amarelo (<code>ColorScheme.YELLOW</code>)</li>
-<li><strong>Erros do Sistema</strong>: Vermelho (<code>ColorScheme.RED</code>)</li>
+<li>Routes message through <code>CreateAgent.chat()</code> (with streaming if configured)</li>
+<li>Executes tool calls automatically if requested by the LLM</li>
+<li>Retains conversational context in history</li>
+<li>Appends interaction turn to conversation history</li>
 </ul>
-<h3 id="formatacao-markdown-no-terminal">Formatação Markdown no Terminal<a class="headerlink" href="#formatacao-markdown-no-terminal" title="Link para esta seção">&para;</a></h3>
-<p>O <code>MarkdownTerminalFormatter</code> converte elementos Markdown para visualização no terminal (não inclui syntax highlighting de código):</p>
+<hr />
+<h3 id="exit-quit-exit"><code>exit</code> / <code>quit</code> - Exit<a class="headerlink" href="#exit-quit-exit" title="Link para esta seção">&para;</a></h3>
+<p><strong>Description</strong>: Terminates the CLI session.</p>
+<p><strong>Aliases</strong>: <code>exit</code>, <code>quit</code></p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight"><pre><span></span><code>You: exit
+</code></pre></div>
+<p>or</p>
+<div class="highlight"><pre><span></span><code>You: quit
+</code></pre></div>
+<p><strong>Output</strong>:</p>
+<div class="highlight"><pre><span></span><code>👋 Goodbye! Thanks for using AI Chat System.
+</code></pre></div>
+<p><strong>Effects</strong>:</p>
 <ul>
-<li><strong>Cabeçalhos</strong>: Níveis <code>#</code> e <code>##</code> em azul com barra de destaque; <code>###</code> e <code>####</code> em roxo; <code>#####</code> e <code>######</code> em cyan</li>
-<li><strong>Negrito</strong>: <code>**texto**</code> ou <code>__texto__</code> com estilo ANSI bold</li>
-<li><strong>Itálico</strong>: <code>*texto*</code> ou <code>_texto_</code> com estilo ANSI italic</li>
-<li><strong>Listas não-ordenadas</strong>: Marcadores <code>•</code> em verde</li>
-<li><strong>Listas ordenadas</strong>: Setas <code>→</code> em azul</li>
-<li><strong>Tabelas Markdown</strong>: Formatadas automaticamente como pares rótulo-valor ou colunas com separadores</li>
-<li><strong>Sanitização de texto</strong>: Sanitização automática de caracteres especiais para evitar travamento de renderização</li>
+<li>Terminates the CLI loop</li>
+<li>Exits the application gracefully</li>
+<li>History buffer is discarded (in-memory temporary session)</li>
 </ul>
-<h3 id="indicadores-de-status">Indicadores de Status<a class="headerlink" href="#indicadores-de-status" title="Link para esta seção">&para;</a></h3>
-<p>Durante o processamento inicial e execução de ferramentas:</p>
+<hr />
+<h3 id="colors">Colors<a class="headerlink" href="#colors" title="Link para esta seção">&para;</a></h3>
+<p>The CLI uses the following ANSI terminal palette:</p>
+<ul>
+<li><strong>User Messages</strong>: Right-aligned box in Blue (<code>ColorScheme.BLUE</code>)</li>
+<li><strong>AI Responses &amp; Thinking Indicator</strong>: Left-aligned box and thinking status in Purple (<code>ColorScheme.PURPLE</code>)</li>
+<li><strong>System Messages, Menus &amp; Commands</strong>: Cyan (<code>ColorScheme.CYAN</code>)</li>
+<li><strong>Success Markers</strong>: Green (<code>ColorScheme.GREEN</code>)</li>
+<li><strong>System Warnings / Interrupts</strong>: Yellow (<code>ColorScheme.YELLOW</code>)</li>
+<li><strong>Errors</strong>: Red (<code>ColorScheme.RED</code>)</li>
+</ul>
+<h3 id="status-indicators">Status Indicators<a class="headerlink" href="#status-indicators" title="Link para esta seção">&para;</a></h3>
+<p>During processing and tool execution turns:</p>
 <div class="highlight"><pre><span></span><code>🤖 AI is thinking...
 </code></pre></div>
-<p>Se o streaming estiver ativo (<code>config={'stream': True}</code>), o indicador é limpo assim que o primeiro token chega e os fragmentos de texto fluem na tela.</p>
 <hr />
-<h2 id="exemplos-de-uso">💡 Exemplos de Uso<a class="headerlink" href="#exemplos-de-uso" title="Link para esta seção">&para;</a></h2>
-<h3 id="exemplo-1-assistente-de-programacao">Exemplo 1: Assistente de Programação<a class="headerlink" href="#exemplo-1-assistente-de-programacao" title="Link para esta seção">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">createagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CreateAgent</span>
-
-<span class="n">code_assistant</span> <span class="o">=</span> <span class="n">CreateAgent</span><span class="p">(</span>
-    <span class="n">provider</span><span class="o">=</span><span class="s1">'openai'</span><span class="p">,</span>
-    <span class="n">model</span><span class="o">=</span><span class="s1">'YOUR_MODEL'</span><span class="p">,</span>
-    <span class="n">name</span><span class="o">=</span><span class="s1">'Code Expert'</span><span class="p">,</span>
-    <span class="n">instructions</span><span class="o">=</span><span class="s1">'Você é um especialista em Python. Sempre forneça exemplos.'</span><span class="p">,</span>
-    <span class="n">config</span><span class="o">=</span><span class="p">{</span><span class="s1">'stream'</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>  <span class="c1"># Habilita streaming no chat</span>
-<span class="p">)</span>
-
-<span class="c1"># Iniciar CLI interativa</span>
-<span class="n">code_assistant</span><span class="o">.</span><span class="n">start_cli</span><span class="p">()</span>
-</code></pre></div>
-<p><strong>Interação</strong>:</p>
-<div class="highlight"><pre><span></span><code>Você: Como criar um decorator em Python?
-[Resposta em streaming...]
-
-Você: /metrics
-[Exibe tabela com estatísticas acumuladas até o momento]
-
-Você: /clear
-[Limpa histórico para novo tópico]
-</code></pre></div>
-<h3 id="exemplo-2-agente-com-ferramentas">Exemplo 2: Agente com Ferramentas<a class="headerlink" href="#exemplo-2-agente-com-ferramentas" title="Link para esta seção">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">createagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CreateAgent</span>
-
-<span class="n">agent_with_tools</span> <span class="o">=</span> <span class="n">CreateAgent</span><span class="p">(</span>
-    <span class="n">provider</span><span class="o">=</span><span class="s1">'openai'</span><span class="p">,</span>
-    <span class="n">model</span><span class="o">=</span><span class="s1">'YOUR_MODEL'</span><span class="p">,</span>
-    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="s1">'currentdate'</span><span class="p">],</span>  <span class="c1"># 'readlocalfile' requer [file-tools]</span>
-<span class="p">)</span>
-
-<span class="c1"># Iniciar CLI</span>
-<span class="n">agent_with_tools</span><span class="o">.</span><span class="n">start_cli</span><span class="p">()</span>
-</code></pre></div>
-<p><strong>Interação</strong>:</p>
-<div class="highlight"><pre><span></span><code>Você: /tools
-[Lista ferramentas disponíveis]
-
-Você: Que dia é hoje?
-[Agente usa CurrentDateTool automaticamente]
-</code></pre></div>
-<h3 id="exemplo-3-ollama-local">Exemplo 3: Ollama Local<a class="headerlink" href="#exemplo-3-ollama-local" title="Link para esta seção">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">createagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CreateAgent</span>
-
-<span class="n">local_agent</span> <span class="o">=</span> <span class="n">CreateAgent</span><span class="p">(</span>
-    <span class="n">provider</span><span class="o">=</span><span class="s1">'ollama'</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">'YOUR_OLLAMA_MODEL'</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'Assistente Local'</span>
-<span class="p">)</span>
-
-<span class="c1"># Iniciar CLI</span>
-<span class="n">local_agent</span><span class="o">.</span><span class="n">start_cli</span><span class="p">()</span>
+<h2 id="command-flow">🔄 Command Flow<a class="headerlink" href="#command-flow" title="Link para esta seção">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>User Input
+  ↓
+CommandRegistry.find_handler()
+  ↓
+Is special command? → Yes → Specific handler (/help, /metrics, etc.)
+  ↓
+No
+  ↓
+ChatCommandHandler (default fallback)
+  ↓
+Streaming Response (or complete formatted response)
 </code></pre></div>
 <hr />
-<h2 id="personalizacao">🔧 Personalização<a class="headerlink" href="#personalizacao" title="Link para esta seção">&para;</a></h2>
-<h3 id="usando-a-cli-programaticamente">Usando a CLI Programaticamente<a class="headerlink" href="#usando-a-cli-programaticamente" title="Link para esta seção">&para;</a></h3>
-<p>A CLI é iniciada através do método <code>start_cli()</code> da facade <code>CreateAgent</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">createagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CreateAgent</span>
+<h2 id="usage-scenarios">💡 Usage Scenarios<a class="headerlink" href="#usage-scenarios" title="Link para esta seção">&para;</a></h2>
+<h3 id="typical-session-flow">Typical Session Flow<a class="headerlink" href="#typical-session-flow" title="Link para esta seção">&para;</a></h3>
+<div class="highlight"><pre><span></span><code># Launch CLI
+You: /help
+[View commands index]
 
-<span class="n">agent</span> <span class="o">=</span> <span class="n">CreateAgent</span><span class="p">(</span><span class="n">provider</span><span class="o">=</span><span class="s1">'openai'</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">'YOUR_MODEL'</span><span class="p">)</span>
-<span class="n">agent</span><span class="o">.</span><span class="n">start_cli</span><span class="p">()</span>  <span class="c1"># Inicia loop interativo</span>
+You: /tools
+[Verify registered tools]
+
+You: What day is today?
+[Agent uses CurrentDateTool and responds]
+
+You: /metrics
+[Inspect latency and token metrics]
+
+You: /configs
+[Review agent parameters]
+
+You: /clear
+[Reset context for new topic]
+
+You: Let's talk about Python typing
+[New conversation starts]
+
+You: exit
+[Exits CLI]
 </code></pre></div>
-<p>Internamente, este método:</p>
-<ol>
-<li>Importa <code>ChatCLIApplication</code> da camada de apresentação</li>
-<li>Instancia a aplicação CLI com o agente</li>
-<li>Executa o loop principal</li>
-</ol>
+<h3 id="debugging-session">Debugging Session<a class="headerlink" href="#debugging-session" title="Link para esta seção">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>You: [message to agent]
+[Response seems unexpected]
+
+You: /configs
+[Verify active prompt and parameters]
+
+You: /tools
+[Ensure correct tool is available]
+
+You: /metrics
+[Inspect latency and token consumption]
+
+You: /clear
+[Reset context and retry]
+</code></pre></div>
 <hr />
 <h2 id="troubleshooting">🐛 Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link para esta seção">&para;</a></h2>
-<h3 id="cli-nao-inicia">CLI não inicia<a class="headerlink" href="#cli-nao-inicia" title="Link para esta seção">&para;</a></h3>
-<p><strong>Problema</strong>: Erro ao chamar <code>agent.start_cli()</code></p>
-<p><strong>Solução</strong>: Certifique-se de que está na versão mais recente:</p>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>createagents
-</code></pre></div>
-<h3 id="caracteres-especiais-nao-aparecem">Caracteres especiais não aparecem<a class="headerlink" href="#caracteres-especiais-nao-aparecem" title="Link para esta seção">&para;</a></h3>
-<p><strong>Problema</strong>: Emojis ou caracteres Unicode não renderizam</p>
-<p><strong>Solução</strong>: Use um terminal com suporte UTF-8 (Windows Terminal, iTerm2, etc.)</p>
-<h3 id="streaming-muito-lento">Streaming muito lento<a class="headerlink" href="#streaming-muito-lento" title="Link para esta seção">&para;</a></h3>
-<p><strong>Problema</strong>: Tokens aparecem muito devagar</p>
-<p><strong>Solução</strong>:</p>
-<ol>
-<li>Verifique sua conexão de internet (para OpenAI)</li>
-<li>Para Ollama, verifique se o modelo está carregado</li>
-<li>Considere usar um modelo menor/mais rápido</li>
-</ol>
+<h3 id="command-not-recognized">Command Not Recognized<a class="headerlink" href="#command-not-recognized" title="Link para esta seção">&para;</a></h3>
+<p><strong>Problem</strong>: Misspelled command\<br />
+<strong>Solution</strong>: Run <code>/help</code> to see exact command names and aliases.</p>
+<h3 id="empty-metrics">Empty Metrics<a class="headerlink" href="#empty-metrics" title="Link para esta seção">&para;</a></h3>
+<p><strong>Problem</strong>: <code>/metrics</code> shows no entries\<br />
+<strong>Solution</strong>: Ensure you have executed at least one chat turn before requesting metrics.</p>
+<h3 id="clear-not-working">Clear Not Working<a class="headerlink" href="#clear-not-working" title="Link para esta seção">&para;</a></h3>
+<p><strong>Problem</strong>: History is not wiped\<br />
+<strong>Solution</strong>: Verify command spelling (<code>/clear</code>, not <code>/clean</code>).</p>
 <hr />
-<h2 id="proximos-passos">📚 Próximos Passos<a class="headerlink" href="#proximos-passos" title="Link para esta seção">&para;</a></h2>
+<h2 id="see-also">📚 See Also<a class="headerlink" href="#see-also" title="Link para esta seção">&para;</a></h2>
 <ul>
-<li><a href="../streaming-guide/">Guia de Streaming</a></li>
-<li><a href="../../dev-guide/cli-architecture/">Arquitetura CLI (Desenvolvedores)</a></li>
-<li><a href="../../reference/commands/">API Reference</a></li>
+<li><a href="../../user-guide/cli-usage/">CLI User Guide</a></li>
+<li><a href="../../dev-guide/cli-architecture/">CLI Architecture</a></li>
+<li><a href="../api/">API Reference</a></li>
 </ul>
 <hr />
-<p><strong>Versão:</strong> 0.3.0 | <strong>Atualização:</strong> 2026-08-27</p>
+<p><strong>Version:</strong> 0.3.0 | <strong>Updated:</strong> 2026-08-27</p>
 
 
 
@@ -2536,12 +2511,12 @@ Você: Que dia é hoje?
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate", "content.code.copy", "content.tabs.link", "header.autohide", "navigation.instant", "navigation.instant.progress", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow", "toc.integrate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "Mais 1 nesta p\u00e1gina", "search.result.more.other": "Mais # nesta p\u00e1gina", "search.result.none": "Nenhum resultado encontrado", "search.result.one": "1 resultado encontrado", "search.result.other": "# resultados encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.annotate", "content.code.copy", "content.tabs.link", "header.autohide", "navigation.instant", "navigation.instant.progress", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow", "toc.integrate"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "Mais 1 nesta p\u00e1gina", "search.result.more.other": "Mais # nesta p\u00e1gina", "search.result.none": "Nenhum resultado encontrado", "search.result.one": "1 resultado encontrado", "search.result.other": "# resultados encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
-        <script src="../../assets/javascripts/wide-toggle.js"></script>
+        <script src="../../../assets/javascripts/wide-toggle.js"></script>
       
     
   </body>

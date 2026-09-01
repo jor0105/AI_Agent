@@ -1,75 +1,147 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/dev-guide/architecture-developer/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/architecture-developer/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/dev-guide/async-guide/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/async-guide/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/dev-guide/cli-architecture/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/cli-architecture/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/dev-guide/contribute/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/contribute/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/dev-guide/logging_guide/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/logging_guide/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/dev-guide/technical-examples/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/dev-guide/technical-examples/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/reference/api/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/reference/commands/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/dev-guide/architecture-developer/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/reference/metrics-api/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/dev-guide/async-guide/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/reference/streaming-api/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/dev-guide/cli-architecture/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/reference/tools/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/dev-guide/contribute/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/user-guide/basic-usage-user/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/dev-guide/logging_guide/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/user-guide/cli-usage/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/dev-guide/technical-examples/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/user-guide/examples-user/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/reference/api/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/user-guide/faq-user/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/reference/commands/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/user-guide/installation-user/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/reference/metrics-api/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
     <url>
-         <loc>https://jor0105.github.io/Create-Agents-AI/user-guide/streaming-guide/</loc>
-         <lastmod>2025-12-02</lastmod>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/reference/streaming-api/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/reference/tools/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/user-guide/basic-usage-user/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/user-guide/cli-usage/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/user-guide/examples-user/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/user-guide/faq-user/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/user-guide/installation-user/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/en/user-guide/streaming-guide/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/reference/api/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/reference/commands/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/reference/metrics-api/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/reference/streaming-api/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/reference/tools/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/user-guide/basic-usage-user/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/user-guide/cli-usage/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/user-guide/examples-user/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/user-guide/faq-user/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/user-guide/installation-user/</loc>
+         <lastmod>2026-09-01</lastmod>
+    </url>
+    <url>
+         <loc>https://jordanestralioto.github.io/Create-Agents-AI/user-guide/streaming-guide/</loc>
+         <lastmod>2026-09-01</lastmod>
     </url>
 </urlset>
