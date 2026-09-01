@@ -17,6 +17,10 @@ from git_changes import (
     unified_diff,
     validated_revision_range,
 )
+from path_migrations import (
+    CaseOnlyTestRename,
+    find_case_only_test_renames,
+)
 
 STRICT_FOCUS_PATTERNS = (
     (
@@ -169,19 +173,30 @@ class _FileDiffState:
         self.has_inline_reduction_reason = False
         self.is_deleted = is_deleted
 
-    def evaluate(self, root: Path, policy_revision: str | None) -> list[str]:
+    def evaluate(
+        self,
+        root: Path,
+        policy_revision: str | None,
+        case_only_rename_paths: dict[str, CaseOnlyTestRename],
+    ) -> list[str]:
         """Return the accumulated integrity failures for this file."""
         if not self.current_file or not is_test_file(self.current_file):
             return []
         if self.is_deleted:
-            if is_test_deletion_approved(
-                self.current_file, root, policy_revision
-            ):
-                return []
-            return [
-                f'{self.current_file}: [TEST_DELETION] Test file deleted. '
-                'Stage an explicit reason in .test-deletions.json.'
-            ]
+            migration = case_only_rename_paths.get(self.current_file)
+            if migration is None:
+                if is_test_deletion_approved(
+                    self.current_file, root, policy_revision
+                ):
+                    return []
+                return [
+                    f'{self.current_file}: [TEST_DELETION] Test file deleted. '
+                    'Stage an explicit reason in .test-deletions.json.'
+                ]
+            self.added_assertions = migration.added_assertions
+            self.has_inline_reduction_reason = (
+                migration.has_assertion_reduction_reason
+            )
         if self.removed_assertions <= self.added_assertions:
             return []
         if self.has_inline_reduction_reason:
@@ -198,17 +213,18 @@ def _update_file_context(
     state: _FileDiffState,
     root: Path,
     policy_revision: str | None,
+    case_only_rename_paths: dict[str, CaseOnlyTestRename],
 ) -> list[str] | None:
     """Update file-level diff state, returning errors for a boundary line."""
     if line.startswith('--- a/'):
         state.previous_file = line[6:]
         return []
     if line.startswith('+++ b/'):
-        errors = state.evaluate(root, policy_revision)
+        errors = state.evaluate(root, policy_revision, case_only_rename_paths)
         state.reset(line[6:])
         return errors
     if line.startswith('+++ /dev/null'):
-        errors = state.evaluate(root, policy_revision)
+        errors = state.evaluate(root, policy_revision, case_only_rename_paths)
         state.reset(state.previous_file, is_deleted=True)
         return errors
     return None
@@ -263,10 +279,18 @@ def scan_test_integrity(
     """
     errors: list[str] = []
     state = _FileDiffState()
+    case_only_rename_paths: dict[str, CaseOnlyTestRename] = (
+        find_case_only_test_renames(
+            diff_text,
+            is_test_file=is_test_file,
+            assertion_pattern=ASSERTION_PATTERN,
+            reduction_reason_pattern=ALLOW_ASSERTION_REDUCTION_RE,
+        )
+    )
 
     for line in diff_text.splitlines():
         boundary_errors = _update_file_context(
-            line, state, root, policy_revision
+            line, state, root, policy_revision, case_only_rename_paths
         )
         if boundary_errors is not None:
             errors.extend(boundary_errors)
@@ -279,7 +303,9 @@ def scan_test_integrity(
             continue
         errors.extend(_scan_added_line(line, state))
 
-    errors.extend(state.evaluate(root, policy_revision))
+    errors.extend(
+        state.evaluate(root, policy_revision, case_only_rename_paths)
+    )
     return errors
 
 

@@ -41,6 +41,45 @@ def _assertion_reduction_diff() -> str:
 """
 
 
+def _case_only_test_rename_diff() -> str:
+    """Return a deletion/addition pair differing only by path casing."""
+    return """diff --git a/tests/OpenAI/test_handler.py b/tests/OpenAI/test_handler.py
+deleted file mode 100644
+--- a/tests/OpenAI/test_handler.py
++++ /dev/null
+@@ -1,2 +0,0 @@
+-def test_old_handler():
+-    assert old_behavior()
+diff --git a/tests/openai/test_handler.py b/tests/openai/test_handler.py
+new file mode 100644
+--- /dev/null
++++ b/tests/openai/test_handler.py
+@@ -0,0 +1,2 @@
++def test_new_handler():
++    assert new_behavior()
+"""
+
+
+def _case_only_test_rename_with_reduced_assertions_diff() -> str:
+    """Return a case-only migration that removes one assertion."""
+    return """diff --git a/tests/OpenAI/test_handler.py b/tests/OpenAI/test_handler.py
+deleted file mode 100644
+--- a/tests/OpenAI/test_handler.py
++++ /dev/null
+@@ -1,3 +0,0 @@
+-def test_old_handler():
+-    assert old_behavior()
+-    assert second_behavior()
+diff --git a/tests/openai/test_handler.py b/tests/openai/test_handler.py
+new file mode 100644
+--- /dev/null
++++ b/tests/openai/test_handler.py
+@@ -0,0 +1,2 @@
++def test_new_handler():
++    assert new_behavior()
+"""
+
+
 @pytest.mark.unit
 class TestStagedTestIntegrity:
     """The gate must never trust an unstaged reason file."""
@@ -90,6 +129,73 @@ class TestStagedTestIntegrity:
         errors = gate.scan_test_integrity(diff, tmp_path)
 
         assert any('[TEST_FOCUS]' in error for error in errors)
+
+    def test_case_only_test_rename_is_not_reported_as_deletion(self, tmp_path):
+        errors = gate.scan_test_integrity(
+            _case_only_test_rename_diff(), tmp_path
+        )
+
+        assert errors == []
+
+    def test_case_only_test_rename_still_checks_assertion_reduction(
+        self, tmp_path
+    ):
+        errors = gate.scan_test_integrity(
+            _case_only_test_rename_with_reduced_assertions_diff(), tmp_path
+        )
+
+        assert len(errors) == 1
+        assert '[TEST_INTEGRITY]' in errors[0]
+
+    def test_case_only_rename_is_safe_in_a_real_revision_diff(
+        self, tmp_path: Path
+    ):
+        _git(tmp_path, 'init')
+        _git(tmp_path, 'config', 'user.email', 'quality@example.invalid')
+        _git(tmp_path, 'config', 'user.name', 'Quality Gate')
+
+        old_path = tmp_path / 'tests' / 'OpenAI' / 'test_handler.py'
+        old_path.parent.mkdir(parents=True)
+        old_path.write_text(
+            'def test_legacy_path():\n'
+            '    legacy_value = old_provider()\n'
+            "    assert legacy_value == 'legacy'\n",
+            encoding='utf-8',
+        )
+        _git(tmp_path, 'add', '--', 'tests/OpenAI/test_handler.py')
+        _git(tmp_path, 'commit', '-m', 'add legacy test path')
+        base_revision = _git(tmp_path, 'rev-parse', 'HEAD')
+
+        old_path.unlink()
+        new_path = tmp_path / 'tests' / 'openai' / 'test_handler.py'
+        new_path.parent.mkdir(parents=True)
+        new_path.write_text(
+            'def test_normalized_path():\n'
+            '    normalized_value = new_provider()\n'
+            "    assert normalized_value == 'normalized'\n",
+            encoding='utf-8',
+        )
+        _git(tmp_path, 'add', '-u', '--', 'tests/OpenAI/test_handler.py')
+        _git(tmp_path, 'add', '--', 'tests/openai/test_handler.py')
+        _git(tmp_path, 'commit', '-m', 'normalize test path')
+        head_revision = _git(tmp_path, 'rev-parse', 'HEAD')
+
+        diff = unified_diff(
+            tmp_path,
+            f'{base_revision}...{head_revision}',
+            context=1,
+        )
+
+        assert 'deleted file mode' in diff
+        assert 'new file mode' in diff
+        assert (
+            gate.scan_test_integrity(
+                diff,
+                tmp_path,
+                policy_revision=head_revision,
+            )
+            == []
+        )
 
     def test_short_skip_reason_is_not_an_exception(self, tmp_path):
         diff = (
