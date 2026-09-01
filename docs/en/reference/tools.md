@@ -430,4 +430,4 @@ A: Yes! Simply subclass `BaseTool` and implement the `execute` method.
 
 ______________________________________________________________________
 
-**Version:** 0.2.0 | **Updated:** 2026-08-27
+**Version:** 0.3.0 | **Updated:** 2026-08-27
