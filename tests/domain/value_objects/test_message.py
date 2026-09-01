@@ -79,6 +79,15 @@ class TestMessage:
         ):
             Message(role=MessageRole.USER, content='   ')
 
+    @pytest.mark.parametrize('content', [42, None, ['not', 'a', 'string']])
+    def test_message_validation_non_string_content_raises_value_error(
+        self, content
+    ):
+        with pytest.raises(
+            ValueError, match='The message content cannot be empty'
+        ):
+            Message(role=MessageRole.USER, content=cast(str, content))
+
     def test_message_validation_invalid_role_type(self):
         with pytest.raises(
             ValueError, match="The 'role' must be an instance of MessageRole"

@@ -33,7 +33,7 @@ class Message:
             # Changing it is a breaking change, not a lint fix.
             raise ValueError("The 'role' must be an instance of MessageRole.")
 
-        if not self.content or not self.content.strip():
+        if not isinstance(self.content, str) or not self.content.strip():
             raise ValueError('The message content cannot be empty.')
 
     def to_dict(self) -> dict[str, str]:

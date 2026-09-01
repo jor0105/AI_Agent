@@ -103,11 +103,44 @@ class TestOpenAIClient:
         assert 'think' not in kwargs
 
     @pytest.mark.asyncio
-    async def test_call_api_passes_temperature(self, mocked_openai_client):
+    async def test_call_api_preserves_responses_reasoning_object(
+        self, mocked_openai_client
+    ):
         client, mock_client = mocked_openai_client
 
         await client.call_api(
             model=OPENAI_MODEL_NANO,
+            instructions='Instr',
+            messages=[],
+            config={'reasoning': {'effort': 'low'}},
+        )
+
+        kwargs = mock_client.responses.create.call_args.kwargs
+        assert kwargs['reasoning'] == {'effort': 'low'}
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('max_tokens', [-1, 0])
+    async def test_call_api_ignores_non_positive_max_tokens(
+        self, mocked_openai_client, max_tokens
+    ):
+        client, mock_client = mocked_openai_client
+
+        await client.call_api(
+            model=OPENAI_MODEL_NANO,
+            instructions='Instr',
+            messages=[],
+            config={'max_tokens': max_tokens},
+        )
+
+        kwargs = mock_client.responses.create.call_args.kwargs
+        assert 'max_output_tokens' not in kwargs
+
+    @pytest.mark.asyncio
+    async def test_call_api_passes_temperature(self, mocked_openai_client):
+        client, mock_client = mocked_openai_client
+
+        await client.call_api(
+            model='gpt-4o-mini',
             instructions='Instr',
             messages=[],
             config={'temperature': 0.7},
@@ -115,7 +148,7 @@ class TestOpenAIClient:
 
         kwargs = mock_client.responses.create.call_args.kwargs
         assert kwargs == {
-            'model': OPENAI_MODEL_NANO,
+            'model': 'gpt-4o-mini',
             'instructions': 'Instr',
             'input': [],
             'temperature': 0.7,
@@ -126,7 +159,7 @@ class TestOpenAIClient:
         client, mock_client = mocked_openai_client
 
         await client.call_api(
-            model=OPENAI_MODEL_NANO,
+            model='gpt-4o-mini',
             instructions='Instr',
             messages=[],
             config={'top_p': 0.9},
@@ -134,14 +167,16 @@ class TestOpenAIClient:
 
         kwargs = mock_client.responses.create.call_args.kwargs
         assert kwargs == {
-            'model': OPENAI_MODEL_NANO,
+            'model': 'gpt-4o-mini',
             'instructions': 'Instr',
             'input': [],
             'top_p': 0.9,
         }
 
     @pytest.mark.asyncio
-    async def test_call_api_passes_top_k(self, mocked_openai_client):
+    async def test_call_api_ignores_ollama_only_top_k(
+        self, mocked_openai_client
+    ):
         client, mock_client = mocked_openai_client
 
         await client.call_api(
@@ -156,7 +191,6 @@ class TestOpenAIClient:
             'model': OPENAI_MODEL_NANO,
             'instructions': 'Instr',
             'input': [],
-            'top_k': 50,
         }
 
     @pytest.mark.asyncio
@@ -171,7 +205,7 @@ class TestOpenAIClient:
         }
 
         await client.call_api(
-            model=OPENAI_MODEL_NANO,
+            model='gpt-4o-mini',
             instructions='Instr',
             messages=[],
             config=config,
@@ -179,13 +213,51 @@ class TestOpenAIClient:
 
         kwargs = mock_client.responses.create.call_args.kwargs
         assert kwargs == {
-            'model': OPENAI_MODEL_NANO,
+            'model': 'gpt-4o-mini',
             'instructions': 'Instr',
             'input': [],
             'temperature': 0.7,
             'top_p': 0.9,
-            'top_k': 50,
         }
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('parameter', ['temperature', 'top_p'])
+    async def test_call_api_omits_sampling_for_gpt5_models(
+        self, mocked_openai_client, parameter
+    ):
+        client, mock_client = mocked_openai_client
+
+        await client.call_api(
+            model=OPENAI_MODEL_NANO,
+            instructions='Instr',
+            messages=[],
+            config={parameter: 0.7},
+        )
+
+        kwargs = mock_client.responses.create.call_args.kwargs
+        assert parameter not in kwargs
+
+    @pytest.mark.asyncio
+    async def test_call_api_omits_sampling_when_gpt52_reasoning_is_enabled(
+        self, mocked_openai_client
+    ):
+        client, mock_client = mocked_openai_client
+
+        await client.call_api(
+            model='gpt-5.2',
+            instructions='Instr',
+            messages=[],
+            config={
+                'think': 'low',
+                'temperature': 0.7,
+                'top_p': 0.9,
+            },
+        )
+
+        kwargs = mock_client.responses.create.call_args.kwargs
+        assert kwargs['reasoning'] == {'effort': 'low'}
+        assert 'temperature' not in kwargs
+        assert 'top_p' not in kwargs
 
     @pytest.mark.asyncio
     async def test_call_api_passes_tools(self, mocked_openai_client):

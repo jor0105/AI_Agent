@@ -94,7 +94,8 @@ class CreateAgentInputDTO:
             _validate_tool_reference(tool)
 
         if (
-            not isinstance(self.history_max_size, int)
+            isinstance(self.history_max_size, bool)
+            or not isinstance(self.history_max_size, int)
             or self.history_max_size <= 0
         ):
             raise ValueError(

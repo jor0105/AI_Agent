@@ -76,6 +76,34 @@ class TestRecorderBaseBehaviour:
             'model3',
         ]
 
+    def test_aggregates_totals_when_one_response_omits_total_tokens(self):
+        recorder = OpenAIMetricsRecorder()
+        responses = [
+            Mock(
+                usage=Mock(
+                    total_tokens=10,
+                    input_tokens=6,
+                    output_tokens=4,
+                )
+            ),
+            Mock(
+                usage=Mock(
+                    spec=['input_tokens', 'output_tokens'],
+                    input_tokens=3,
+                    output_tokens=2,
+                )
+            ),
+        ]
+
+        recorder.record_success_metrics_from_responses(
+            OPENAI_MODEL_MINI, time.time(), responses
+        )
+
+        metrics = recorder.get_metrics()[0]
+        assert metrics.tokens_used == 15
+        assert metrics.prompt_tokens == 9
+        assert metrics.completion_tokens == 6
+
 
 @pytest.mark.unit
 class TestOpenAIMetricsRecorder:

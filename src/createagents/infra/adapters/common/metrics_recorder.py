@@ -19,6 +19,53 @@ class ProviderUsage:
     prompt_eval_duration_ms: float | None = None
     eval_duration_ms: float | None = None
 
+    def add(self, other: 'ProviderUsage') -> 'ProviderUsage':
+        """Add usage from another provider call to this usage record."""
+        prompt_tokens = _add_optional(self.prompt_tokens, other.prompt_tokens)
+        completion_tokens = _add_optional(
+            self.completion_tokens, other.completion_tokens
+        )
+        tokens_used = _add_optional(
+            self._total_tokens(), other._total_tokens()
+        )
+
+        return ProviderUsage(
+            tokens_used=tokens_used,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            load_duration_ms=_add_optional(
+                self.load_duration_ms, other.load_duration_ms
+            ),
+            prompt_eval_duration_ms=_add_optional(
+                self.prompt_eval_duration_ms, other.prompt_eval_duration_ms
+            ),
+            eval_duration_ms=_add_optional(
+                self.eval_duration_ms, other.eval_duration_ms
+            ),
+        )
+
+    def _total_tokens(self) -> int | None:
+        """Return the reported total or derive it from both token counters."""
+        if self.tokens_used is not None:
+            return self.tokens_used
+        if (
+            self.prompt_tokens is not None
+            and self.completion_tokens is not None
+        ):
+            return self.prompt_tokens + self.completion_tokens
+        return None
+
+
+def _add_optional[NumericT: (int, float)](
+    first: NumericT | None, second: NumericT | None
+) -> NumericT | None:
+    """Add optional numeric values while preserving an absent measurement."""
+    if first is None:
+        return second
+    if second is None:
+        return first
+    return first + second
+
 
 class MetricsRecorder(ABC):
     """Turns a provider response into `ChatMetrics` and stores it.
@@ -53,8 +100,34 @@ class MetricsRecorder(ABC):
             response_api: The response object from the API.
 
         """
-        usage = self._extract_usage(response_api)
+        self.__record_success_metrics(
+            model, start_time, self._extract_usage(response_api)
+        )
 
+    def record_success_metrics_from_responses(
+        self, model: str, start_time: float, responses: list[Any]
+    ) -> None:
+        """Record one metric after several provider calls form one turn.
+
+        Tool calling can require multiple Responses API requests before the
+        assistant returns its final answer. Each response reports usage for
+        that request, so the metric for the logical turn must aggregate them.
+
+        Args:
+            model: The model name used for the operation.
+            start_time: The timestamp when the operation started.
+            responses: Responses returned during the logical turn.
+
+        """
+        usage = ProviderUsage()
+        for response in responses:
+            usage = usage.add(self._extract_usage(response))
+        self.__record_success_metrics(model, start_time, usage)
+
+    def __record_success_metrics(
+        self, model: str, start_time: float, usage: ProviderUsage
+    ) -> None:
+        """Append a successful metric built from normalized provider usage."""
         metrics = ChatMetrics(
             model=model,
             latency_ms=(time.time() - start_time) * 1000,

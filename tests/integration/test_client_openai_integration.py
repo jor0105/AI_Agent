@@ -8,9 +8,18 @@ from createagents.application import ChatRepository
 from createagents.domain import ChatException
 from createagents.infra import OpenAIChatAdapter
 from createagents.infra.adapters.tools.available_tools import AvailableTools
+from tests.integration.test_file_tool_contracts_support import (
+    assert_successful_file_read,
+    create_file_read_challenge,
+    file_tool_fixture_sandbox,
+    fixture_path,
+    make_file_read_prompt,
+)
 from tests.test_constants import OPENAI_MODEL_MINI, OPENAI_MODEL_NANO
 
 # assertion-reduction-reason: Sampling cases moved to OpenAIClient unit tests.
+# assertion-reduction-reason: File-tool cases now require a sandboxed
+# per-run proof token instead of a shallow non-empty response.
 
 
 def _get_openai_api_key() -> str:
@@ -668,7 +677,7 @@ class TestClientOpenAIIntegration:
 
         models = await client.models.list()
         assert models is not None
-        model_list = list(models)
+        model_list = models.data
         assert len(model_list) > 0
 
     @pytest.mark.asyncio
@@ -699,8 +708,8 @@ class TestClientOpenAIIntegration:
 
         assert client1 is not None
         assert client2 is not None
-        models1 = client1.models.list()
-        models2 = client2.models.list()
+        models1 = await client1.models.list()
+        models2 = await client2.models.list()
         assert models1 is not None
         assert models2 is not None
 
@@ -729,10 +738,8 @@ class TestClientOpenAIIntegration:
 
         _get_openai_api_key()
 
-        client = ClientOpenAI.get_client(invalid_key, 30, 3)
-        assert client is not None
-
         with pytest.raises(openai.OpenAIError):
+            client = ClientOpenAI.get_client(invalid_key, 30, 3)
             await client.models.list()
 
     @pytest.mark.asyncio
@@ -995,60 +1002,80 @@ class TestOpenAIChatAdapterToolsIntegration:
             assert len(response) > 0
 
     @pytest.mark.asyncio
-    async def test_chat_with_readlocalfile_tool_text_file(self):
+    async def test_chat_with_readlocalfile_tool_text_file(
+        self, monkeypatch, tmp_path
+    ):
         _get_openai_api_key()
 
+        source_file = fixture_path(__file__, 'sample_text.txt')
         adapter = OpenAIChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
 
         tool_names = [t.name for t in tools]
-        if 'read_local_file' not in tool_names:
+        if 'readlocalfile' not in tool_names:
             pytest.skip(
                 'ReadLocalFileTool not available (missing optional dependencies)'
             )
 
-        file_path = os.path.abspath('.fixtures/sample_text.txt')
-
-        response = await adapter.chat(
-            model=OPENAI_MODEL_MINI,
-            instructions='You are a helpful assistant. Use tools when appropriate.',
-            config={},
-            tools=tools,
-            history=[],
-            user_ask=f'Read the file at {file_path} and tell me how many lines it has. Use the read_local_file tool.',
+        assert source_file.is_file()
+        file_path, invocation_proof = create_file_read_challenge(
+            source_file, tmp_path
         )
+        with file_tool_fixture_sandbox(monkeypatch, file_path):
+            response = await adapter.chat(
+                model=OPENAI_MODEL_MINI,
+                instructions='Use tools when appropriate.',
+                config={},
+                tools=tools,
+                history=[],
+                user_ask=make_file_read_prompt(
+                    file_path,
+                    'State what kind of file this is and what it contains.',
+                ),
+            )
 
-        assert response is not None
         assert isinstance(response, str)
-        assert len(response) > 0
+        assert_successful_file_read(response, {'sample'}, invocation_proof)
 
     @pytest.mark.asyncio
-    async def test_chat_with_readlocalfile_tool_csv_file(self):
+    async def test_chat_with_readlocalfile_tool_csv_file(
+        self, monkeypatch, tmp_path
+    ):
         _get_openai_api_key()
 
+        source_file = fixture_path(__file__, 'sample_data.csv')
         adapter = OpenAIChatAdapter()
         tools = list(AvailableTools.get_all_tool_instances().values())
 
         tool_names = [t.name for t in tools]
-        if 'read_local_file' not in tool_names:
+        if 'readlocalfile' not in tool_names:
             pytest.skip(
                 'ReadLocalFileTool not available (missing optional dependencies)'
             )
 
-        file_path = os.path.abspath('.fixtures/sample_data.csv')
-
-        response = await adapter.chat(
-            model=OPENAI_MODEL_MINI,
-            instructions='You are a helpful assistant. Use tools when appropriate.',
-            config={},
-            tools=tools,
-            history=[],
-            user_ask=f'Read the CSV file at {file_path} and tell me the names in it. Use the read_local_file tool.',
+        assert source_file.is_file()
+        file_path, invocation_proof = create_file_read_challenge(
+            source_file, tmp_path
         )
+        with file_tool_fixture_sandbox(monkeypatch, file_path):
+            response = await adapter.chat(
+                model=OPENAI_MODEL_MINI,
+                instructions='Use tools when appropriate.',
+                config={},
+                tools=tools,
+                history=[],
+                user_ask=make_file_read_prompt(
+                    file_path,
+                    'List every name in the CSV.',
+                ),
+            )
 
-        assert response is not None
         assert isinstance(response, str)
-        assert len(response) > 0
+        assert_successful_file_read(
+            response,
+            {'Alice', 'Bob', 'Charlie'},
+            invocation_proof,
+        )
 
     @pytest.mark.asyncio
     async def test_chat_with_multiple_tool_calls_in_conversation(self):
@@ -1178,7 +1205,7 @@ class TestOpenAIChatAdapterConfigEdgeCases:
 
         adapter = OpenAIChatAdapter()
 
-        config = {'think': 'low'}
+        config = {'think': 'high'}
 
         response = await adapter.chat(
             model=OPENAI_MODEL_NANO,

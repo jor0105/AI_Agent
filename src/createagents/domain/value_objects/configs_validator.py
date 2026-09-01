@@ -45,7 +45,8 @@ class SupportedConfigs:
 
         """
         if value is not None and (
-            not isinstance(value, (float, int))
+            isinstance(value, bool)
+            or not isinstance(value, (float, int))
             or not (0.0 <= float(value) <= 2.0)
         ):
             raise InvalidAgentConfigException(
@@ -63,7 +64,9 @@ class SupportedConfigs:
             InvalidAgentConfigException: If the value is invalid.
 
         """
-        if value is not None and (not isinstance(value, int) or value <= 0):
+        if value is not None and (
+            isinstance(value, bool) or not isinstance(value, int) or value <= 0
+        ):
             raise InvalidAgentConfigException(
                 'max_tokens', 'must be an integer greater than zero'
             )
@@ -81,7 +84,8 @@ class SupportedConfigs:
 
         """
         if value is not None and (
-            not isinstance(value, (float, int))
+            isinstance(value, bool)
+            or not isinstance(value, (float, int))
             or not (0.0 <= float(value) <= 1.0)
         ):
             raise InvalidAgentConfigException(
@@ -137,7 +141,9 @@ class SupportedConfigs:
             InvalidAgentConfigException: If the value is invalid.
 
         """
-        if value is not None and (not isinstance(value, int) or value <= 0):
+        if value is not None and (
+            isinstance(value, bool) or not isinstance(value, int) or value <= 0
+        ):
             raise InvalidAgentConfigException(
                 'top_k', 'must be an integer greater than zero'
             )

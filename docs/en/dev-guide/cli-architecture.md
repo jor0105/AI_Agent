@@ -276,6 +276,13 @@ app.run()
       → handler.execute(agent, user_input)
 ```
 
+#### Session termination
+
+In addition to `exit` and `quit`, `Ctrl+D` raises `EOFError` and ends the
+session in a controlled way: the CLI renders its goodbye message and leaves
+the loop without recording the event as a generic error. `Ctrl+C` still renders
+the interruption message before exiting.
+
 ### 3. Command Processing
 
 ```
@@ -419,4 +426,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Version:** 0.2.0 | **Updated:** 2026-08-27
+**Version:** 0.2.0 | **Updated:** 2026-08-31

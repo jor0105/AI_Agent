@@ -87,6 +87,7 @@ class OpenAIHandler:
         )
 
         iteration = 0
+        responses: list[Any] = []
         try:
             while iteration < self.__max_tool_iterations:
                 iteration += 1
@@ -102,6 +103,7 @@ class OpenAIHandler:
                 response_api = await self.__client.call_api(
                     model, instructions, messages, config, session.schemas
                 )
+                responses.append(response_api)
 
                 if ToolCallParser.has_tool_calls(response_api):
                     self.__logger.info('Tool calls detected in response')
@@ -128,8 +130,8 @@ class OpenAIHandler:
                     self.__logger.warning('OpenAI returned an empty response.')
                     raise ChatException('OpenAI returned an empty response.')
 
-                self.__metrics_recorder.record_success_metrics(
-                    model, start_time, response_api
+                self.__metrics_recorder.record_success_metrics_from_responses(
+                    model, start_time, responses
                 )
 
                 self.__logger.debug(

@@ -393,14 +393,14 @@ agent = CreateAgent(provider='openai', model='YOUR_MODEL', config=config)
 
 **Supported Parameters:**
 
-| Name          | Range / Type    | Description                                                                |
-| ------------- | --------------- | -------------------------------------------------------------------------- |
-| `temperature` | `0.0` – `2.0`   | Sampling randomness (0 = deterministic, 2 = creative)                      |
-| `max_tokens`  | `>0` (`int`)    | Maximum completion tokens                                                  |
-| `top_p`       | `0.0` – `1.0`   | Nucleus sampling probability                                               |
-| `think`       | `bool` or `str` | Extended reasoning (Ollama: `bool`; OpenAI: `"low"`, `"medium"`, `"high"`) |
-| `top_k`       | `>0` (`int`)    | Top-k sampling limit (Ollama)                                              |
-| `stream`      | `bool`          | Enables real-time streaming (`StreamingResponseDTO`)                       |
+| Name          | Range / Type    | Description                                                                                          |
+| ------------- | --------------- | ---------------------------------------------------------------------------------------------------- |
+| `temperature` | `0.0` – `2.0`   | Sampling randomness; model-dependent for OpenAI (GPT-5, GPT-5 Mini, and GPT-5 nano do not accept it) |
+| `max_tokens`  | `>0` (`int`)    | Maximum completion tokens                                                                            |
+| `top_p`       | `0.0` – `1.0`   | Nucleus sampling; model-dependent for OpenAI (GPT-5, GPT-5 Mini, and GPT-5 nano do not accept it)    |
+| `think`       | `bool` or `str` | Extended reasoning (Ollama: `bool`; OpenAI: `"low"`, `"medium"`, `"high"`)                           |
+| `top_k`       | `>0` (`int`)    | Top-k sampling limit (Ollama)                                                                        |
+| `stream`      | `bool`          | Enables real-time streaming (`StreamingResponseDTO`)                                                 |
 
 ______________________________________________________________________
 

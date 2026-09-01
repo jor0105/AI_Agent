@@ -1,20 +1,28 @@
 from types import SimpleNamespace
-from typing import ClassVar
-from unittest.mock import AsyncMock, MagicMock, patch
+from typing import Any, ClassVar, cast
 
 import pytest
 
-from createagents.domain import BaseTool, ChatMetrics
+from createagents.domain import BaseTool, ChatException, ChatMetrics
+from createagents.infra.adapters.ollama.ollama_client import (
+    OllamaClient,
+    OllamaMessage,
+)
 from createagents.infra.adapters.ollama.ollama_handler import OllamaHandler
+from createagents.infra.config import EnvironmentConfig
 
 
 class FakeMessage:
+    """Controlled model message used by the handler state-machine tests."""
+
     def __init__(self, content: str | None, tool_calls: object = None) -> None:
         self.content = content
         self.tool_calls = tool_calls
 
 
 class FakeResponse(dict[str, int]):
+    """Response shape used by the Ollama client boundary."""
+
     def __init__(
         self,
         content: str | None,
@@ -25,82 +33,266 @@ class FakeResponse(dict[str, int]):
         self.message = FakeMessage(content, tool_calls)
 
 
+class FakeOllamaClient:
+    """Records each provider request and returns predetermined responses."""
+
+    def __init__(self, responses: list[FakeResponse]) -> None:
+        self._responses = iter(responses)
+        self.calls: list[dict[str, Any]] = []
+
+    async def call_api(
+        self,
+        model: str,
+        messages: list[Any],
+        config: dict[str, Any] | None,
+        tools: list[dict[str, Any]] | None,
+    ) -> FakeResponse:
+        self.calls.append(
+            {
+                'model': model,
+                'messages': list(messages),
+                'config': config,
+                'tools': tools,
+            }
+        )
+        return next(self._responses)
+
+
 class DummyTool(BaseTool):
+    """Deterministic tool used to drive the actual tool executor."""
+
     name = 'dummy'
-    description = 'dummy tool'
+    description = 'Returns its argument'
     parameters: ClassVar[dict[str, object]] = {
         'type': 'object',
-        'properties': {},
+        'properties': {
+            'value': {'type': 'string', 'description': 'Value to return'}
+        },
+        'required': ['value'],
     }
 
-    def execute(self, **kwargs: object) -> dict[str, object]:
-        return kwargs
+    def execute(self, value: str) -> str:
+        return f'tool result: {value}'
+
+
+def _create_handler(
+    responses: list[FakeResponse],
+    metrics: list[ChatMetrics] | None = None,
+) -> tuple[OllamaHandler, FakeOllamaClient]:
+    """Build a handler around a client fake without replacing its logic."""
+    client = FakeOllamaClient(responses)
+    handler = OllamaHandler(cast(OllamaClient, client), metrics)
+    return handler, client
 
 
 @pytest.mark.unit
 class TestOllamaHandler:
     @pytest.mark.asyncio
-    async def test_execute_tool_loop_scenarios_returns_final_response(self):
-        metrics_store: list[ChatMetrics] = []
-        client = MagicMock()
-        client.call_api = AsyncMock(
-            return_value=FakeResponse(
-                content='final response',
-                metrics={'prompt_eval_count': 2, 'eval_count': 3},
-            )
+    async def test_empty_response_retries_without_mutating_messages(self):
+        original_messages: list[OllamaMessage] = [
+            {'role': 'user', 'content': 'What did we learn?'}
+        ]
+        metrics: list[ChatMetrics] = []
+        handler, client = _create_handler(
+            [
+                FakeResponse(content=''),
+                FakeResponse(
+                    content='A final response.',
+                    metrics={'prompt_eval_count': 2, 'eval_count': 3},
+                ),
+            ],
+            metrics,
         )
-
-        handler = OllamaHandler(client, metrics_store)
 
         result = await handler.execute_tool_loop(
             model='test-model',
-            messages=[],
+            messages=original_messages,
+            config={'temperature': 0.2},
+            tools=None,
+        )
+
+        retry_messages = client.calls[1]['messages']
+        assert result == 'A final response.'
+        assert original_messages == [
+            {'role': 'user', 'content': 'What did we learn?'}
+        ]
+        assert retry_messages[:-1] == original_messages
+        assert retry_messages[-1] == {
+            'role': 'user',
+            'content': (
+                'Based on the information gathered, please provide a final '
+                'answer to the original question.'
+            ),
+        }
+        assert client.calls[1]['tools'] is None
+        assert len(metrics) == 1
+        assert metrics[0].success is True
+        assert metrics[0].tokens_used == 5
+
+    @pytest.mark.asyncio
+    async def test_two_empty_responses_summarize_three_tool_results(self):
+        long_result = 'a' * 600
+        messages: list[OllamaMessage] = [
+            {
+                'role': 'tool',
+                'tool_name': f'tool-{index}',
+                'content': long_result if index == 0 else f'result {index}',
+            }
+            for index in range(4)
+        ]
+        handler, client = _create_handler(
+            [
+                FakeResponse(content=''),
+                FakeResponse(content=''),
+                FakeResponse(content=''),
+            ]
+        )
+
+        result = await handler.execute_tool_loop(
+            model='test-model',
+            messages=messages,
             config=None,
             tools=None,
         )
 
-        assert result == 'final response'
-        assert len(metrics_store) == 1
-        assert metrics_store[0].success is True
-        assert metrics_store[0].tokens_used == 5
+        assert result.startswith('Based on the gathered information:\n\n')
+        assert f'From tool-0: {long_result[:500]}' in result
+        assert long_result[:501] not in result
+        assert 'From tool-1: result 1' in result
+        assert 'From tool-2: result 2' in result
+        assert 'tool-3' not in result
+        assert len(client.calls) == 3
+        assert client.calls[1]['tools'] is None
 
     @pytest.mark.asyncio
-    @patch('createagents.infra.adapters.common.tool_session.ToolExecutor')
-    async def test_execute_tool_loop_scenarios_executes_tool_calls(
-        self, mock_tool_executor
-    ):
-        metrics_store: list[ChatMetrics] = []
-        client = MagicMock()
-        tool_call = SimpleNamespace(
-            function=SimpleNamespace(name='dummy', arguments={'value': 1})
-        )
-        response_with_tool = FakeResponse(content='', tool_calls=[tool_call])
-        final_response = FakeResponse(
-            content='done', metrics={'prompt_eval_count': 1, 'eval_count': 1}
-        )
-        client.call_api = AsyncMock(
-            side_effect=[response_with_tool, final_response]
+    async def test_two_empty_responses_without_tool_results_raise_error(self):
+        metrics: list[ChatMetrics] = []
+        handler, _ = _create_handler(
+            [
+                FakeResponse(content=''),
+                FakeResponse(content=''),
+                FakeResponse(content=''),
+            ],
+            metrics,
         )
 
-        executor_instance = SimpleNamespace(
-            execute_tool=AsyncMock(
-                return_value=SimpleNamespace(success=True, result='ok')
+        with pytest.raises(
+            ChatException, match='Ollama returned multiple empty responses'
+        ):
+            await handler.execute_tool_loop(
+                model='test-model',
+                messages=[],
+                config=None,
+                tools=None,
+            )
+
+        assert len(metrics) == 1
+        assert metrics[0].success is False
+
+    @pytest.mark.asyncio
+    async def test_tool_call_without_tools_records_an_error_metric(self):
+        tool_call = SimpleNamespace(
+            function=SimpleNamespace(name='dummy', arguments={'value': 'one'})
+        )
+        metrics: list[ChatMetrics] = []
+        handler, _ = _create_handler(
+            [FakeResponse(content='', tool_calls=[tool_call])],
+            metrics,
+        )
+
+        with pytest.raises(
+            ChatException,
+            match='Tool calls detected but no tools were provided',
+        ):
+            await handler.execute_tool_loop(
+                model='test-model',
+                messages=[],
+                config=None,
+                tools=None,
+            )
+
+        assert len(metrics) == 1
+        assert metrics[0].success is False
+
+    @pytest.mark.asyncio
+    async def test_tool_call_uses_real_executor_and_returns_final_response(
+        self,
+    ):
+        tool_call = SimpleNamespace(
+            function=SimpleNamespace(
+                name='dummy',
+                arguments={'value': 'one'},
             )
         )
-        mock_tool_executor.return_value = executor_instance
-
-        handler = OllamaHandler(client, metrics_store)
+        metrics: list[ChatMetrics] = []
+        handler, client = _create_handler(
+            [
+                FakeResponse(content='', tool_calls=[tool_call]),
+                FakeResponse(
+                    content='Tool output was used.',
+                    metrics={'prompt_eval_count': 1, 'eval_count': 1},
+                ),
+            ],
+            metrics,
+        )
 
         result = await handler.execute_tool_loop(
             model='test-model',
-            messages=[{'role': 'user', 'content': 'Hi'}],
+            messages=[{'role': 'user', 'content': 'Run the tool.'}],
             config=None,
             tools=[DummyTool()],
         )
 
-        assert result == 'done'
-        executor_instance.execute_tool.assert_awaited_once_with(
-            'dummy', value=1
+        tool_messages = [
+            message
+            for message in client.calls[1]['messages']
+            if isinstance(message, dict) and message.get('role') == 'tool'
+        ]
+        assert result == 'Tool output was used.'
+        assert tool_messages == [
+            {
+                'role': 'tool',
+                'tool_name': 'dummy',
+                'content': 'tool result: one',
+            }
+        ]
+        assert len(metrics) == 1
+        assert metrics[0].success is True
+        assert metrics[0].tokens_used == 2
+
+    @pytest.mark.asyncio
+    async def test_tool_loop_raises_when_iteration_limit_is_exhausted(
+        self, monkeypatch
+    ):
+        monkeypatch.setenv('OLLAMA_MAX_TOOL_ITERATIONS', '1')
+        EnvironmentConfig.clear_cache()
+        tool_call = SimpleNamespace(
+            function=SimpleNamespace(
+                name='dummy',
+                arguments={'value': 'one'},
+            )
         )
-        assert len(metrics_store) == 1
-        assert metrics_store[0].tokens_used == 2
+        metrics: list[ChatMetrics] = []
+        handler, client = _create_handler(
+            [FakeResponse(content='', tool_calls=[tool_call])],
+            metrics,
+        )
+
+        try:
+            with pytest.raises(
+                ChatException,
+                match=r'Max tool calling iterations \(1\) exceeded',
+            ):
+                await handler.execute_tool_loop(
+                    model='test-model',
+                    messages=[],
+                    config=None,
+                    tools=[DummyTool()],
+                )
+        finally:
+            EnvironmentConfig.clear_cache()
+
+        assert len(client.calls) == 1
+        assert client.calls[0]['tools'] is not None
+        assert len(metrics) == 1
+        assert metrics[0].success is False

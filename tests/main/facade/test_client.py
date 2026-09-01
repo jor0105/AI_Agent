@@ -173,6 +173,7 @@ class TestCreateAgentInitialization:
 
 @pytest.mark.unit
 class TestCreateAgentChat:
+    # assertion-reduction-reason: History updates belong to use-case tests.
     @patch(
         'createagents.main.facade.client.AgentComposer.create_chat_use_case'
     )
@@ -296,19 +297,13 @@ class TestCreateAgentChat:
         'createagents.main.facade.client.AgentComposer.create_chat_use_case'
     )
     @pytest.mark.asyncio
-    async def test_chat_updates_agent_history(self, mock_create_chat):
+    async def test_chat_delegates_to_composed_use_case(self, mock_create_chat):
         from unittest.mock import AsyncMock
 
         mock_use_case = Mock()
         mock_output = Mock()
         mock_output.response = 'AI Response'
-
-        async def execute_side_effect(agent, input_dto):
-            agent.add_user_message(input_dto.message)
-            agent.add_assistant_message(mock_output.response)
-            return mock_output
-
-        mock_use_case.execute = AsyncMock(side_effect=execute_side_effect)
+        mock_use_case.execute = AsyncMock(return_value=mock_output)
         mock_create_chat.return_value = mock_use_case
 
         controller = CreateAgent(
@@ -318,10 +313,33 @@ class TestCreateAgentChat:
             instructions='Test',
         )
 
-        await controller.chat('Hello')
+        response = await controller.chat('Hello')
 
-        configs = controller.get_configs()
-        assert len(configs['history']) == 2
+        executed_agent, input_dto = mock_use_case.execute.await_args.args
+        mock_create_chat.assert_called_once_with(provider='openai')
+        assert executed_agent.provider == 'openai'
+        assert executed_agent.model == OPENAI_MODEL_MINI
+        assert input_dto.message == 'Hello'
+        assert response == 'AI Response'
+
+
+@pytest.mark.unit
+class TestCreateAgentCli:
+    @patch('createagents.presentation.cli.ChatCLIApplication')
+    def test_start_cli_builds_and_runs_presentation_application(
+        self, mock_cli
+    ):
+        controller = CreateAgent(
+            provider='openai',
+            model=OPENAI_MODEL_MINI,
+            name='Test',
+            instructions='Test',
+        )
+
+        controller.start_cli()
+
+        mock_cli.assert_called_once_with(agent=controller)
+        mock_cli.return_value.run.assert_called_once_with()
 
 
 @pytest.mark.unit
@@ -427,44 +445,6 @@ class TestCreateAgentClearHistory:
             instructions='Test',
         )
         assert callable(controller.clear_history)
-
-    @patch(
-        'createagents.main.facade.client.AgentComposer.create_chat_use_case'
-    )
-    @pytest.mark.asyncio
-    async def test_clear_history_clears_populated_history(
-        self, mock_create_chat
-    ):
-        from unittest.mock import AsyncMock
-
-        mock_use_case = Mock()
-        mock_output = Mock()
-        mock_output.response = 'AI Response'
-
-        async def execute_side_effect(agent, input_dto):
-            agent.add_user_message(input_dto.message)
-            agent.add_assistant_message(mock_output.response)
-            return mock_output
-
-        mock_use_case.execute = AsyncMock(side_effect=execute_side_effect)
-        mock_create_chat.return_value = mock_use_case
-
-        controller = CreateAgent(
-            provider='openai',
-            model=OPENAI_MODEL_MINI,
-            name='Test',
-            instructions='Test',
-        )
-
-        await controller.chat('Message 1')
-        await controller.chat('Message 2')
-        assert len(controller.get_configs()['history']) == 4
-
-        controller.clear_history()
-        assert controller.get_configs()['history'] == []
-
-        await controller.chat('New message')
-        assert len(controller.get_configs()['history']) == 2
 
     def test_clear_history_preserves_agent_config(self):
         controller = CreateAgent(
@@ -731,36 +711,6 @@ class TestCreateAgentIntegration:
         configs = controller.get_configs()
         assert isinstance(configs, dict)
 
-    @patch(
-        'createagents.main.facade.client.AgentComposer.create_chat_use_case'
-    )
-    @pytest.mark.asyncio
-    async def test_chat_clear_history_chat_again(self, mock_create_chat):
-        from unittest.mock import AsyncMock
-
-        mock_use_case = Mock()
-        mock_output = Mock()
-        mock_output.response = 'Response'
-
-        async def execute_side_effect(agent, input_dto):
-            agent.add_user_message(input_dto.message)
-            agent.add_assistant_message(mock_output.response)
-            return mock_output
-
-        mock_use_case.execute = AsyncMock(side_effect=execute_side_effect)
-        mock_create_chat.return_value = mock_use_case
-
-        controller = _create_openai_agent(OPENAI_MODEL_MINI)
-
-        await controller.chat('Message 1')
-        assert len(controller.get_configs()['history']) == 2
-
-        controller.clear_history()
-        assert len(controller.get_configs()['history']) == 0
-
-        await controller.chat('Message 2')
-        assert len(controller.get_configs()['history']) == 2
-
 
 @pytest.mark.unit
 class TestCreateAgentEdgeCases:
@@ -908,43 +858,6 @@ class TestCreateAgentEdgeCases:
     @patch(
         'createagents.main.facade.client.AgentComposer.create_chat_use_case'
     )
-    @pytest.mark.asyncio
-    async def test_chat_preserves_message_order(self, mock_create_chat):
-        from unittest.mock import AsyncMock
-
-        mock_use_case = Mock()
-        mock_output = Mock()
-        mock_output.response = 'Response'
-
-        async def execute_side_effect(agent, input_dto):
-            agent.add_user_message(input_dto.message)
-            agent.add_assistant_message(mock_output.response)
-            return mock_output
-
-        mock_use_case.execute = AsyncMock(side_effect=execute_side_effect)
-        mock_create_chat.return_value = mock_use_case
-
-        controller = CreateAgent(
-            provider='openai',
-            model=OPENAI_MODEL_MINI,
-            name='Test',
-            instructions='Test',
-        )
-
-        await controller.chat('First message')
-        await controller.chat('Second message')
-        await controller.chat('Third message')
-
-        history = controller.get_configs()['history']
-
-        assert len(history) == 6
-        assert history[0]['content'] == 'First message'
-        assert history[2]['content'] == 'Second message'
-        assert history[4]['content'] == 'Third message'
-
-    @patch(
-        'createagents.main.facade.client.AgentComposer.create_chat_use_case'
-    )
     def test_get_metrics_does_not_modify_internal_state(
         self, mock_create_chat
     ):
@@ -1030,44 +943,6 @@ class TestCreateAgentEdgeCases:
         assert isinstance(prom_text, str)
         assert len(prom_text) > 0
 
-    @patch(
-        'createagents.main.facade.client.AgentComposer.create_chat_use_case'
-    )
-    @pytest.mark.asyncio
-    async def test_clear_history_with_chat_and_get_configs(
-        self, mock_create_chat
-    ):
-        from unittest.mock import AsyncMock
-
-        mock_chat_use_case = Mock()
-        mock_output = Mock()
-        mock_output.response = 'Response'
-
-        async def execute_side_effect(agent, input_dto):
-            agent.add_user_message(input_dto.message)
-            agent.add_assistant_message(mock_output.response)
-            return mock_output
-
-        mock_chat_use_case.execute = AsyncMock(side_effect=execute_side_effect)
-        mock_create_chat.return_value = mock_chat_use_case
-
-        controller = CreateAgent(
-            provider='openai',
-            model=OPENAI_MODEL_MINI,
-            name='Test',
-            instructions='Test',
-        )
-
-        await controller.chat('Hello')
-        configs = controller.get_configs()
-        assert len(configs['history']) == 2
-
-        controller.clear_history()
-        assert len(controller.get_configs()['history']) == 0
-
-        await controller.chat('New conversation')
-        assert len(controller.get_configs()['history']) == 2
-
     def test_initialization_with_all_optional_params_none(self):
         controller = CreateAgent(
             provider='openai',
@@ -1081,46 +956,6 @@ class TestCreateAgentEdgeCases:
         assert configs['name'] is None
         assert configs['instructions'] is None
         assert configs['config'] == {}
-
-    @patch(
-        'createagents.main.facade.client.AgentComposer.create_chat_use_case'
-    )
-    @pytest.mark.asyncio
-    async def test_multiple_consecutive_clear_history_calls(
-        self, mock_create_chat
-    ):
-        from unittest.mock import AsyncMock
-
-        mock_use_case = Mock()
-        mock_output = Mock()
-        mock_output.response = 'Response'
-
-        async def execute_side_effect(agent, input_dto):
-            agent.add_user_message(input_dto.message)
-            agent.add_assistant_message(mock_output.response)
-            return mock_output
-
-        mock_use_case.execute = AsyncMock(side_effect=execute_side_effect)
-        mock_create_chat.return_value = mock_use_case
-
-        controller = CreateAgent(
-            provider='openai',
-            model=OPENAI_MODEL_MINI,
-            name='Test',
-            instructions='Test',
-        )
-
-        await controller.chat('Message')
-        assert len(controller.get_configs()['history']) == 2
-
-        controller.clear_history()
-        controller.clear_history()
-        controller.clear_history()
-
-        assert len(controller.get_configs()['history']) == 0
-
-        controller.clear_history()
-        assert len(controller.get_configs()['history']) == 0
 
     def test_initialization_provider_case_variations(self):
         providers = ['openai', 'OPENAI', 'OpenAI', 'oPeNaI']

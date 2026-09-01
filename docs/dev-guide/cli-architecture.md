@@ -327,6 +327,13 @@ app.run()
       → handler.execute(agent, user_input)
 ```
 
+#### Encerramento de sessão
+
+Além dos comandos `exit` e `quit`, `Ctrl+D` gera `EOFError` e encerra a
+sessão de forma controlada: a CLI renderiza a despedida e sai do loop sem
+registrar o evento como um erro genérico. `Ctrl+C` continua renderizando a
+mensagem de interrupção antes de encerrar.
+
 ### 3. Processamento de Comando
 
 ```
@@ -477,4 +484,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Versão:** 0.2.0 | **Atualização:** 2026-08-27
+**Versão:** 0.2.0 | **Atualização:** 2026-08-31

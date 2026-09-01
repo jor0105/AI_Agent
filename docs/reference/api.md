@@ -420,9 +420,9 @@ agent = CreateAgent(provider='openai', model='YOUR_MODEL', config=config)
 
 | Nome          | Faixa/Tipo  | Descrição                                                                                                 |
 | ------------- | ----------- | --------------------------------------------------------------------------------------------------------- |
-| `temperature` | 0.0–2.0     | Controla aleatoriedade. 0=determinístico, 2=mais criativo                                                 |
+| `temperature` | 0.0–2.0     | Controla aleatoriedade; no OpenAI depende do modelo (GPT-5, GPT-5 Mini e GPT-5 nano não aceitam)          |
 | `max_tokens`  | >0 (int)    | Limite de tokens na resposta                                                                              |
-| `top_p`       | 0.0–1.0     | Nucleus sampling                                                                                          |
+| `top_p`       | 0.0–1.0     | Nucleus sampling; no OpenAI depende do modelo (GPT-5, GPT-5 Mini e GPT-5 nano não aceitam)                |
 | `think`       | bool ou str | Ollama: bool (ativa/desativa), OpenAI: string de opções avançadas ("low", "medium" ou "high" disponíveis) |
 | `top_k`       | >0 (int)    | Número de tokens considerados no sampling (Ollama)                                                        |
 | `stream`      | bool        | Ativa streaming de tokens em tempo real (`StreamingResponseDTO`)                                          |

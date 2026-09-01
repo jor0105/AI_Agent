@@ -1,4 +1,5 @@
-from typing import cast
+from types import SimpleNamespace
+from typing import ClassVar, cast
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
@@ -168,3 +169,150 @@ class TestOpenAIHandler:
         metrics = self.handler.get_metrics()
         assert len(metrics) == 1
         assert metrics[0].success is True
+
+    @pytest.mark.asyncio
+    async def test_execute_tool_loop_composes_real_tool_call_flow(self):
+        class EchoTool(BaseTool):
+            name = 'echo'
+            description = 'Echoes the supplied value'
+            parameters: ClassVar[dict[str, object]] = {
+                'type': 'object',
+                'properties': {
+                    'value': {
+                        'type': 'string',
+                        'description': 'Value to echo',
+                    }
+                },
+                'required': ['value'],
+            }
+
+            def execute(self, value: str) -> str:
+                return f'echo: {value}'
+
+        tool_call_response = SimpleNamespace(
+            output=[
+                SimpleNamespace(
+                    type='function_call',
+                    id='fc_123',
+                    call_id='call_123',
+                    name='echo',
+                    arguments='{"value": "protocol input"}',
+                )
+            ],
+            output_text='',
+            usage=SimpleNamespace(
+                total_tokens=7,
+                input_tokens=4,
+                output_tokens=3,
+            ),
+        )
+        final_response = SimpleNamespace(
+            output=[],
+            output_text='Final answer after the tool call.',
+            usage=SimpleNamespace(
+                total_tokens=9,
+                input_tokens=5,
+                output_tokens=4,
+            ),
+        )
+        messages = [{'role': 'user', 'content': 'Use the echo tool.'}]
+        self.mock_client.call_api.side_effect = [
+            tool_call_response,
+            final_response,
+        ]
+
+        response = await self.handler.execute_tool_loop(
+            model=OPENAI_MODEL_NANO,
+            instructions='Use tools when needed.',
+            messages=messages,
+            config={},
+            tools=[EchoTool()],
+        )
+
+        first_request, second_request = (
+            self.mock_client.call_api.await_args_list
+        )
+        assert response == 'Final answer after the tool call.'
+        assert first_request.args[4] == [
+            {
+                'type': 'function',
+                'name': 'echo',
+                'description': 'Echoes the supplied value',
+                'parameters': EchoTool.parameters,
+            }
+        ]
+        assert second_request.args[2] == [
+            {'role': 'user', 'content': 'Use the echo tool.'},
+            {
+                'type': 'function_call',
+                'id': 'fc_123',
+                'call_id': 'call_123',
+                'name': 'echo',
+                'arguments': '{"value": "protocol input"}',
+            },
+            {
+                'type': 'function_call_output',
+                'call_id': 'call_123',
+                'output': 'echo: protocol input',
+            },
+        ]
+
+        metrics = self.handler.get_metrics()
+        assert len(metrics) == 1
+        assert metrics[0].success is True
+        assert metrics[0].tokens_used == 16
+        assert metrics[0].prompt_tokens == 9
+        assert metrics[0].completion_tokens == 7
+
+    @pytest.mark.asyncio
+    async def test_invalid_tool_arguments_return_error_output(self):
+        class EchoTool(BaseTool):
+            name = 'echo'
+            description = 'Echoes the supplied value'
+            parameters: ClassVar[dict[str, object]] = {
+                'type': 'object',
+                'properties': {
+                    'value': {'type': 'string'},
+                },
+                'required': ['value'],
+            }
+
+            def execute(self, value: str) -> str:
+                raise AssertionError('The malformed call must not execute')
+
+        malformed_response = SimpleNamespace(
+            output=[
+                SimpleNamespace(
+                    type='function_call',
+                    id='fc_bad',
+                    call_id='call_bad',
+                    name='echo',
+                    arguments='{not valid json}',
+                )
+            ],
+            output_text='',
+            usage=None,
+        )
+        final_response = SimpleNamespace(
+            output=[],
+            output_text='The tool call was corrected.',
+            usage=None,
+        )
+        messages = [{'role': 'user', 'content': 'Use the echo tool.'}]
+        self.mock_client.call_api.side_effect = [
+            malformed_response,
+            final_response,
+        ]
+
+        response = await self.handler.execute_tool_loop(
+            model=OPENAI_MODEL_NANO,
+            instructions='Use tools when needed.',
+            messages=messages,
+            config={},
+            tools=[EchoTool()],
+        )
+
+        assert response == 'The tool call was corrected.'
+        assert messages[-1]['type'] == 'function_call_output'
+        assert messages[-1]['call_id'] == 'call_bad'
+        assert 'valid JSON arguments' in messages[-1]['output']

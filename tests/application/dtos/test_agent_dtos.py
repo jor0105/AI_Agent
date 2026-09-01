@@ -267,6 +267,21 @@ class TestCreateAgentInputDTO:
         with pytest.raises(ValueError, match='history_max_size'):
             dto.validate()
 
+    @pytest.mark.parametrize('value', [True, False, cast(int, 5.5)])
+    def test_validate_rejects_boolean_and_float_history_max_size(self, value):
+        dto = CreateAgentInputDTO(
+            provider='openai',
+            model=OPENAI_MODEL_NANO,
+            name='Test',
+            instructions='Test',
+            history_max_size=value,
+        )
+
+        with pytest.raises(
+            ValueError, match=r'history_max_size.*positive integer'
+        ):
+            dto.validate()
+
     def test_validate_non_string_provider(self):
         dto = CreateAgentInputDTO(
             provider=cast(str, 123),
@@ -512,19 +527,19 @@ class TestCreateAgentInputDTOWithTools:
 
         assert dto.tools == []
 
-    def test_validate_converts_string_tools_to_basetool(self):
+    def test_validate_accepts_nonempty_string_tool_reference(self):
         dto = CreateAgentInputDTO(
             provider='openai',
             model=OPENAI_MODEL_NANO,
             name='Test',
             instructions='Test',
-            tools=[],
+            tools=['currentdate'],
         )
 
         dto.validate()
 
-        if dto.tools:
-            assert all(isinstance(tool, BaseTool) for tool in dto.tools)
+        assert dto.tools == ['currentdate']
+        assert isinstance(dto.tools[0], str)
 
     def test_validate_with_tool_not_callable_execute(self):
         from createagents.domain.exceptions import InvalidBaseToolException

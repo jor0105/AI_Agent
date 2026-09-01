@@ -1,12 +1,13 @@
 import ast
 import time
 from typing import Any, ClassVar
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
 from createagents.domain import BaseTool, ToolExecutionResult, ToolExecutor
 from createagents.domain.interfaces import LoggerInterface
+from createagents.domain.services import tool_executor as tool_executor_module
 
 # allow-assertion-reduction: Removed batch and parallel executor cases target the retired execution contract; current single-tool behavior is covered below.
 
@@ -249,6 +250,47 @@ class TestToolExecutor:
 
 @pytest.mark.unit
 class TestToolExecutorEdgeCases:
+    @pytest.mark.asyncio
+    async def test_execute_tool_runs_async_tool_without_thread_pool(
+        self, mock_logger
+    ):
+        class AsyncEchoTool(BaseTool):
+            name = 'async_echo'
+            description = 'Returns an asynchronous result'
+
+            async def execute(self, value: str) -> str:
+                return f'async: {value}'
+
+        executor = ToolExecutor([AsyncEchoTool()], mock_logger)
+
+        with patch.object(
+            tool_executor_module._TOOL_THREAD_POOL, 'submit'
+        ) as submit:
+            result = await executor.execute_tool('async_echo', value='done')
+
+        assert result.success is True
+        assert result.result == 'async: done'
+        submit.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_execute_tool_encapsulates_async_tool_errors(
+        self, mock_logger
+    ):
+        class AsyncFailingTool(BaseTool):
+            name = 'async_failing'
+            description = 'Raises asynchronously'
+
+            async def execute(self) -> str:
+                raise RuntimeError('async tool failure')
+
+        executor = ToolExecutor([AsyncFailingTool()], mock_logger)
+
+        result = await executor.execute_tool('async_failing')
+
+        assert result.success is False
+        assert result.error is not None
+        assert 'async tool failure' in result.error
+
     @pytest.mark.asyncio
     async def test_execute_tool_with_none_value_argument(self, mock_logger):
         class NullableTool(BaseTool):

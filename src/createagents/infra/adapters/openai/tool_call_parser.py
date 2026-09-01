@@ -68,8 +68,10 @@ class ToolCallParser:
             response: OpenAI Responses API response object.
 
         Returns:
-            List of tool call dictionaries with 'id', 'name', and 'arguments' keys.
-            Returns empty list if no tool calls are present.
+            List of tool call dictionaries with 'id', 'name', and 'arguments'
+            keys. Calls whose arguments cannot be parsed also include an
+            'error' key so the caller can return a function-call output to the
+            API. Returns an empty list if no tool calls are present.
 
         Example:
             ```python
@@ -101,6 +103,10 @@ class ToolCallParser:
                     arguments = json.loads(arguments_str)
                 else:
                     arguments = arguments_str
+                if not isinstance(arguments, dict):
+                    raise TypeError(
+                        'tool call arguments must be a JSON object'
+                    )
 
                 tool_call = {
                     'id': item.call_id,  # Responses API uses call_id
@@ -114,12 +120,23 @@ class ToolCallParser:
                     item.call_id,
                 )
 
-            except (json.JSONDecodeError, AttributeError) as e:
-                # Log error but continue processing other tool calls
+            except (json.JSONDecodeError, AttributeError, TypeError) as e:
                 ToolCallParser._logger.error(
                     'Failed to parse tool call: %s', e, exc_info=True
                 )
-                continue
+                call_id = getattr(item, 'call_id', None)
+                if call_id:
+                    tool_calls.append(
+                        {
+                            'id': call_id,
+                            'name': getattr(item, 'name', 'unknown'),
+                            'arguments': {},
+                            'error': (
+                                'The tool call arguments could not be parsed: '
+                                f'{e!s}'
+                            ),
+                        }
+                    )
 
         ToolCallParser._logger.info(
             'Extracted %s tool call(s)', len(tool_calls)

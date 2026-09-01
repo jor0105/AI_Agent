@@ -46,6 +46,14 @@ class TestTemperatureValidation:
         with pytest.raises(InvalidAgentConfigException, match='temperature'):
             SupportedConfigs.validate_temperature(value)
 
+    @pytest.mark.parametrize('value', [True, False])
+    def test_validate_temperature_rejects_boolean_values(self, value):
+        with pytest.raises(
+            InvalidAgentConfigException,
+            match=r'temperature.*float between 0.0 and 2.0',
+        ):
+            SupportedConfigs.validate_temperature(value)
+
 
 @pytest.mark.unit
 class TestMaxTokensValidation:
@@ -60,6 +68,14 @@ class TestMaxTokensValidation:
         with pytest.raises(InvalidAgentConfigException, match='max_tokens'):
             SupportedConfigs.validate_max_tokens(value)
 
+    @pytest.mark.parametrize('value', [True, False])
+    def test_validate_max_tokens_rejects_boolean_values(self, value):
+        with pytest.raises(
+            InvalidAgentConfigException,
+            match=r'max_tokens.*integer greater than zero',
+        ):
+            SupportedConfigs.validate_max_tokens(value)
+
 
 @pytest.mark.unit
 class TestTopPValidation:
@@ -72,6 +88,14 @@ class TestTopPValidation:
     @pytest.mark.parametrize('value', [-0.1, 1.1, 2.0, -1.0, -0.01, 1.01])
     def test_validate_top_p_rejects_invalid_values(self, value):
         with pytest.raises(InvalidAgentConfigException, match='top_p'):
+            SupportedConfigs.validate_top_p(value)
+
+    @pytest.mark.parametrize('value', [True, False])
+    def test_validate_top_p_rejects_boolean_values(self, value):
+        with pytest.raises(
+            InvalidAgentConfigException,
+            match=r'top_p.*float between 0.0 and 1.0',
+        ):
             SupportedConfigs.validate_top_p(value)
 
 
@@ -263,9 +287,10 @@ class TestTopKValidation:
         with pytest.raises(InvalidAgentConfigException, match='top_k'):
             SupportedConfigs.validate_top_k(cast(int | None, '10'))
 
-    def test_validate_top_k_with_boolean_value(self):
+    @pytest.mark.parametrize('value', [True, False])
+    def test_validate_top_k_rejects_boolean_values(self, value):
         with pytest.raises(InvalidAgentConfigException, match='top_k'):
-            SupportedConfigs.validate_top_k(False)
+            SupportedConfigs.validate_top_k(value)
 
     def test_validate_top_k_error_message_format(self):
         with pytest.raises(InvalidAgentConfigException) as exc_info:

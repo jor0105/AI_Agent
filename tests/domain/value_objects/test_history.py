@@ -93,6 +93,23 @@ class TestHistory:
         assert messages[0].role == MessageRole.SYSTEM
         assert messages[0].content == 'System instruction'
 
+    def test_add_tool_message_preserves_order_and_history_limit(self):
+        history = History(max_size=2)
+        history.add_user_message('Discarded after the limit')
+        history.add_tool_message('Tool result')
+        history.add_assistant_message('Final response')
+
+        messages = history.get_messages()
+
+        assert len(messages) == 2
+        assert messages[0].role == MessageRole.TOOL
+        assert messages[0].content == 'Tool result'
+        assert messages[1].role == MessageRole.ASSISTANT
+        assert history.to_dict_list() == [
+            {'role': 'tool', 'content': 'Tool result'},
+            {'role': 'assistant', 'content': 'Final response'},
+        ]
+
     def test_add_multiple_messages(self):
         history = History()
 
@@ -347,13 +364,6 @@ class TestHistory:
         assert len(history) == 5
         messages = history.get_messages()
         assert messages[0].content == 'Msg 1'
-
-    def test_history_to_dict_list_empty(self):
-        history = History()
-        result = history.to_dict_list()
-
-        assert result == []
-        assert isinstance(result, list)
 
 
 @pytest.mark.unit

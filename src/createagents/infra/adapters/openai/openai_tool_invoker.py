@@ -42,6 +42,19 @@ async def run_tool_calls(
         tool_name = tool_call['name']
         tool_args = tool_call['arguments']
 
+        if tool_call.get('error'):
+            messages.append(
+                ToolCallParser.format_tool_results_for_llm(
+                    tool_call_id=tool_call['id'],
+                    tool_name=tool_name,
+                    result=(
+                        f'{tool_call["error"]} Please retry the tool call '
+                        'with valid JSON arguments.'
+                    ),
+                )
+            )
+            continue
+
         logger.debug("Executing tool '%s' with args: %s", tool_name, tool_args)
 
         execution_result = await executor.execute_tool(tool_name, **tool_args)

@@ -590,6 +590,8 @@ class TestGetAgentConfigUseCase:
         assert len(output.tools) == 1
         assert output.config == config
 
+    # allow-assertion-reduction: Removed duplicate history assertions; the
+    # dedicated history_max_size state test above retains this behavior.
     def test_execute_to_dict_with_all_fields_including_tools(self):
         from createagents.domain import BaseTool
 
@@ -624,22 +626,3 @@ class TestGetAgentConfigUseCase:
         assert 'config' in result
         assert 'tools' in result
         assert 'history_max_size' in result
-
-        from createagents.domain.entities import History
-
-        use_case = GetAgentConfigUseCase()
-        agent = Agent(
-            provider='openai',
-            model=OPENAI_MODEL_NANO,
-            name='Test',
-            instructions='Test',
-            history=History(max_size=25),
-        )
-
-        for i in range(30):
-            agent.add_user_message(f'Message {i}')
-
-        output = use_case.execute(agent)
-
-        assert output.history_max_size == 25
-        assert len(output.history) == 25

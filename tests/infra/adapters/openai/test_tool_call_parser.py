@@ -147,7 +147,7 @@ class TestToolCallParser:
         assert len(result) == 1
         assert result[0]['arguments'] == {'key': 'value'}
 
-    def test_extract_tool_calls_skips_invalid_json(self):
+    def test_extract_tool_calls_preserves_invalid_json_for_error_output(self):
         output_items = [
             MockOutputItem(
                 'function_call',
@@ -168,8 +168,12 @@ class TestToolCallParser:
 
         result = ToolCallParser.extract_tool_calls(response)
 
-        assert len(result) == 1
+        assert len(result) == 2
         assert result[0]['name'] == 'valid_tool'
+        assert result[0]['arguments'] == {'valid': 'json'}
+        assert result[1]['name'] == 'invalid_tool'
+        assert result[1]['arguments'] == {}
+        assert 'could not be parsed' in result[1]['error']
 
     def test_extract_tool_calls_skips_non_function_types(self):
         output_items = [
@@ -414,7 +418,10 @@ class TestToolCallParser:
 
         result = ToolCallParser.extract_tool_calls(response)
 
-        assert len(result) == 0
+        assert len(result) == 1
+        assert result[0]['id'] == 'call_1'
+        assert result[0]['arguments'] == {}
+        assert 'could not be parsed' in result[0]['error']
 
     def test_format_tool_results_with_multiline_result(self):
         multiline_result = """Line 1

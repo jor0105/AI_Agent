@@ -91,6 +91,9 @@ class ChatCLIApplication:
             except KeyboardInterrupt:
                 self._renderer.render_interrupt()
                 break
+            except EOFError:
+                self._renderer.render_goodbye()
+                break
             except Exception as e:
                 self._logger.exception('Unhandled error in CLI command loop')
                 self._renderer.render_error(str(e))

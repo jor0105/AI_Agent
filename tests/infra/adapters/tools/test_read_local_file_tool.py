@@ -1,5 +1,4 @@
-import contextlib
-import tempfile
+from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -11,6 +10,34 @@ from createagents.infra.adapters.tools.read_local_file_tool import (
 from createagents.infra.adapters.tools.read_local_file_tool.read_local_file_tool import (
     ReadLocalFileTool,
 )
+from createagents.infra.config import EnvironmentConfig
+
+# assertion-reduction-reason: Replaced unrestricted temporary-file cases with
+# isolated sandbox, traversal, symlink, and content-exposure coverage.
+
+
+def _write_file(
+    directory: Path,
+    name: str,
+    content: str | bytes,
+) -> Path:
+    """Create one fixture file inside the requested directory."""
+    file_path = directory / name
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    if isinstance(content, bytes):
+        file_path.write_bytes(content)
+    else:
+        file_path.write_text(content, encoding='utf-8')
+    return file_path
+
+
+def _write_external_file(
+    sandbox_dir: Path,
+    name: str,
+    content: str,
+) -> Path:
+    """Create an explicitly external fixture for a sandbox rejection test."""
+    return _write_file(sandbox_dir.parent, name, content)
 
 
 @pytest.fixture(autouse=True)
@@ -25,385 +52,333 @@ def fake_tiktoken_encoding(monkeypatch):
     )
 
 
+@pytest.fixture(autouse=True)
+def sandbox_dir(monkeypatch, tmp_path: Path) -> Generator[Path, None, None]:
+    """Restrict every test to an isolated directory unless it opts out."""
+    monkeypatch.setenv('FILE_TOOL_BASE_DIR', str(tmp_path))
+    EnvironmentConfig.clear_cache()
+    yield tmp_path
+    EnvironmentConfig.clear_cache()
+
+
 @pytest.mark.unit
 class TestReadLocalFileTool:
-    @pytest.fixture(autouse=True)
-    def allow_temp_directory(self, monkeypatch):
-        monkeypatch.setenv('FILE_TOOL_BASE_DIR', '/')
-
     def test_tool_has_correct_name(self):
         tool = ReadLocalFileTool()
+
         assert tool.name == 'readlocalfile'
 
     def test_tool_has_description(self):
         tool = ReadLocalFileTool()
+
         assert tool.description
         assert 'read' in tool.description.lower()
         assert 'file' in tool.description.lower()
 
     def test_tool_has_parameters_schema(self):
         tool = ReadLocalFileTool()
-        assert 'type' in tool.parameters
+
         assert tool.parameters['type'] == 'object'
-        assert 'properties' in tool.parameters
         assert 'path' in tool.parameters['properties']
         assert 'max_tokens' in tool.parameters['properties']
-        assert 'required' in tool.parameters
-        assert 'path' in tool.parameters['required']
+        assert tool.parameters['required'] == ['path']
 
     # assertion-reduction-reason: public tool behavior replaces private checks.
     def test_max_file_size_constant_defined(self):
         tool = ReadLocalFileTool()
+
         assert tool.MAX_FILE_SIZE_BYTES == 100 * 1024 * 1024
 
-    def test_execute_read_simple_text_file(self):
-        tool = ReadLocalFileTool()
+    def test_execute_reads_file_inside_sandbox(self, sandbox_dir: Path):
+        file_path = _write_file(sandbox_dir, 'hello.txt', 'Hello, World!')
 
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.txt', delete=False
-        ) as f:
-            f.write('Hello, World!')
-            f.flush()
-            filepath = f.name
+        result = ReadLocalFileTool().execute(
+            path=str(file_path), max_tokens=1000
+        )
 
-        try:
-            result = tool.execute(path=filepath, max_tokens=1000)
+        assert not result.startswith('[ReadLocalFileTool Error]')
+        assert result == 'Hello, World!'
 
-            assert not result.startswith('[ReadLocalFileTool Error]')
-            assert 'Hello, World!' in result
-        finally:
-            Path(filepath).unlink()
+    def test_execute_rejects_absolute_path_outside_sandbox(
+        self, sandbox_dir: Path
+    ):
+        external_content = 'outside sandbox secret'
+        file_path = _write_external_file(
+            sandbox_dir,
+            'external.txt',
+            external_content,
+        )
 
-    def test_execute_file_not_found(self):
-        tool = ReadLocalFileTool()
+        result = ReadLocalFileTool().execute(
+            path=str(file_path), max_tokens=1000
+        )
 
-        result = tool.execute(path='/nonexistent/file.txt', max_tokens=1000)
+        assert result.startswith('[ReadLocalFileTool Error] Access denied:')
+        assert external_content not in result
 
-        assert result.startswith('[ReadLocalFileTool Error]')
-        assert 'File not found' in result
+    def test_execute_rejects_parent_traversal_outside_sandbox(
+        self, sandbox_dir: Path
+    ):
+        external_content = 'parent traversal secret'
+        file_path = _write_external_file(
+            sandbox_dir,
+            'traversal.txt',
+            external_content,
+        )
+        traversal_path = sandbox_dir / '..' / file_path.name
 
-    def test_execute_path_is_directory(self):
-        tool = ReadLocalFileTool()
+        result = ReadLocalFileTool().execute(
+            path=str(traversal_path), max_tokens=1000
+        )
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            result = tool.execute(path=tmpdir, max_tokens=1000)
+        assert result.startswith('[ReadLocalFileTool Error] Access denied:')
+        assert external_content not in result
 
-            assert result.startswith('[ReadLocalFileTool Error]')
-            assert 'directory' in result.lower()
+    def test_execute_rejects_symlink_escaping_sandbox(self, sandbox_dir: Path):
+        external_content = 'symlink target secret'
+        external_file = _write_external_file(
+            sandbox_dir,
+            'symlink-target.txt',
+            external_content,
+        )
+        symlink = sandbox_dir / 'external-link.txt'
+        symlink.symlink_to(external_file)
 
-    def test_execute_file_too_large(self):
-        tool = ReadLocalFileTool()
+        result = ReadLocalFileTool().execute(
+            path=str(symlink), max_tokens=1000
+        )
 
-        with tempfile.NamedTemporaryFile(
-            mode='wb', suffix='.txt', delete=False
-        ) as f:
-            large_data = b'x' * (tool.MAX_FILE_SIZE_BYTES + 1024)
-            f.write(large_data)
-            f.flush()
-            filepath = f.name
+        assert result.startswith('[ReadLocalFileTool Error] Access denied:')
+        assert external_content not in result
 
-        try:
-            result = tool.execute(path=filepath, max_tokens=100000)
+    def test_execute_file_not_found_inside_sandbox(self, sandbox_dir: Path):
+        missing_file = sandbox_dir / 'missing.txt'
 
-            assert result.startswith('[ReadLocalFileTool Error]')
-            assert 'File too large' in result
-        finally:
-            Path(filepath).unlink()
+        result = ReadLocalFileTool().execute(
+            path=str(missing_file), max_tokens=1000
+        )
 
-    def test_execute_content_exceeds_token_limit(self):
-        tool = ReadLocalFileTool()
+        assert result.startswith('[ReadLocalFileTool Error] File not found:')
 
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.txt', delete=False
-        ) as f:
-            large_text = 'word ' * 10000
-            f.write(large_text)
-            f.flush()
-            filepath = f.name
+    def test_execute_path_is_directory(self, sandbox_dir: Path):
+        directory = sandbox_dir / 'directory'
+        directory.mkdir()
 
-        try:
-            result = tool.execute(path=filepath, max_tokens=100)
+        result = ReadLocalFileTool().execute(
+            path=str(directory), max_tokens=1000
+        )
 
-            assert result.startswith('[ReadLocalFileTool Error]')
-            assert 'exceeds token limit' in result
-        finally:
-            Path(filepath).unlink()
+        assert result.startswith(
+            '[ReadLocalFileTool Error] Path is a directory:'
+        )
 
-    def test_execute_with_default_max_tokens(self):
-        tool = ReadLocalFileTool()
+    def test_execute_file_too_large(self, monkeypatch, sandbox_dir: Path):
+        monkeypatch.setattr(ReadLocalFileTool, 'MAX_FILE_SIZE_BYTES', 10)
+        file_path = _write_file(sandbox_dir, 'large.txt', b'x' * 11)
 
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.txt', delete=False
-        ) as f:
-            f.write('Test content')
-            f.flush()
-            filepath = f.name
+        result = ReadLocalFileTool().execute(
+            path=str(file_path), max_tokens=100000
+        )
 
-        try:
-            result = tool.execute(path=filepath, max_tokens=30000)
+        assert result.startswith('[ReadLocalFileTool Error] File too large:')
 
-            assert not result.startswith('[ReadLocalFileTool Error]')
-            assert 'Test content' in result
-        finally:
-            Path(filepath).unlink()
+    def test_execute_content_exceeds_token_limit(self, sandbox_dir: Path):
+        file_path = _write_file(sandbox_dir, 'tokens.txt', 'word ' * 10000)
 
-    def test_execute_resolves_relative_path(self):
-        tool = ReadLocalFileTool()
+        result = ReadLocalFileTool().execute(
+            path=str(file_path), max_tokens=100
+        )
 
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.txt', delete=False
-        ) as f:
-            f.write('Content')
-            f.flush()
-            filepath = f.name
+        assert result.startswith(
+            '[ReadLocalFileTool Error] Content exceeds token limit:'
+        )
 
-        try:
-            filename = Path(filepath).name
-            result = tool.execute(path=filename, max_tokens=1000)
+    def test_execute_uses_default_max_tokens(self, sandbox_dir: Path):
+        file_path = _write_file(sandbox_dir, 'default.txt', 'Test content')
 
-            assert result.startswith('[ReadLocalFileTool Error]')
-        finally:
-            Path(filepath).unlink()
+        result = ReadLocalFileTool().execute(path=str(file_path))
 
-    def test_execute_logs_operation(self, caplog):
+        assert result == 'Test content'
+
+    def test_execute_rejects_relative_path_that_escapes_sandbox(
+        self, sandbox_dir: Path, monkeypatch
+    ):
+        external_content = 'relative path secret'
+        external_file = _write_external_file(
+            sandbox_dir,
+            'relative-external.txt',
+            external_content,
+        )
+        monkeypatch.chdir(sandbox_dir)
+
+        result = ReadLocalFileTool().execute(
+            path=f'../{external_file.name}', max_tokens=1000
+        )
+
+        assert result.startswith('[ReadLocalFileTool Error] Access denied:')
+        assert external_content not in result
+
+    def test_execute_logs_successful_operation(
+        self, sandbox_dir: Path, caplog
+    ):
         import logging
 
-        tool = ReadLocalFileTool()
+        file_path = _write_file(sandbox_dir, 'logged.txt', 'Test content')
 
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.txt', delete=False
-        ) as f:
-            f.write('Test content')
-            f.flush()
-            filepath = f.name
+        with caplog.at_level(logging.INFO):
+            ReadLocalFileTool().execute(path=str(file_path), max_tokens=1000)
 
-        try:
-            with caplog.at_level(logging.INFO):
-                tool.execute(path=filepath, max_tokens=1000)
+        assert any(
+            'Successfully read file' in record.message
+            for record in caplog.records
+        )
 
-            assert any(
-                'Successfully read file' in r.message for r in caplog.records
-            )
-        finally:
-            Path(filepath).unlink()
+    def test_execute_handles_permission_error(
+        self, sandbox_dir: Path, monkeypatch
+    ):
+        file_path = _write_file(sandbox_dir, 'restricted.txt', 'Test')
+        monkeypatch.setattr(
+            tool_mod,
+            'read_file_by_type',
+            Mock(side_effect=PermissionError),
+        )
 
-    def test_execute_handles_permission_error(self):
-        tool = ReadLocalFileTool()
+        result = ReadLocalFileTool().execute(
+            path=str(file_path), max_tokens=1000
+        )
 
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.txt', delete=False
-        ) as f:
-            f.write('Test')
-            f.flush()
-            filepath = f.name
+        assert result.startswith(
+            '[ReadLocalFileTool Error] Permission denied:'
+        )
 
-        try:
-            Path(filepath).chmod(0o000)
+    @pytest.mark.parametrize(
+        ('name', 'content', 'expected_fragment'),
+        [
+            ('example.py', "def hello():\n    return 'world'", 'def hello()'),
+            ('example.md', '# Header\n\nParagraph', '# Header'),
+            ('example.json', '{"key": "value"}', '"key"'),
+        ],
+    )
+    def test_execute_reads_supported_textual_file_types(
+        self,
+        sandbox_dir: Path,
+        name: str,
+        content: str,
+        expected_fragment: str,
+    ):
+        file_path = _write_file(sandbox_dir, name, content)
 
-            result = tool.execute(path=filepath, max_tokens=1000)
+        result = ReadLocalFileTool().execute(
+            path=str(file_path), max_tokens=1000
+        )
 
-            assert result.startswith('[ReadLocalFileTool Error]')
-            assert 'Permission denied' in result or 'File not found' in result
-        finally:
-            with contextlib.suppress(OSError):
-                Path(filepath).chmod(0o644)
-                Path(filepath).unlink()
+        assert not result.startswith('[ReadLocalFileTool Error]')
+        assert expected_fragment in result
 
-    def test_execute_with_python_file(self):
-        tool = ReadLocalFileTool()
-
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.py', delete=False
-        ) as f:
-            f.write("def hello():\n    return 'world'")
-            f.flush()
-            filepath = f.name
-
-        try:
-            result = tool.execute(path=filepath, max_tokens=1000)
-
-            assert not result.startswith('[ReadLocalFileTool Error]')
-            assert 'def hello()' in result
-        finally:
-            Path(filepath).unlink()
-
-    def test_execute_with_markdown_file(self):
-        tool = ReadLocalFileTool()
-
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.md', delete=False
-        ) as f:
-            f.write('# Header\n\nParagraph')
-            f.flush()
-            filepath = f.name
-
-        try:
-            result = tool.execute(path=filepath, max_tokens=1000)
-
-            assert not result.startswith('[ReadLocalFileTool Error]')
-            assert '# Header' in result
-        finally:
-            Path(filepath).unlink()
-
-    def test_execute_with_json_file(self):
-        tool = ReadLocalFileTool()
-
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.json', delete=False
-        ) as f:
-            f.write('{"key": "value"}')
-            f.flush()
-            filepath = f.name
-
-        try:
-            result = tool.execute(path=filepath, max_tokens=1000)
-
-            assert not result.startswith('[ReadLocalFileTool Error]')
-            assert 'key' in result
-            assert 'value' in result
-        finally:
-            Path(filepath).unlink()
-
-    def test_execute_counts_tokens_correctly(self, caplog):
+    def test_execute_counts_tokens(self, sandbox_dir: Path, caplog):
         import logging
 
-        tool = ReadLocalFileTool()
+        file_path = _write_file(
+            sandbox_dir,
+            'counted.txt',
+            'This is a test ' * 100,
+        )
 
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.txt', delete=False
-        ) as f:
-            f.write('This is a test ' * 100)
-            f.flush()
-            filepath = f.name
+        with caplog.at_level(logging.DEBUG):
+            ReadLocalFileTool().execute(path=str(file_path), max_tokens=10000)
 
-        try:
-            with caplog.at_level(logging.DEBUG):
-                tool.execute(path=filepath, max_tokens=10000)
+        assert any('tokens' in record.message for record in caplog.records)
 
-            assert any('tokens' in r.message for r in caplog.records)
-        finally:
-            Path(filepath).unlink()
+    def test_execute_reads_empty_file(self, sandbox_dir: Path):
+        file_path = _write_file(sandbox_dir, 'empty.txt', '')
 
-    def test_execute_with_empty_file(self):
-        tool = ReadLocalFileTool()
+        result = ReadLocalFileTool().execute(
+            path=str(file_path), max_tokens=1000
+        )
 
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.txt', delete=False
-        ) as f:
-            f.flush()
-            filepath = f.name
+        assert result == ''
 
-        try:
-            result = tool.execute(path=filepath, max_tokens=1000)
-
-            assert not result.startswith('[ReadLocalFileTool Error]')
-            assert result == '' or len(result) == 0
-        finally:
-            Path(filepath).unlink()
-
-    def test_execute_detects_file_type_correctly(self, caplog):
+    @pytest.mark.parametrize(
+        'extension', ['.txt', '.py', '.md', '.json', '.xml']
+    )
+    def test_execute_detects_file_type(
+        self, sandbox_dir: Path, caplog, extension
+    ):
         import logging
 
-        tool = ReadLocalFileTool()
+        file_path = _write_file(
+            sandbox_dir,
+            f'content{extension}',
+            'content',
+        )
 
-        extensions = ['.txt', '.py', '.md', '.json', '.xml']
+        with caplog.at_level(logging.DEBUG):
+            ReadLocalFileTool().execute(path=str(file_path), max_tokens=1000)
 
-        for ext in extensions:
-            with tempfile.NamedTemporaryFile(
-                mode='w', suffix=ext, delete=False
-            ) as f:
-                f.write('content')
-                f.flush()
-                filepath = f.name
-
-            try:
-                with caplog.at_level(logging.DEBUG):
-                    tool.execute(path=filepath, max_tokens=1000)
-
-                assert any('file as type' in r.message for r in caplog.records)
-            finally:
-                Path(filepath).unlink()
+        assert any(
+            'file as type' in record.message for record in caplog.records
+        )
 
     def test_execute_handles_unexpected_exception(self):
-        tool = ReadLocalFileTool()
-
         with patch(
             'pathlib.Path.resolve', side_effect=Exception('Unexpected')
         ):
-            result = tool.execute(path='/some/path', max_tokens=1000)
-
-            assert result.startswith('[ReadLocalFileTool Error]')
-            assert 'Unexpected error' in result
-
-    def test_parameters_schema_has_defaults(self):
-        tool = ReadLocalFileTool()
-        max_tokens_param = tool.parameters['properties']['max_tokens']
-
-        assert 'default' in max_tokens_param
-        assert max_tokens_param['default'] == 30000
-
-    def test_tool_instantiation(self):
-        tool = ReadLocalFileTool()
-        assert tool.name == 'readlocalfile'
-        assert isinstance(tool.description, str)
-        assert tool.parameters is not None
-
-    def test_tool_handles_unicode_content(self):
-        tool = ReadLocalFileTool()
-
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.txt', delete=False, encoding='utf-8'
-        ) as f:
-            f.write('Café ☕ 日本語 🎉')
-            f.flush()
-            filepath = f.name
-
-        try:
-            result = tool.execute(path=filepath, max_tokens=1000)
-
-            assert not result.startswith('[ReadLocalFileTool Error]')
-            assert 'Café' in result or 'Caf' in result
-        finally:
-            Path(filepath).unlink()
-
-    def test_multiple_executions_independent(self):
-        tool = ReadLocalFileTool()
-
-        files = []
-        try:
-            for i in range(3):
-                with tempfile.NamedTemporaryFile(
-                    mode='w', suffix='.txt', delete=False
-                ) as f:
-                    f.write(f'Content {i}')
-                    f.flush()
-                    files.append(f.name)
-
-            results = [tool.execute(path=f, max_tokens=1000) for f in files]
-
-            assert all(
-                not r.startswith('[ReadLocalFileTool Error]') for r in results
+            result = ReadLocalFileTool().execute(
+                path='path-that-raises', max_tokens=1000
             )
-            assert 'Content 0' in results[0]
-            assert 'Content 1' in results[1]
-            assert 'Content 2' in results[2]
-        finally:
-            for file_path in files:
-                Path(file_path).unlink()
 
-    def test_error_format_consistency(self):
+        assert result.startswith('[ReadLocalFileTool Error] Unexpected error:')
+        assert 'Unexpected' in result
+
+    def test_parameters_schema_has_default_max_tokens(self):
         tool = ReadLocalFileTool()
 
-        errors = [
-            tool.execute(path='/nonexistent', max_tokens=1000),
+        assert tool.parameters['properties']['max_tokens']['default'] == 30000
+
+    def test_tool_handles_unicode_content(self, sandbox_dir: Path):
+        file_path = _write_file(
+            sandbox_dir,
+            'unicode.txt',
+            'Café ☕ 日本語 🎉',
+        )
+
+        result = ReadLocalFileTool().execute(
+            path=str(file_path), max_tokens=1000
+        )
+
+        assert result == 'Café ☕ 日本語 🎉'
+
+    def test_multiple_executions_are_independent(self, sandbox_dir: Path):
+        file_paths = [
+            _write_file(
+                sandbox_dir,
+                f'content-{index}.txt',
+                f'Content {index}',
+            )
+            for index in range(3)
+        ]
+        tool = ReadLocalFileTool()
+        results = [
+            tool.execute(path=str(file_path), max_tokens=1000)
+            for file_path in file_paths
         ]
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            errors.append(tool.execute(path=tmpdir, max_tokens=1000))
+        assert results == ['Content 0', 'Content 1', 'Content 2']
 
-        for error in errors:
-            assert error.startswith('[ReadLocalFileTool Error]')
-            assert ':' in error
+    def test_error_format_is_consistent(self, sandbox_dir: Path):
+        missing_file = sandbox_dir / 'missing.txt'
+        directory = sandbox_dir / 'directory'
+        directory.mkdir()
+        tool = ReadLocalFileTool()
+        errors = [
+            tool.execute(path=str(missing_file), max_tokens=1000),
+            tool.execute(path=str(directory), max_tokens=1000),
+        ]
+
+        assert all(
+            error.startswith('[ReadLocalFileTool Error]') for error in errors
+        )
+        assert all(':' in error for error in errors)
 
 
 @pytest.mark.unit
@@ -413,7 +388,7 @@ class TestReadLocalFileToolConstants:
 
     def test_description_constant(self):
         assert isinstance(ReadLocalFileTool.description, str)
-        assert len(ReadLocalFileTool.description) > 0
+        assert ReadLocalFileTool.description
 
     def test_parameters_constant(self):
         assert isinstance(ReadLocalFileTool.parameters, dict)
@@ -427,7 +402,7 @@ class TestReadLocalFileToolConstants:
 class TestReadLocalFileToolMissingDependencies:
     def test_tool_instantiation_when_dependencies_available(self):
         tool = ReadLocalFileTool()
-        assert tool is not None
+
         assert tool.name == 'readlocalfile'
 
     def test_tool_raises_helpful_error_when_dependencies_missing(
@@ -435,7 +410,9 @@ class TestReadLocalFileToolMissingDependencies:
     ):
         monkeypatch.setattr(tool_mod, 'DEPENDENCIES_AVAILABLE', False)
         monkeypatch.setattr(
-            tool_mod, 'IMPORT_ERROR', ImportError('No module named pandas')
+            tool_mod,
+            'IMPORT_ERROR',
+            ImportError('No module named pandas'),
         )
 
         with pytest.raises(
